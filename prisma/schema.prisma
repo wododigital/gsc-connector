@@ -1,0 +1,169 @@
+// GSC Connect - Database Schema
+// Run: npx prisma migrate dev --name init
+// Run: npx prisma generate
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// User Accounts
+// ============================================================
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  name             String?
+  googleId         String?  @unique @map("google_id")
+  passwordHash     String?  @map("password_hash")
+  subscriptionTier String   @default("free") @map("subscription_tier") // free, pro, agency
+  stripeCustomerId String?  @map("stripe_customer_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  googleCredentials GoogleCredential[]
+  gscProperties     GscProperty[]
+  apiKeys           ApiKey[]
+  oauthTokens       OAuthToken[]
+  authCodes         OAuthAuthorizationCode[]
+
+  @@map("users")
+}
+
+// ============================================================
+// Google OAuth Credentials (for accessing GSC API)
+// ============================================================
+model GoogleCredential {
+  id                    String   @id @default(uuid())
+  userId                String   @map("user_id")
+  googleEmail           String   @map("google_email")
+  accessTokenEncrypted  String   @map("access_token_encrypted")
+  refreshTokenEncrypted String   @map("refresh_token_encrypted")
+  tokenExpiry           DateTime @map("token_expiry")
+  scopes                String   @default("")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  properties GscProperty[]
+
+  @@map("google_credentials")
+}
+
+// ============================================================
+// GSC Properties (sites connected to the user's account)
+// ============================================================
+model GscProperty {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  credentialId    String   @map("credential_id")
+  siteUrl         String   @map("site_url") // e.g., "https://example.com/" or "sc-domain:example.com"
+  permissionLevel String   @map("permission_level") // siteOwner, siteFullUser, etc.
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credential GoogleCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  oauthTokens OAuthToken[]
+  authCodes   OAuthAuthorizationCode[]
+
+  @@unique([userId, siteUrl])
+  @@map("gsc_properties")
+}
+
+// ============================================================
+// API Keys (for Claude Desktop / Cursor authentication)
+// ============================================================
+model ApiKey {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  keyHash   String    @unique @map("key_hash") // SHA-256 hash
+  keyPrefix String    @map("key_prefix") // First 8 chars for display
+  name      String    @default("Default")
+  isActive  Boolean   @default(true) @map("is_active")
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+// ============================================================
+// OAuth Clients (registered via Dynamic Client Registration)
+// ============================================================
+model OAuthClient {
+  id                      String   @id @default(uuid())
+  clientId                String   @unique @map("client_id")
+  clientSecretHash        String   @map("client_secret_hash")
+  clientName              String   @default("Unknown") @map("client_name")
+  redirectUris            String[] @map("redirect_uris")
+  grantTypes              String[] @default(["authorization_code", "refresh_token"]) @map("grant_types")
+  tokenEndpointAuthMethod String   @default("client_secret_post") @map("token_endpoint_auth_method")
+  createdAt               DateTime @default(now()) @map("created_at")
+
+  @@map("oauth_clients")
+}
+
+// ============================================================
+// OAuth Tokens (issued to Claude/ChatGPT for MCP access)
+// ============================================================
+model OAuthToken {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  clientId         String   @map("client_id")
+  accessTokenHash  String   @unique @map("access_token_hash")
+  refreshTokenHash String?  @unique @map("refresh_token_hash")
+  propertyId       String   @map("property_id")
+  scopes           String   @default("gsc:read")
+  expiresAt        DateTime @map("expires_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property GscProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("oauth_tokens")
+}
+
+// ============================================================
+// OAuth Authorization Codes (short-lived, single-use)
+// ============================================================
+model OAuthAuthorizationCode {
+  id                  String   @id @default(uuid())
+  codeHash            String   @unique @map("code_hash")
+  userId              String   @map("user_id")
+  clientId            String   @map("client_id")
+  redirectUri         String   @map("redirect_uri")
+  propertyId          String   @map("property_id")
+  codeChallenge       String?  @map("code_challenge")
+  codeChallengeMethod String?  @map("code_challenge_method")
+  scopes              String   @default("gsc:read")
+  expiresAt           DateTime @map("expires_at")
+  used                Boolean  @default(false)
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property GscProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("oauth_authorization_codes")
+}
+
+// ============================================================
+// Usage Tracking
+// ============================================================
+model UsageLog {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  toolName  String   @map("tool_name")
+  siteUrl   String   @map("site_url")
+  source    String   @default("mcp") // mcp, api, dashboard
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@index([userId, toolName])
+  @@map("usage_logs")
+}
