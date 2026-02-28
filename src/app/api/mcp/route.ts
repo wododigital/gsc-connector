@@ -40,14 +40,30 @@ function buildForwardHeaders(req: NextRequest): Record<string, string> {
   return headers;
 }
 
+function buildResponseHeaders(
+  upstream: Response,
+  extra?: Record<string, string>
+): Headers {
+  const responseHeaders = new Headers({
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "no-cache",
+    ...extra,
+  });
+  for (const name of FORWARD_RESPONSE_HEADERS) {
+    const value = upstream.headers.get(name);
+    if (value) responseHeaders.set(name, value);
+  }
+  return responseHeaders;
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
       "Access-Control-Allow-Headers":
-        "Content-Type, Authorization, MCP-Session-Id, MCP-Protocol-Version",
+        "Content-Type, Authorization, MCP-Session-Id, MCP-Protocol-Version, Accept",
     },
   });
 }
@@ -69,18 +85,9 @@ export async function GET(req: NextRequest) {
       headers: buildForwardHeaders(req),
     });
 
-    const responseHeaders = new Headers({
-      "Access-Control-Allow-Origin": "*",
-      "Cache-Control": "no-cache",
-    });
-    for (const name of FORWARD_RESPONSE_HEADERS) {
-      const value = upstream.headers.get(name);
-      if (value) responseHeaders.set(name, value);
-    }
-
     return new NextResponse(upstream.body, {
       status: upstream.status,
-      headers: responseHeaders,
+      headers: buildResponseHeaders(upstream),
     });
   } catch {
     return NextResponse.json(
@@ -100,19 +107,29 @@ export async function POST(req: NextRequest) {
       body,
     });
 
-    const responseHeaders = new Headers({
-      "Access-Control-Allow-Origin": "*",
-      "Cache-Control": "no-cache",
-    });
-    for (const name of FORWARD_RESPONSE_HEADERS) {
-      const value = upstream.headers.get(name);
-      if (value) responseHeaders.set(name, value);
-    }
-
     // Stream the response body back (MCP uses streaming JSON)
     return new NextResponse(upstream.body, {
       status: upstream.status,
-      headers: responseHeaders,
+      headers: buildResponseHeaders(upstream),
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "MCP server unavailable" },
+      { status: 503 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const upstream = await fetch(INTERNAL_MCP_URL, {
+      method: "DELETE",
+      headers: buildForwardHeaders(req),
+    });
+
+    return new NextResponse(upstream.body, {
+      status: upstream.status,
+      headers: buildResponseHeaders(upstream),
     });
   } catch {
     return NextResponse.json(

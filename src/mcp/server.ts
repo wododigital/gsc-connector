@@ -2,8 +2,13 @@
  * GSC Connect - MCP Server (Streamable HTTP transport)
  *
  * Runs on port 3001 (or MCP_PORT env var).
- * Validates Bearer tokens via the auth middleware, then creates a per-request
+ * Validates Bearer tokens via the auth middleware, then creates a per-SESSION
  * McpServer instance with all 13 GSC tools registered.
+ *
+ * Session lifecycle (required by MCP Streamable HTTP spec):
+ *   1. POST with initialize (no MCP-Session-Id) → create transport + server, return session ID
+ *   2. POST with MCP-Session-Id → reuse existing transport, dispatch request
+ *   3. DELETE with MCP-Session-Id → close and remove session
  *
  * Owned by: Coder-MCP agent
  */
@@ -11,6 +16,7 @@
 import express, { Request, Response } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "crypto";
 import { validateAuth } from "./middleware/auth.js";
 import db from "../lib/db.js";
@@ -45,7 +51,17 @@ interface UserContext {
 }
 
 // ----------------------------------------------------------------
-// Factory: create a fresh McpServer per request
+// Session store: maps MCP-Session-Id → { transport, userId }
+// ----------------------------------------------------------------
+interface Session {
+  transport: StreamableHTTPServerTransport;
+  userId: string;
+}
+
+const sessions = new Map<string, Session>();
+
+// ----------------------------------------------------------------
+// Factory: create a fresh McpServer per session (not per request)
 // ----------------------------------------------------------------
 function createMcpServer(user: UserContext): McpServer {
   const server = new McpServer({
@@ -108,11 +124,11 @@ app.use((_req: Request, res: Response, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Methods",
-    "POST, GET, OPTIONS, DELETE"
+    "POST, GET, DELETE, OPTIONS"
   );
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, MCP-Session-Id, Accept"
+    "Content-Type, Authorization, MCP-Session-Id, MCP-Protocol-Version, Accept"
   );
   if (_req.method === "OPTIONS") {
     res.status(200).end();
@@ -123,43 +139,149 @@ app.use((_req: Request, res: Response, next) => {
 
 // Health check - no auth required
 app.get("/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok", service: "gsc-connect-mcp", timestamp: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    service: "gsc-connect-mcp",
+    timestamp: new Date().toISOString(),
+    sessions: sessions.size,
+  });
 });
 
 // ----------------------------------------------------------------
-// MCP endpoint - all methods (POST for JSON-RPC, GET for SSE, DELETE for session)
+// POST /mcp - main JSON-RPC handler (initialize or dispatch to session)
 // ----------------------------------------------------------------
-app.all("/mcp", validateAuth, async (req: Request, res: Response) => {
+app.post("/mcp", validateAuth, async (req: Request, res: Response) => {
   const user = req.user;
   if (!user) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  // Create a stateless transport per request (no session persistence needed)
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-  });
-
-  const server = createMcpServer(user);
-
   try {
-    await server.connect(transport);
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-    // Log tool call if this is a CallTool request
-    if (req.method === "POST" && req.body?.method === "tools/call") {
-      const toolName = req.body?.params?.name ?? "unknown";
-      // Fire-and-forget - do not await to keep latency low
-      logUsage(user.userId, toolName, user.siteUrl).catch(() => undefined);
+    // ---- Path 1: Request carries an existing session ID ----
+    if (sessionId && sessions.has(sessionId)) {
+      const session = sessions.get(sessionId)!;
+
+      // Security: ensure the authenticated user owns this session
+      if (session.userId !== user.userId) {
+        res.status(403).json({ error: "Session belongs to a different user" });
+        return;
+      }
+
+      // Log tool calls (fire-and-forget)
+      if (req.body?.method === "tools/call") {
+        const toolName = (req.body?.params?.name as string) ?? "unknown";
+        logUsage(user.userId, toolName, user.siteUrl).catch(() => undefined);
+      }
+
+      await session.transport.handleRequest(req, res, req.body);
+      return;
     }
 
-    await transport.handleRequest(req, res, req.body);
+    // ---- Path 2: No session ID - must be an initialize request ----
+    if (!sessionId && isInitializeRequest(req.body)) {
+      // enableJsonResponse: true - use plain JSON responses (no SSE streaming).
+      // This avoids SSE buffering issues through the Next.js proxy.
+      let transport: StreamableHTTPServerTransport;
+      transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        enableJsonResponse: true,
+        onsessioninitialized: (id) => {
+          // Register session in the store as soon as the ID is assigned.
+          // Using the callback (not after handleRequest) avoids race conditions.
+          sessions.set(id, { transport, userId: user.userId });
+          console.log(`[MCP] Session created: ${id} for user ${user.userId}`);
+
+          // Auto-cleanup when transport closes
+          transport.onclose = () => {
+            sessions.delete(id);
+            console.log(`[MCP] Session closed: ${id}`);
+          };
+        },
+      });
+
+      const server = createMcpServer(user);
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+      return;
+    }
+
+    // ---- Path 3: Unknown session ID or non-initialize without session ----
+    // Return JSON-RPC error so Claude.ai knows to re-initialize
+    res.status(400).json({
+      jsonrpc: "2.0",
+      error: {
+        code: -32000,
+        message: "Bad Request: No valid session ID provided",
+      },
+      id: null,
+    });
   } catch (error) {
-    console.error("[mcp] Request handling error:", error);
+    console.error("[mcp] POST error:", error);
     if (!res.headersSent) {
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({
+        jsonrpc: "2.0",
+        error: { code: -32603, message: "Internal server error" },
+        id: null,
+      });
     }
   }
+});
+
+// ----------------------------------------------------------------
+// GET /mcp - SSE stream for server-initiated messages
+// We use JSON response mode so GET is not needed for standard flows.
+// Return 405 to tell clients to use POST only.
+// ----------------------------------------------------------------
+app.get("/mcp", validateAuth, async (req: Request, res: Response) => {
+  const user = req.user;
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  if (sessionId && sessions.has(sessionId)) {
+    const session = sessions.get(sessionId)!;
+    if (session.userId !== user.userId) {
+      res.status(403).json({ error: "Session belongs to a different user" });
+      return;
+    }
+    // Forward to transport in case the client opens a GET SSE stream
+    await session.transport.handleRequest(req, res, undefined);
+    return;
+  }
+
+  res.status(405).set("Allow", "POST").send("Method Not Allowed");
+});
+
+// ----------------------------------------------------------------
+// DELETE /mcp - explicit session termination
+// ----------------------------------------------------------------
+app.delete("/mcp", validateAuth, async (req: Request, res: Response) => {
+  const user = req.user;
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  if (sessionId && sessions.has(sessionId)) {
+    const session = sessions.get(sessionId)!;
+    if (session.userId !== user.userId) {
+      res.status(403).json({ error: "Session belongs to a different user" });
+      return;
+    }
+    await session.transport.close();
+    sessions.delete(sessionId);
+    console.log(`[MCP] Session deleted: ${sessionId}`);
+    res.status(200).end();
+    return;
+  }
+
+  res.status(404).json({ error: "Session not found" });
 });
 
 // ----------------------------------------------------------------
