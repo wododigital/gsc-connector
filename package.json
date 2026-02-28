@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "dev:mcp": "tsx watch src/mcp/server.ts",
-    "dev:all": "concurrently \"npm run dev\" \"npm run dev:mcp\"",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:mcp\" --names web,mcp --prefix-colors green,blue",
     "build": "next build && tsc -p tsconfig.mcp.json",
     "build:mcp": "tsc -p tsconfig.mcp.json",
-    "start": "next start --port 3000",
+    "start": "concurrently \"next start --port 3000\" \"node dist/mcp/server.js\"",
     "start:mcp": "node dist/mcp/server.js",
     "lint": "next lint",
     "db:migrate": "prisma migrate dev",
@@ -25,6 +25,7 @@
     "next": "^14.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "concurrently": "^9.0.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.0"
   },
@@ -34,7 +35,6 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.0",
-    "concurrently": "^9.0.0",
     "postcss": "^8.4.0",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.0",

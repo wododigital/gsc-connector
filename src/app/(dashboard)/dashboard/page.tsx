@@ -31,7 +31,9 @@ async function getApiKeyCount(userId: string) {
   }
 }
 
-const MCP_ENDPOINT = "http://localhost:3001/mcp";
+// In production use APP_URL/api/mcp (single port via proxy).
+// In development, default to localhost:3000/api/mcp so the proxy is tested too.
+const MCP_ENDPOINT = `${process.env.APP_URL || "http://localhost:3000"}/api/mcp`;
 
 const CLAUDE_DESKTOP_CONFIG = JSON.stringify(
   {
