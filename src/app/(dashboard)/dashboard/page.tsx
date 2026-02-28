@@ -193,6 +193,26 @@ export default async function DashboardPage() {
           </p>
         )}
       </section>
+
+      {/* Usage logs link */}
+      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100 mb-1">
+              Usage Logs
+            </h2>
+            <p className="text-zinc-400 text-sm">
+              View a history of all MCP tool calls made on your account.
+            </p>
+          </div>
+          <a
+            href="/dashboard/logs"
+            className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors"
+          >
+            View logs
+          </a>
+        </div>
+      </section>
     </div>
   );
 }

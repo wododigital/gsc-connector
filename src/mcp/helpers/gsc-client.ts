@@ -16,6 +16,37 @@ export interface GscContext {
   userId: string;
 }
 
+/** Shared token refresh logic for a credential record */
+async function resolveAccessToken(credential: {
+  id: string;
+  accessTokenEncrypted: string;
+  refreshTokenEncrypted: string;
+  tokenExpiry: Date;
+}): Promise<string> {
+  const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000);
+
+  if (credential.tokenExpiry > fiveMinutesFromNow) {
+    return decrypt(credential.accessTokenEncrypted);
+  }
+
+  // Token is expired or about to expire - refresh it
+  const refreshToken = decrypt(credential.refreshTokenEncrypted);
+  const newTokens = await refreshGoogleToken(refreshToken);
+
+  const newExpiry = new Date(Date.now() + newTokens.expires_in * 1000);
+  const newAccessTokenEncrypted = encrypt(newTokens.access_token);
+
+  await db.googleCredential.update({
+    where: { id: credential.id },
+    data: {
+      accessTokenEncrypted: newAccessTokenEncrypted,
+      tokenExpiry: newExpiry,
+    },
+  });
+
+  return newTokens.access_token;
+}
+
 /**
  * Returns a GscContext (accessToken + siteUrl) for the given user/property pair.
  * Refreshes the access token if it is within 5 minutes of expiry.
@@ -42,39 +73,49 @@ export async function getGscContext(
       throw new AppError("FORBIDDEN", "Access denied to this property", 403);
     }
 
-    const credential = property.credential;
+    const accessToken = await resolveAccessToken(property.credential);
 
-    // Use the access token if it is valid for at least 5 more minutes
-    const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000);
+    return { accessToken, siteUrl: property.siteUrl, userId };
+  } catch (error) {
+    if (error instanceof AppError) throw error;
 
-    if (credential.tokenExpiry > fiveMinutesFromNow) {
-      return {
-        accessToken: decrypt(credential.accessTokenEncrypted),
-        siteUrl: property.siteUrl,
-        userId,
-      };
-    }
+    console.error("[gsc-client] Unexpected error:", error);
+    throw new AppError(
+      "CREDENTIAL_NOT_FOUND",
+      "Failed to get GSC access. Please reconnect your Google account.",
+      401
+    );
+  }
+}
 
-    // Token is expired or about to expire - refresh it
-    const refreshToken = decrypt(credential.refreshTokenEncrypted);
-    const newTokens = await refreshGoogleToken(refreshToken);
-
-    const newExpiry = new Date(Date.now() + newTokens.expires_in * 1000);
-    const newAccessTokenEncrypted = encrypt(newTokens.access_token);
-
-    await db.googleCredential.update({
-      where: { id: credential.id },
-      data: {
-        accessTokenEncrypted: newAccessTokenEncrypted,
-        tokenExpiry: newExpiry,
-      },
+/**
+ * Returns a GscContext for a property identified by siteUrl (instead of propertyId).
+ * Used when a tool call specifies site_url to override the default property.
+ *
+ * @throws AppError("PROPERTY_NOT_FOUND") if no active property matches siteUrl
+ * @throws AppError("CREDENTIAL_NOT_FOUND") on token refresh failure
+ */
+export async function getGscContextBySiteUrl(
+  userId: string,
+  siteUrl: string
+): Promise<GscContext> {
+  try {
+    const property = await db.gscProperty.findFirst({
+      where: { userId, siteUrl, isActive: true },
+      include: { credential: true },
     });
 
-    return {
-      accessToken: newTokens.access_token,
-      siteUrl: property.siteUrl,
-      userId,
-    };
+    if (!property) {
+      throw new AppError(
+        "PROPERTY_NOT_FOUND",
+        `No active GSC property found for "${siteUrl}". Use list_my_properties to see available properties.`,
+        404
+      );
+    }
+
+    const accessToken = await resolveAccessToken(property.credential);
+
+    return { accessToken, siteUrl: property.siteUrl, userId };
   } catch (error) {
     if (error instanceof AppError) throw error;
 

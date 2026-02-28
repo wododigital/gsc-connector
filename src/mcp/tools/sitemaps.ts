@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getGscContext } from "../helpers/gsc-client.js";
+import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js";
 import {
   listSitemaps,
   getSitemap,
@@ -20,6 +20,13 @@ interface UserContext {
   propertyId: string;
 }
 
+const siteUrlParam = z
+  .string()
+  .optional()
+  .describe(
+    "GSC property to query (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see all available properties."
+  );
+
 // ----------------------------------------------------------------
 // Tool: list_sitemaps
 // ----------------------------------------------------------------
@@ -30,10 +37,13 @@ export function registerListSitemapsTool(
   server.tool(
     "list_sitemaps",
     "List all sitemaps submitted for your site",
-    {},
-    async () => {
+    { site_url: siteUrlParam },
+    async (params) => {
       try {
-        const ctx = await getGscContext(user.userId, user.propertyId);
+        const ctx = params.site_url
+          ? await getGscContextBySiteUrl(user.userId, params.site_url)
+          : await getGscContext(user.userId, user.propertyId);
+
         const result = await listSitemaps(ctx.accessToken, ctx.siteUrl);
 
         return {
@@ -91,10 +101,14 @@ export function registerGetSitemapTool(
         .describe(
           "The full URL of the sitemap (e.g., https://example.com/sitemap.xml)"
         ),
+      site_url: siteUrlParam,
     },
     async (params) => {
       try {
-        const ctx = await getGscContext(user.userId, user.propertyId);
+        const ctx = params.site_url
+          ? await getGscContextBySiteUrl(user.userId, params.site_url)
+          : await getGscContext(user.userId, user.propertyId);
+
         const result = await getSitemap(
           ctx.accessToken,
           ctx.siteUrl,
@@ -155,10 +169,14 @@ export function registerSubmitSitemapTool(
         .describe(
           "The full URL of the sitemap to submit (e.g., https://example.com/sitemap.xml)"
         ),
+      site_url: siteUrlParam,
     },
     async (params) => {
       try {
-        const ctx = await getGscContext(user.userId, user.propertyId);
+        const ctx = params.site_url
+          ? await getGscContextBySiteUrl(user.userId, params.site_url)
+          : await getGscContext(user.userId, user.propertyId);
+
         await submitSitemap(ctx.accessToken, ctx.siteUrl, params.sitemap_url);
 
         return {
@@ -214,10 +232,14 @@ export function registerDeleteSitemapTool(
         .string()
         .url()
         .describe("The full URL of the sitemap to delete"),
+      site_url: siteUrlParam,
     },
     async (params) => {
       try {
-        const ctx = await getGscContext(user.userId, user.propertyId);
+        const ctx = params.site_url
+          ? await getGscContextBySiteUrl(user.userId, params.site_url)
+          : await getGscContext(user.userId, user.propertyId);
+
         await deleteSitemap(ctx.accessToken, ctx.siteUrl, params.sitemap_url);
 
         return {

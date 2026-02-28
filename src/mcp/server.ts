@@ -39,6 +39,7 @@ import {
   registerDeleteSiteTool,
 } from "./tools/sites.js";
 import { registerMobileFriendlyTool } from "./tools/mobile-friendly.js";
+import { registerListMyPropertiesTool } from "./tools/list-properties.js";
 
 // ----------------------------------------------------------------
 // User context type (populated by auth middleware)
@@ -91,6 +92,9 @@ function createMcpServer(user: UserContext): McpServer {
 
   // Mobile-friendly test
   registerMobileFriendlyTool(server, userCtx);
+
+  // Property discovery
+  registerListMyPropertiesTool(server, userCtx);
 
   return server;
 }

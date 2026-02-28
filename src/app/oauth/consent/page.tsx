@@ -182,11 +182,14 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
             </ul>
           </div>
 
-          {/* Property selection */}
+          {/* Property selection - checkboxes for multi-select */}
           <div className="p-6 border-b border-zinc-800">
-            <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-              Grant access to this property
+            <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
+              Grant access to properties
             </h2>
+            <p className="text-xs text-zinc-500 mb-3">
+              Select one or more properties. You can query any selected property using the <code className="text-zinc-400">site_url</code> parameter in tool calls.
+            </p>
             <form
               action="/api/oauth/authorize"
               method="POST"
@@ -211,7 +214,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
                 <input type="hidden" name="response_type" value={response_type} />
               )}
 
-              {/* Property radio buttons */}
+              {/* Property checkboxes */}
               <div className="space-y-2">
                 {properties.map((property, index) => (
                   <label
@@ -219,12 +222,11 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
                     className="flex items-center gap-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer has-[:checked]:border-green-700 has-[:checked]:bg-green-950/30 transition-colors"
                   >
                     <input
-                      type="radio"
+                      type="checkbox"
                       name="property_id"
                       value={property.id}
                       defaultChecked={index === 0}
-                      className="accent-green-500"
-                      required
+                      className="accent-green-500 shrink-0"
                     />
                     <div className="min-w-0">
                       <p className="text-sm text-zinc-100 font-mono truncate">

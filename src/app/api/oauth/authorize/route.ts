@@ -102,34 +102,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // The consent page is a browser HTML form - it POSTs as application/x-www-form-urlencoded.
-    // Also accept JSON for programmatic callers.
-    let rawBody: Record<string, string>;
+    // Parse body into a URLSearchParams so we can handle multi-value fields
+    // (e.g. multiple property_id checkboxes) uniformly across form-encoded and JSON.
     const contentType = req.headers.get("content-type") ?? "";
+    let bodyParams: URLSearchParams;
+
     if (contentType.includes("application/x-www-form-urlencoded")) {
       const text = await req.text();
-      const params = new URLSearchParams(text);
-      rawBody = Object.fromEntries(params.entries());
+      bodyParams = new URLSearchParams(text);
     } else {
+      // JSON body - convert to URLSearchParams
+      let json: Record<string, unknown>;
       try {
-        rawBody = (await req.json()) as Record<string, string>;
+        json = (await req.json()) as Record<string, unknown>;
       } catch {
         return NextResponse.json(
           { error: "invalid_request", error_description: "Invalid request body" },
           { status: 400 }
         );
       }
+      bodyParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(json)) {
+        if (Array.isArray(value)) {
+          for (const v of value) bodyParams.append(key, String(v));
+        } else if (value != null) {
+          bodyParams.set(key, String(value));
+        }
+      }
     }
 
-    const {
-      client_id,
-      redirect_uri,
-      state,
-      code_challenge,
-      code_challenge_method,
-      property_id,
-      action,
-    } = rawBody;
+    const client_id = bodyParams.get("client_id") ?? "";
+    const redirect_uri = bodyParams.get("redirect_uri") ?? "";
+    const state = bodyParams.get("state") ?? undefined;
+    const code_challenge = bodyParams.get("code_challenge") ?? undefined;
+    const code_challenge_method = bodyParams.get("code_challenge_method") ?? undefined;
+    const action = bodyParams.get("action") ?? "";
+    // getAll captures every checked checkbox with name="property_id"
+    const propertyIds = bodyParams.getAll("property_id");
 
     if (!client_id || !redirect_uri) {
       return NextResponse.json(
@@ -160,20 +169,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
-    // Approval - validate property selection
-    if (!property_id) {
+    // Approval - at least one property must be selected
+    const primaryPropertyId = propertyIds[0];
+    if (!primaryPropertyId) {
       return NextResponse.json(
         {
           error: "invalid_request",
-          error_description: "property_id is required when approving authorization",
+          error_description: "At least one property must be selected",
         },
         { status: 400 }
       );
     }
 
-    // Verify property belongs to the authenticated user
+    // Verify the primary property belongs to the authenticated user
     const property = await db.gscProperty.findFirst({
-      where: { id: property_id, userId: session.id, isActive: true },
+      where: { id: primaryPropertyId, userId: session.id, isActive: true },
     });
 
     if (!property) {
@@ -195,7 +205,7 @@ export async function POST(req: NextRequest) {
         userId: session.id,
         clientId: client_id,
         redirectUri: redirect_uri,
-        propertyId: property_id,
+        propertyId: primaryPropertyId,
         codeChallenge: code_challenge ?? null,
         codeChallengeMethod: code_challenge_method ?? null,
         scopes: "gsc:read",

@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getGscContext } from "../helpers/gsc-client.js";
+import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js";
 import { querySearchAnalytics } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
 import type { SearchAnalyticsRow } from "../../types/index.js";
@@ -47,10 +47,19 @@ export function registerTopPagesTool(
         .enum(["clicks", "impressions", "ctr", "position"])
         .default("clicks")
         .describe("Sort metric"),
+      site_url: z
+        .string()
+        .optional()
+        .describe(
+          "GSC property to query (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see all available properties."
+        ),
     },
     async (params) => {
       try {
-        const ctx = await getGscContext(user.userId, user.propertyId);
+        const ctx = params.site_url
+          ? await getGscContextBySiteUrl(user.userId, params.site_url)
+          : await getGscContext(user.userId, user.propertyId);
+
         const { days, limit, sort_by } = params;
 
         const endDate = new Date().toISOString().split("T")[0];

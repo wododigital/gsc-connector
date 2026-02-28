@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getGscContext } from "../helpers/gsc-client.js";
+import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js";
 import { listSites, addSite, deleteSite } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
 
@@ -14,6 +14,13 @@ interface UserContext {
   userId: string;
   propertyId: string;
 }
+
+const propertyUrlParam = z
+  .string()
+  .optional()
+  .describe(
+    "Your authenticated GSC property to use for this request (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see available options."
+  );
 
 // ----------------------------------------------------------------
 // Tool: list_sites
@@ -25,10 +32,13 @@ export function registerListSitesTool(
   server.tool(
     "list_sites",
     "List all sites you have access to in Google Search Console",
-    {},
-    async () => {
+    { property_url: propertyUrlParam },
+    async (params) => {
       try {
-        const ctx = await getGscContext(user.userId, user.propertyId);
+        const ctx = params.property_url
+          ? await getGscContextBySiteUrl(user.userId, params.property_url)
+          : await getGscContext(user.userId, user.propertyId);
+
         const result = await listSites(ctx.accessToken);
 
         return {
@@ -84,10 +94,14 @@ export function registerAddSiteTool(
         .describe(
           "The URL of the site to add (e.g., https://example.com/ or sc-domain:example.com)"
         ),
+      property_url: propertyUrlParam,
     },
     async (params) => {
       try {
-        const ctx = await getGscContext(user.userId, user.propertyId);
+        const ctx = params.property_url
+          ? await getGscContextBySiteUrl(user.userId, params.property_url)
+          : await getGscContext(user.userId, user.propertyId);
+
         await addSite(ctx.accessToken, params.site_url);
 
         return {
@@ -142,10 +156,14 @@ export function registerDeleteSiteTool(
       site_url: z
         .string()
         .describe("The URL of the site to remove"),
+      property_url: propertyUrlParam,
     },
     async (params) => {
       try {
-        const ctx = await getGscContext(user.userId, user.propertyId);
+        const ctx = params.property_url
+          ? await getGscContextBySiteUrl(user.userId, params.property_url)
+          : await getGscContext(user.userId, user.propertyId);
+
         await deleteSite(ctx.accessToken, params.site_url);
 
         return {

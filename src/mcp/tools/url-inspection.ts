@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getGscContext } from "../helpers/gsc-client.js";
+import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js";
 import { inspectUrl } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
 
@@ -27,10 +27,18 @@ export function registerUrlInspectionTool(
         .string()
         .url()
         .describe("The full URL to inspect (must belong to your verified property)"),
+      site_url: z
+        .string()
+        .optional()
+        .describe(
+          "GSC property that owns this URL (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see all available properties."
+        ),
     },
     async (params) => {
       try {
-        const ctx = await getGscContext(user.userId, user.propertyId);
+        const ctx = params.site_url
+          ? await getGscContextBySiteUrl(user.userId, params.site_url)
+          : await getGscContext(user.userId, user.propertyId);
 
         const result = await inspectUrl(
           ctx.accessToken,
