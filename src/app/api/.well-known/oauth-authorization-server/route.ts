@@ -11,7 +11,7 @@ export async function GET() {
   const baseUrl = config.app.url;
   return NextResponse.json({
     issuer: baseUrl,
-    authorization_endpoint: `${baseUrl}/oauth/authorize`,
+    authorization_endpoint: `${baseUrl}/api/oauth/authorize`,
     token_endpoint: `${baseUrl}/api/oauth/token`,
     registration_endpoint: `${baseUrl}/api/oauth/register`,
     revocation_endpoint: `${baseUrl}/api/oauth/revoke`,
