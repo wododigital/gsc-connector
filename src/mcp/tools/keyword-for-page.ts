@@ -71,7 +71,7 @@ export function registerKeywordForPageTool(
           }
         );
 
-        const keywords = (data.rows as Array<{ keys: string[]; clicks: number; impressions: number; ctr: number; position: number }> || []).map((row) => ({
+        const keywords = (data.rows || []).map((row) => ({
           keyword: row.keys[0] ?? "",
           clicks: row.clicks,
           impressions: row.impressions,

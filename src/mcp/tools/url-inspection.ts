@@ -38,7 +38,7 @@ export function registerUrlInspectionTool(
           ctx.siteUrl
         );
 
-        const inspection = result.inspectionResult ?? result;
+        const inspection = result;
 
         return {
           content: [

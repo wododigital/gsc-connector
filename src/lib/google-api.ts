@@ -1,9 +1,17 @@
 /**
  * Google Search Console API Helper
- * 
+ *
  * Handles token refresh and API calls to GSC.
  * All tokens are stored encrypted in the database.
  */
+
+import type {
+  SearchAnalyticsResponse,
+  SitemapEntry,
+  SiteEntry,
+  UrlInspectionResult,
+  MobileFriendlyTestResult,
+} from "../types/index.js";
 
 // Google OAuth2 endpoints
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -47,11 +55,11 @@ export async function refreshGoogleToken(refreshToken: string): Promise<{
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`Google token refresh failed: ${JSON.stringify(error)}`);
   }
 
-  return response.json();
+  return response.json() as Promise<{ access_token: string; expires_in: number }>;
 }
 
 /**
@@ -65,12 +73,13 @@ export async function querySearchAnalytics(
     startDate: string;
     endDate: string;
     dimensions?: string[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dimensionFilterGroups?: any[];
     rowLimit?: number;
     startRow?: number;
     type?: string; // "web", "image", "video", "news", "discover", "googleNews"
   }
-) {
+): Promise<SearchAnalyticsResponse> {
   const encodedSiteUrl = encodeURIComponent(siteUrl);
   const url = `${GSC_SEARCH_ANALYTICS_URL}/${encodedSiteUrl}/searchAnalytics/query`;
 
@@ -84,11 +93,11 @@ export async function querySearchAnalytics(
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`GSC Search Analytics API error: ${JSON.stringify(error)}`);
   }
 
-  return response.json();
+  return response.json() as Promise<SearchAnalyticsResponse>;
 }
 
 /**
@@ -99,7 +108,7 @@ export async function inspectUrl(
   accessToken: string,
   inspectionUrl: string,
   siteUrl: string
-) {
+): Promise<UrlInspectionResult> {
   const response = await fetch(URL_INSPECTION_URL, {
     method: "POST",
     headers: {
@@ -110,18 +119,20 @@ export async function inspectUrl(
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`URL Inspection API error: ${JSON.stringify(error)}`);
   }
 
-  return response.json();
+  // Google wraps the result in { inspectionResult: { ... } }
+  const body = await response.json() as { inspectionResult: UrlInspectionResult };
+  return body.inspectionResult;
 }
 
 /**
  * List all sitemaps for a site
  * Endpoint: GET https://searchconsole.googleapis.com/webmasters/v3/sites/{siteUrl}/sitemaps
  */
-export async function listSitemaps(accessToken: string, siteUrl: string) {
+export async function listSitemaps(accessToken: string, siteUrl: string): Promise<{ sitemap?: SitemapEntry[] }> {
   const encodedSiteUrl = encodeURIComponent(siteUrl);
   const url = `${GSC_SEARCH_ANALYTICS_URL}/${encodedSiteUrl}/sitemaps`;
 
@@ -130,17 +141,17 @@ export async function listSitemaps(accessToken: string, siteUrl: string) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`Sitemaps API error: ${JSON.stringify(error)}`);
   }
 
-  return response.json();
+  return response.json() as Promise<{ sitemap?: SitemapEntry[] }>;
 }
 
 /**
  * Get a specific sitemap
  */
-export async function getSitemap(accessToken: string, siteUrl: string, feedpath: string) {
+export async function getSitemap(accessToken: string, siteUrl: string, feedpath: string): Promise<SitemapEntry> {
   const encodedSiteUrl = encodeURIComponent(siteUrl);
   const encodedFeedpath = encodeURIComponent(feedpath);
   const url = `${GSC_SEARCH_ANALYTICS_URL}/${encodedSiteUrl}/sitemaps/${encodedFeedpath}`;
@@ -150,11 +161,11 @@ export async function getSitemap(accessToken: string, siteUrl: string, feedpath:
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`Get Sitemap API error: ${JSON.stringify(error)}`);
   }
 
-  return response.json();
+  return response.json() as Promise<SitemapEntry>;
 }
 
 /**
@@ -171,7 +182,7 @@ export async function submitSitemap(accessToken: string, siteUrl: string, feedpa
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`Submit Sitemap API error: ${JSON.stringify(error)}`);
   }
 
@@ -193,7 +204,7 @@ export async function deleteSitemap(accessToken: string, siteUrl: string, feedpa
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`Delete Sitemap API error: ${JSON.stringify(error)}`);
   }
 
@@ -204,7 +215,7 @@ export async function deleteSitemap(accessToken: string, siteUrl: string, feedpa
  * List all sites
  * Endpoint: GET https://searchconsole.googleapis.com/webmasters/v3/sites
  */
-export async function listSites(accessToken: string) {
+export async function listSites(accessToken: string): Promise<{ siteEntry?: SiteEntry[] }> {
   const url = `${GSC_API_BASE}/sites`;
 
   const response = await fetch(url, {
@@ -212,11 +223,11 @@ export async function listSites(accessToken: string) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`List Sites API error: ${JSON.stringify(error)}`);
   }
 
-  return response.json();
+  return response.json() as Promise<{ siteEntry?: SiteEntry[] }>;
 }
 
 /**
@@ -232,7 +243,7 @@ export async function addSite(accessToken: string, siteUrl: string) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`Add Site API error: ${JSON.stringify(error)}`);
   }
 
@@ -252,7 +263,7 @@ export async function deleteSite(accessToken: string, siteUrl: string) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`Delete Site API error: ${JSON.stringify(error)}`);
   }
 
@@ -264,7 +275,7 @@ export async function deleteSite(accessToken: string, siteUrl: string) {
  * Endpoint: POST https://searchconsole.googleapis.com/v1/urlTestingTools/mobileFriendlyTest:run
  * NOTE: This API uses an API key, not OAuth token
  */
-export async function runMobileFriendlyTest(url: string) {
+export async function runMobileFriendlyTest(url: string): Promise<MobileFriendlyTestResult> {
   const response = await fetch(
     `${MOBILE_TEST_URL}?key=${process.env.GOOGLE_API_KEY}`,
     {
@@ -275,9 +286,9 @@ export async function runMobileFriendlyTest(url: string) {
   );
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json() as Record<string, unknown>;
     throw new Error(`Mobile Friendly Test API error: ${JSON.stringify(error)}`);
   }
 
-  return response.json();
+  return response.json() as Promise<MobileFriendlyTestResult>;
 }
