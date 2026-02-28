@@ -36,13 +36,19 @@ export async function validateAuth(
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
-      res.status(401).json({ error: "Missing or invalid Authorization header" });
+      res
+        .status(401)
+        .setHeader("WWW-Authenticate", 'Bearer realm="gsc-connect"')
+        .json({ error: "Missing or invalid Authorization header" });
       return;
     }
 
     const token = authHeader.slice(7);
     if (!token) {
-      res.status(401).json({ error: "Bearer token is empty" });
+      res
+        .status(401)
+        .setHeader("WWW-Authenticate", 'Bearer realm="gsc-connect"')
+        .json({ error: "Bearer token is empty" });
       return;
     }
 
@@ -114,7 +120,10 @@ export async function validateAuth(
       return;
     }
 
-    res.status(401).json({ error: "Invalid or expired token" });
+    res
+      .status(401)
+      .setHeader("WWW-Authenticate", 'Bearer realm="gsc-connect"')
+      .json({ error: "Invalid or expired token" });
   } catch (error) {
     if (error instanceof AppError) {
       res.status(error.statusCode).json({ error: error.message });

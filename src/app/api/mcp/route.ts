@@ -27,6 +27,8 @@ const FORWARD_RESPONSE_HEADERS = [
   "content-type",
   "mcp-session-id",
   "transfer-encoding",
+  // Required so Claude.ai can discover OAuth when MCP returns 401
+  "www-authenticate",
 ];
 
 function buildForwardHeaders(req: NextRequest): Record<string, string> {

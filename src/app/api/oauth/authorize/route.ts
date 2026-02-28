@@ -102,14 +102,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    let body: Record<string, unknown>;
-    try {
-      body = (await req.json()) as Record<string, unknown>;
-    } catch {
-      return NextResponse.json(
-        { error: "invalid_request", error_description: "Request body must be valid JSON" },
-        { status: 400 }
-      );
+    // The consent page is a browser HTML form - it POSTs as application/x-www-form-urlencoded.
+    // Also accept JSON for programmatic callers.
+    let rawBody: Record<string, string>;
+    const contentType = req.headers.get("content-type") ?? "";
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      const text = await req.text();
+      const params = new URLSearchParams(text);
+      rawBody = Object.fromEntries(params.entries());
+    } else {
+      try {
+        rawBody = (await req.json()) as Record<string, string>;
+      } catch {
+        return NextResponse.json(
+          { error: "invalid_request", error_description: "Invalid request body" },
+          { status: 400 }
+        );
+      }
     }
 
     const {
@@ -120,15 +129,7 @@ export async function POST(req: NextRequest) {
       code_challenge_method,
       property_id,
       action,
-    } = body as {
-      client_id?: string;
-      redirect_uri?: string;
-      state?: string;
-      code_challenge?: string;
-      code_challenge_method?: string;
-      property_id?: string;
-      action?: string;
-    };
+    } = rawBody;
 
     if (!client_id || !redirect_uri) {
       return NextResponse.json(
@@ -155,7 +156,8 @@ export async function POST(req: NextRequest) {
     if (action === "deny") {
       redirectUrl.searchParams.set("error", "access_denied");
       if (state) redirectUrl.searchParams.set("state", state);
-      return NextResponse.redirect(redirectUrl.toString());
+      // 302 converts the browser's POST to a GET on the redirect_uri
+      return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
     // Approval - validate property selection
@@ -205,7 +207,8 @@ export async function POST(req: NextRequest) {
     redirectUrl.searchParams.set("code", code);
     if (state) redirectUrl.searchParams.set("state", state);
 
-    return NextResponse.redirect(redirectUrl.toString());
+    // 302 converts the browser's POST to a GET on the redirect_uri (required by OAuth spec)
+    return NextResponse.redirect(redirectUrl.toString(), 302);
   } catch (error) {
     console.error("[oauth/authorize POST] Unexpected error:", error);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
