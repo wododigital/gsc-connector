@@ -1,7 +1,7 @@
 {
-  "name": "gsc-connect",
+  "name": "omg-ai-mcp",
   "version": "1.0.0",
-  "description": "GSC Connect - Google Search Console to AI Bridge via MCP",
+  "description": "OMG AI - Connect Google Search Console and Analytics to AI assistants via MCP",
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",

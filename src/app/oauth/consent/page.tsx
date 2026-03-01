@@ -3,7 +3,7 @@ import db from "@/lib/db";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Authorize - GSC Connect",
+  title: "Authorize - OMG AI",
 };
 
 interface ConsentPageProps {
@@ -52,6 +52,24 @@ async function getUserProperties(userId: string) {
   }
 }
 
+async function getUserGA4Properties(userId: string) {
+  try {
+    return await db.ga4Property.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        propertyId: true,
+        displayName: true,
+        accountName: true,
+        isActive: true,
+      },
+    });
+  } catch {
+    return [];
+  }
+}
+
 export default async function ConsentPage({ searchParams }: ConsentPageProps) {
   const params = await searchParams;
   const {
@@ -80,7 +98,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <span className="text-2xl font-bold text-green-400">GSC Connect</span>
+            <span className="text-2xl font-bold text-green-400">OMG AI</span>
           </div>
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
             <h1 className="text-lg font-semibold text-zinc-100 mb-3">Sign in required</h1>
@@ -112,8 +130,11 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
     );
   }
 
-  // Get user's GSC properties
-  const properties = await getUserProperties(session.id);
+  // Get user's GSC and GA4 properties
+  const [properties, ga4Properties] = await Promise.all([
+    getUserProperties(session.id),
+    getUserGA4Properties(session.id),
+  ]);
 
   if (properties.length === 0) {
     return (
@@ -142,13 +163,14 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 
   // Pre-select previously active properties (or the first property if none are active)
   const hasActiveProperties = properties.some((p) => p.isActive);
+  const hasActiveGA4Properties = ga4Properties.some((p) => p.isActive);
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-6">
-          <span className="text-xl font-bold text-green-400">GSC Connect</span>
+          <span className="text-xl font-bold text-green-400">OMG AI</span>
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
@@ -160,7 +182,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
             </h1>
             <p className="text-zinc-400 text-sm">
               <span className="font-medium text-zinc-300">{oauthClient.clientName}</span>{" "}
-              wants to access your GSC Connect account as{" "}
+              wants to access your OMG AI account as{" "}
               <span className="text-zinc-300">{session.email}</span>.
             </p>
           </div>
@@ -188,13 +210,13 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
             </ul>
           </div>
 
-          {/* Property selection - checkboxes for multi-select */}
+          {/* GSC Property selection */}
           <div className="p-6 border-b border-zinc-800">
             <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
-              Grant access to properties
+              Google Search Console Properties
             </h2>
             <p className="text-xs text-zinc-500 mb-3">
-              Select one or more properties. You can query any selected property using the <code className="text-zinc-400">site_url</code> parameter in tool calls.
+              Select which GSC properties to grant access to.
             </p>
             <form
               action="/api/oauth/authorize"
@@ -220,7 +242,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
                 <input type="hidden" name="response_type" value={response_type} />
               )}
 
-              {/* Property checkboxes - pre-check active properties (or first if none active) */}
+              {/* GSC Property checkboxes */}
               <div className="space-y-2">
                 {properties.map((property, index) => (
                   <label
@@ -247,6 +269,47 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
                   </label>
                 ))}
               </div>
+
+              {/* GA4 Property section - only show if user has GA4 properties */}
+              {ga4Properties.length > 0 && (
+                <div className="mt-5">
+                  <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
+                    Google Analytics 4 Properties
+                  </h2>
+                  <p className="text-xs text-zinc-500 mb-3">
+                    Select which GA4 properties to grant access to (optional).
+                  </p>
+                  <div className="space-y-2">
+                    {ga4Properties.map((property, index) => (
+                      <label
+                        key={property.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer has-[:checked]:border-blue-700 has-[:checked]:bg-blue-950/30 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          name="ga4_property_id"
+                          value={property.id}
+                          defaultChecked={
+                            hasActiveGA4Properties ? property.isActive : index === 0
+                          }
+                          className="accent-blue-500 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm text-zinc-100 font-mono truncate">
+                            {property.displayName}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            {property.propertyId}
+                            {property.accountName && (
+                              <span className="ml-1">- {property.accountName}</span>
+                            )}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </form>
           </div>
 
@@ -289,7 +352,7 @@ function ErrorPage({ message }: { message: string }) {
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         <div className="mb-6">
-          <span className="text-xl font-bold text-green-400">GSC Connect</span>
+          <span className="text-xl font-bold text-green-400">OMG AI</span>
         </div>
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8">
           <div className="w-12 h-12 rounded-full bg-red-950 border border-red-800 flex items-center justify-center mx-auto mb-4">

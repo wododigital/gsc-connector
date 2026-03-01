@@ -27,6 +27,7 @@ model User {
 
   googleCredentials GoogleCredential[]
   gscProperties     GscProperty[]
+  ga4Properties     Ga4Property[]
   apiKeys           ApiKey[]
   oauthTokens       OAuthToken[]
   authCodes         OAuthAuthorizationCode[]
@@ -48,8 +49,9 @@ model GoogleCredential {
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  properties GscProperty[]
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  properties     GscProperty[]
+  ga4Properties  Ga4Property[]
 
   @@map("google_credentials")
 }
@@ -153,6 +155,26 @@ model OAuthAuthorizationCode {
 }
 
 // ============================================================
+// GA4 Properties (Google Analytics 4 properties per user)
+// ============================================================
+model Ga4Property {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  credentialId String  @map("credential_id")
+  propertyId  String   @map("property_id") // e.g. "properties/987654321"
+  displayName String   @map("display_name") // e.g. "nandhini.com"
+  accountName String?  @map("account_name") // e.g. "My Company"
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credential GoogleCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@map("ga4_properties")
+}
+
+// ============================================================
 // Usage Tracking
 // ============================================================
 model UsageLog {
@@ -163,6 +185,7 @@ model UsageLog {
   source         String   @default("mcp") // e.g. "Claude.ai", "ChatGPT", API key name
   status         String   @default("success") // "success" or "error"
   responseTimeMs Int?     @map("response_time_ms")
+  service        String   @default("gsc") // "gsc" or "ga4"
   createdAt      DateTime @default(now()) @map("created_at")
 
   @@index([userId, createdAt])
@@ -185,6 +208,7 @@ model McpDebugLog {
   responseTimeMs Int?     @map("response_time_ms")
   requestBody    String?  @map("request_body")
   responseBody   String?  @map("response_body")
+  service        String   @default("gsc") // "gsc" or "ga4"
 
   @@index([timestamp])
   @@index([userId, timestamp])

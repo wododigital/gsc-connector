@@ -234,9 +234,13 @@ export type AppErrorCode =
   | "GSC_API_ERROR"
   | "TOKEN_EXPIRED"
   | "TOKEN_INVALID"
+  | "TOKEN_REFRESH_FAILED"
   | "PROPERTY_NOT_FOUND"
   | "PROPERTY_NOT_ACTIVE"
-  | "CREDENTIAL_NOT_FOUND";
+  | "CREDENTIAL_NOT_FOUND"
+  | "NO_CREDENTIAL"
+  | "NO_GA4_PROPERTY"
+  | "GA4_PROPERTY_NOT_FOUND";
 
 export class AppError extends Error {
   constructor(

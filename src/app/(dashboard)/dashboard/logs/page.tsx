@@ -4,7 +4,7 @@ import db from "@/lib/db";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Usage Logs - GSC Connect",
+  title: "Usage Logs - OMG AI",
 };
 
 interface LogsPageProps {
@@ -113,7 +113,7 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
       {/* Nav */}
       <nav className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <span className="text-green-400 font-bold">GSC Connect</span>
+          <span className="text-green-400 font-bold">OMG AI</span>
           <span className="text-zinc-600">/</span>
           <span className="text-zinc-300 text-sm">Usage Logs</span>
         </div>

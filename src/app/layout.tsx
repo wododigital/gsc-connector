@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GSC Connect - Google Search Console for AI",
+  title: "OMG AI - Google Search Console and Analytics for AI",
   description:
-    "Connect your Google Search Console to Claude, ChatGPT, and Cursor via MCP",
+    "Connect Google Search Console and Google Analytics to Claude, ChatGPT, and Cursor via MCP",
 };
 
 export default function RootLayout({

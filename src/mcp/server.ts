@@ -40,6 +40,20 @@ import {
 import { registerMobileFriendlyTool } from "./tools/mobile-friendly.js";
 import { registerListMyPropertiesTool } from "./tools/list-properties.js";
 
+// GA4 tool registration functions
+import {
+  registerGaListPropertiesTool,
+  registerGaRunReportTool,
+  registerGaRealtimeTool,
+  registerGaTopPagesTool,
+  registerGaTrafficSourcesTool,
+  registerGaConversionsTool,
+  registerGaAudienceTool,
+  registerGaPagePerformanceTool,
+  registerGaUserJourneyTool,
+  registerGaEventsTool,
+} from "./tools/ga4/index.js";
+
 // ----------------------------------------------------------------
 // User context type (populated by auth middleware)
 // ----------------------------------------------------------------
@@ -66,7 +80,7 @@ const sessions = new Map<string, Session>();
 // ----------------------------------------------------------------
 function createMcpServer(user: UserContext): McpServer {
   const server = new McpServer({
-    name: "gsc-connect",
+    name: "omg-ai",
     version: "1.0.0",
   });
 
@@ -100,6 +114,18 @@ function createMcpServer(user: UserContext): McpServer {
   // Property discovery
   registerListMyPropertiesTool(server, userCtx);
 
+  // GA4 tools (10 tools)
+  registerGaListPropertiesTool(server, userCtx);
+  registerGaRunReportTool(server, userCtx);
+  registerGaRealtimeTool(server, userCtx);
+  registerGaTopPagesTool(server, userCtx);
+  registerGaTrafficSourcesTool(server, userCtx);
+  registerGaConversionsTool(server, userCtx);
+  registerGaAudienceTool(server, userCtx);
+  registerGaPagePerformanceTool(server, userCtx);
+  registerGaUserJourneyTool(server, userCtx);
+  registerGaEventsTool(server, userCtx);
+
   return server;
 }
 
@@ -131,7 +157,7 @@ app.use((_req: Request, res: Response, next) => {
 app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
-    service: "gsc-connect-mcp",
+    service: "omg-ai-mcp",
     timestamp: new Date().toISOString(),
     sessions: sessions.size,
   });

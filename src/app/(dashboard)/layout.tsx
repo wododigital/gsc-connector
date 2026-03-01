@@ -15,7 +15,7 @@ export default async function DashboardLayout({
       <aside className="fixed left-0 top-0 w-64 h-full bg-zinc-900 border-r border-zinc-800 flex flex-col">
         {/* Logo */}
         <div className="p-4 border-b border-zinc-800">
-          <span className="text-lg font-bold text-green-400">GSC Connect</span>
+          <span className="text-lg font-bold text-green-400">OMG AI</span>
         </div>
 
         {/* Nav links */}

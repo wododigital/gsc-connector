@@ -139,6 +139,8 @@ export async function POST(req: NextRequest) {
     const action = bodyParams.get("action") ?? "";
     // getAll captures every checked checkbox with name="property_id"
     const propertyIds = bodyParams.getAll("property_id");
+    // GA4 property selections (optional - users may not have GA4 properties)
+    const ga4PropertyIds = bodyParams.getAll("ga4_property_id");
 
     if (!client_id || !redirect_uri) {
       return NextResponse.json(
@@ -197,8 +199,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Persist the property selection: deactivate all, then activate only the chosen ones.
-    // This is the authoritative record of which properties the user wants AI assistants to access.
+    // Persist the GSC property selection: deactivate all, then activate only the chosen ones.
     await db.gscProperty.updateMany({
       where: { userId: session.id },
       data: { isActive: false },
@@ -207,6 +208,28 @@ export async function POST(req: NextRequest) {
       where: { id: { in: Array.from(validIds) }, userId: session.id },
       data: { isActive: true },
     });
+
+    // Persist GA4 property selection if any were provided.
+    // Non-fatal - GA4 access is optional.
+    if (ga4PropertyIds.length > 0) {
+      try {
+        const ownedGA4 = await db.ga4Property.findMany({
+          where: { id: { in: ga4PropertyIds }, userId: session.id },
+          select: { id: true },
+        });
+        const validGA4Ids = new Set(ownedGA4.map((p) => p.id));
+        await db.ga4Property.updateMany({
+          where: { userId: session.id },
+          data: { isActive: false },
+        });
+        await db.ga4Property.updateMany({
+          where: { id: { in: Array.from(validGA4Ids) }, userId: session.id },
+          data: { isActive: true },
+        });
+      } catch (ga4Err) {
+        console.error("[oauth/authorize] Failed to persist GA4 selection:", ga4Err);
+      }
+    }
 
     // Generate a cryptographically random authorization code
     const code = randomBytes(32).toString("hex");

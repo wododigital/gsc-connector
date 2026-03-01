@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
         "email",
         "profile",
         "https://www.googleapis.com/auth/webmasters.readonly",
+        "https://www.googleapis.com/auth/analytics.readonly",
       ],
       redirectUri: gscCallbackUri,
       state,

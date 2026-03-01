@@ -17,7 +17,7 @@ export default function LandingPage() {
               <span className="text-green-400">Natural Language</span>
             </h1>
             <p className="text-lg sm:text-xl text-zinc-400 mb-8 leading-relaxed">
-              GSC Connect bridges Google Search Console to Claude, ChatGPT, and Cursor
+              OMG AI bridges Google Search Console and Google Analytics to Claude, ChatGPT, and Cursor
               via the Model Context Protocol. Ask questions about your SEO data in plain
               English - no SQL, no dashboards.
             </p>
@@ -268,7 +268,7 @@ export default function LandingPage() {
               GSC Connect
             </span>
             <p className="text-zinc-500 text-sm">
-              &copy; {new Date().getFullYear()} WODO Digital. All rights reserved.
+              &copy; {new Date().getFullYear()} OMG AI. All rights reserved.
             </p>
             <div className="flex gap-4 text-sm text-zinc-500">
               <span>Built with MCP</span>

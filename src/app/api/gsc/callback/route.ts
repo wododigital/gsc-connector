@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeGoogleCode, getGoogleUserInfo } from "@/lib/google-oauth";
 import { listSites } from "@/lib/google-api";
+import { listGA4Properties } from "@/lib/ga4/api";
 import { encrypt } from "@/lib/encryption";
 import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
@@ -26,6 +27,7 @@ const GSC_SCOPES = [
   "email",
   "profile",
   "https://www.googleapis.com/auth/webmasters.readonly",
+  "https://www.googleapis.com/auth/analytics.readonly",
 ].join(" ");
 
 export async function GET(req: NextRequest) {
@@ -168,6 +170,51 @@ export async function GET(req: NextRequest) {
           upsertError
         );
       }
+    }
+
+    // Fetch and save GA4 properties if analytics scope was granted.
+    // Check the granted scope by attempting the Admin API call.
+    // Failures here are non-fatal - GSC connection already succeeded.
+    try {
+      const ga4Props = await listGA4Properties(tokens.access_token);
+      for (const prop of ga4Props) {
+        try {
+          await db.ga4Property.upsert({
+            where: {
+              userId_propertyId: {
+                userId: session.id,
+                propertyId: prop.property,
+              },
+            },
+            update: {
+              displayName: prop.displayName,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              accountName: (prop as any).accountName ?? null,
+              credentialId,
+            },
+            create: {
+              userId: session.id,
+              credentialId,
+              propertyId: prop.property,
+              displayName: prop.displayName,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              accountName: (prop as any).accountName ?? null,
+              isActive: true,
+            },
+          });
+        } catch (upsertErr) {
+          console.error(
+            `[gsc/callback] Failed to upsert GA4 property ${prop.property}:`,
+            upsertErr
+          );
+        }
+      }
+    } catch (ga4Error) {
+      // Non-fatal - user may not have analytics.readonly scope yet
+      console.warn(
+        "[gsc/callback] Could not fetch GA4 properties (analytics scope may not be granted):",
+        ga4Error instanceof Error ? ga4Error.message : ga4Error
+      );
     }
 
     // Clear the CSRF state cookie and redirect to dashboard

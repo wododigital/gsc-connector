@@ -5,7 +5,7 @@ import { ApiKeysClient } from "@/components/api-keys-client";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "API Keys - GSC Connect",
+  title: "API Keys - OMG AI",
 };
 
 async function getApiKeys(userId: string) {

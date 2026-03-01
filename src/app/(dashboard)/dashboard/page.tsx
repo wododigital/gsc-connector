@@ -6,7 +6,7 @@ import { PropertyManager } from "@/components/property-manager";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Dashboard - GSC Connect",
+  title: "Dashboard - OMG AI",
 };
 
 // Fetch ALL GSC properties (active + inactive) for the dashboard manager
@@ -45,7 +45,7 @@ const MCP_ENDPOINT = `${process.env.APP_URL || "http://localhost:3000"}/api/mcp`
 const CLAUDE_DESKTOP_CONFIG = JSON.stringify(
   {
     mcpServers: {
-      "gsc-connect": {
+      "omg-ai": {
         url: MCP_ENDPOINT,
         headers: {
           Authorization: "Bearer YOUR_API_KEY",
@@ -74,7 +74,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
         <p className="text-zinc-400 text-sm mt-1">
-          Manage your GSC Connect setup and integrations.
+          Manage your OMG AI setup and integrations.
         </p>
       </div>
 
@@ -133,7 +133,7 @@ export default async function DashboardPage() {
           MCP Endpoint
         </h2>
         <p className="text-zinc-400 text-sm mb-4">
-          Use this URL to connect GSC Connect to your AI tools.
+          Use this URL to connect OMG AI to your AI tools.
         </p>
 
         {/* Endpoint URL */}
