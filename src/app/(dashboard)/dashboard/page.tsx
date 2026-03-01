@@ -2,18 +2,25 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import db from "@/lib/db";
 import { CopyButton } from "@/components/copy-button";
+import { PropertyManager } from "@/components/property-manager";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Dashboard - GSC Connect",
 };
 
-// Fetch GSC properties directly from DB in the server component
+// Fetch ALL GSC properties (active + inactive) for the dashboard manager
 async function getProperties(userId: string) {
   try {
     return await db.gscProperty.findMany({
-      where: { userId, isActive: true },
+      where: { userId },
       orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        siteUrl: true,
+        permissionLevel: true,
+        isActive: true,
+      },
     });
   } catch {
     return [];
@@ -59,7 +66,7 @@ export default async function DashboardPage() {
     getApiKeyCount(session.id),
   ]);
 
-  const hasGscConnected = properties.length > 0;
+  const hasGscConnected = properties.some((p) => p.isActive);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -90,33 +97,18 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {hasGscConnected ? (
+        {properties.length > 0 ? (
           <div>
             <p className="text-zinc-400 text-sm mb-3">
-              {properties.length} {properties.length === 1 ? "property" : "properties"} connected
+              Check the properties you want AI assistants to access. Uncheck to hide from MCP tools.
             </p>
-            <ul className="space-y-2">
-              {properties.map((property) => (
-                <li
-                  key={property.id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700"
-                >
-                  <span className="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
-                  <span className="text-sm text-zinc-100 font-mono truncate">
-                    {property.siteUrl}
-                  </span>
-                  <span className="ml-auto text-xs text-zinc-500 shrink-0 capitalize">
-                    {property.permissionLevel.replace("site", "").toLowerCase()}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <PropertyManager properties={properties} />
             <div className="mt-4">
               <a
                 href="/api/gsc/connect"
                 className="text-sm text-green-400 hover:text-green-300 transition-colors"
               >
-                + Add more properties
+                + Connect another Google account
               </a>
             </div>
           </div>

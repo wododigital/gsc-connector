@@ -181,17 +181,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify the primary property belongs to the authenticated user
-    const property = await db.gscProperty.findFirst({
-      where: { id: primaryPropertyId, userId: session.id, isActive: true },
+    // Verify all selected property IDs belong to the authenticated user
+    const ownedProperties = await db.gscProperty.findMany({
+      where: { id: { in: propertyIds }, userId: session.id },
+      select: { id: true },
     });
 
-    if (!property) {
+    const validIds = new Set(ownedProperties.map((p) => p.id));
+    const invalidIds = propertyIds.filter((id) => !validIds.has(id));
+
+    if (invalidIds.length > 0 || !validIds.has(primaryPropertyId)) {
       return NextResponse.json(
-        { error: "invalid_request", error_description: "Property not found or not active" },
+        { error: "invalid_request", error_description: "One or more selected properties are invalid or do not belong to you" },
         { status: 400 }
       );
     }
+
+    // Persist the property selection: deactivate all, then activate only the chosen ones.
+    // This is the authoritative record of which properties the user wants AI assistants to access.
+    await db.gscProperty.updateMany({
+      where: { userId: session.id },
+      data: { isActive: false },
+    });
+    await db.gscProperty.updateMany({
+      where: { id: { in: Array.from(validIds) }, userId: session.id },
+      data: { isActive: true },
+    });
 
     // Generate a cryptographically random authorization code
     const code = randomBytes(32).toString("hex");

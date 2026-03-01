@@ -35,13 +35,16 @@ async function getOAuthClient(clientId: string) {
 
 async function getUserProperties(userId: string) {
   try {
+    // Return ALL properties so the user can pick which ones to grant access to.
+    // Previously-active ones are pre-checked as a convenience.
     return await db.gscProperty.findMany({
-      where: { userId, isActive: true },
+      where: { userId },
       orderBy: { createdAt: "asc" },
       select: {
         id: true,
         siteUrl: true,
         permissionLevel: true,
+        isActive: true,
       },
     });
   } catch {
@@ -137,6 +140,9 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
     );
   }
 
+  // Pre-select previously active properties (or the first property if none are active)
+  const hasActiveProperties = properties.some((p) => p.isActive);
+
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
@@ -214,7 +220,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
                 <input type="hidden" name="response_type" value={response_type} />
               )}
 
-              {/* Property checkboxes */}
+              {/* Property checkboxes - pre-check active properties (or first if none active) */}
               <div className="space-y-2">
                 {properties.map((property, index) => (
                   <label
@@ -225,7 +231,9 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
                       type="checkbox"
                       name="property_id"
                       value={property.id}
-                      defaultChecked={index === 0}
+                      defaultChecked={
+                        hasActiveProperties ? property.isActive : index === 0
+                      }
                       className="accent-green-500 shrink-0"
                     />
                     <div className="min-w-0">

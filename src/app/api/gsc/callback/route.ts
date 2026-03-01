@@ -148,16 +148,18 @@ export async function GET(req: NextRequest) {
             },
           },
           update: {
+            // Update credential and permission but PRESERVE the existing isActive
+            // value. The user sets isActive via consent or dashboard - reconnecting
+            // Google must not reset their selection.
             permissionLevel: site.permissionLevel,
             credentialId,
-            isActive: true,
           },
           create: {
             userId: session.id,
             credentialId,
             siteUrl: site.siteUrl,
             permissionLevel: site.permissionLevel,
-            isActive: true,
+            isActive: true, // New properties default to active; user can deactivate
           },
         });
       } catch (upsertError) {
