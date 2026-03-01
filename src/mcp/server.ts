@@ -219,12 +219,14 @@ app.post("/mcp", validateAuth, async (req: Request, res: Response) => {
     }
 
     // ---- Path 3: Unknown session ID or non-initialize without session ----
-    // Return JSON-RPC error so Claude.ai knows to re-initialize
-    res.status(400).json({
+    // Return 404 per MCP Streamable HTTP spec - this tells the client to
+    // reinitialize (e.g. after a server restart clears the in-memory session store).
+    // A 400 would cause some clients to retry rather than reinitialize.
+    res.status(404).json({
       jsonrpc: "2.0",
       error: {
-        code: -32000,
-        message: "Bad Request: No valid session ID provided",
+        code: -32001,
+        message: "Session not found - please reinitialize",
       },
       id: null,
     });
