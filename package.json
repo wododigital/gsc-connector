@@ -9,7 +9,7 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:mcp\" --names web,mcp --prefix-colors green,blue",
     "build": "prisma migrate deploy && next build && tsc -p tsconfig.mcp.json",
     "build:mcp": "tsc -p tsconfig.mcp.json",
-    "start": "concurrently \"next start\" \"node dist/mcp/server.js\"",
+    "start": "concurrently \"next start --port 3000\" \"node dist/mcp/server.js\"",
     "start:mcp": "node dist/mcp/server.js",
     "lint": "next lint",
     "db:migrate": "prisma migrate dev",
