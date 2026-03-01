@@ -2,7 +2,7 @@
  * Usage tracking and plan enforcement.
  * Called before each MCP tool execution to check limits and increment counter.
  */
-import db from "@/lib/db";
+import db from "./db.js";
 
 export interface UsageCheckResult {
   allowed: boolean;
