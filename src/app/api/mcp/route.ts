@@ -1,63 +1,129 @@
 /**
- * MCP Proxy Route
+ * MCP Direct Route Handler (Single Server - Approach A)
  *
- * Proxies all MCP requests to the internal Express MCP server (localhost:3001).
- * This allows Railway (single-port deployments) to expose MCP over the same
- * port as the Next.js web app.
+ * Handles MCP requests directly in Next.js using WebStandardStreamableHTTPServerTransport.
+ * No proxy to a separate Express server - all MCP logic runs in this route.
  *
- * External URL: https://your-app.railway.app/api/mcp
- * Internal:     http://localhost:3001/mcp
+ * Session lifecycle:
+ *   1. POST with initialize (no MCP-Session-Id) -> create transport + server, return session ID
+ *   2. POST/GET with MCP-Session-Id -> reuse existing transport, dispatch request
+ *   3. DELETE with MCP-Session-Id -> close and remove session
  */
 
 import { type NextRequest, NextResponse } from "next/server";
-import { logMcpRequest, logMcpError } from "@/lib/error-logger";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import { randomUUID } from "crypto";
+import { validateMcpToken, McpAuthError, type McpUser } from "@/lib/mcp-auth";
 
-const INTERNAL_MCP_URL = `http://localhost:${process.env.MCP_PORT || 3001}/mcp`;
-const PROXY_TIMEOUT_MS = 30_000;
+// GSC tool registration functions
+import { registerSearchAnalyticsTool } from "@/mcp/tools/search-analytics";
+import { registerTopKeywordsTool } from "@/mcp/tools/top-keywords";
+import { registerTopPagesTool } from "@/mcp/tools/top-pages";
+import { registerKeywordForPageTool } from "@/mcp/tools/keyword-for-page";
+import { registerUrlInspectionTool } from "@/mcp/tools/url-inspection";
+import {
+  registerListSitemapsTool,
+  registerGetSitemapTool,
+  registerSubmitSitemapTool,
+  registerDeleteSitemapTool,
+} from "@/mcp/tools/sitemaps";
+import {
+  registerListSitesTool,
+  registerAddSiteTool,
+  registerDeleteSiteTool,
+} from "@/mcp/tools/sites";
+import { registerMobileFriendlyTool } from "@/mcp/tools/mobile-friendly";
+import { registerListMyPropertiesTool } from "@/mcp/tools/list-properties";
 
-// Headers to forward from client -> MCP server
-const FORWARD_REQUEST_HEADERS = [
-  "authorization",
-  "content-type",
-  "accept",
-  "mcp-session-id",
-  "mcp-protocol-version",
-];
+// GA4 tool registration functions
+import {
+  registerGaListPropertiesTool,
+  registerGaRunReportTool,
+  registerGaRealtimeTool,
+  registerGaTopPagesTool,
+  registerGaTrafficSourcesTool,
+  registerGaConversionsTool,
+  registerGaAudienceTool,
+  registerGaPagePerformanceTool,
+  registerGaUserJourneyTool,
+  registerGaEventsTool,
+} from "@/mcp/tools/ga4/index";
 
-// Headers to forward from MCP server -> client
-const FORWARD_RESPONSE_HEADERS = [
-  "content-type",
-  "mcp-session-id",
-  "transfer-encoding",
-  // Required so Claude.ai can discover OAuth when MCP returns 401
-  "www-authenticate",
-];
+// Prevent Next.js from statically optimizing this route
+export const dynamic = "force-dynamic";
 
-function buildForwardHeaders(req: NextRequest): Record<string, string> {
-  const headers: Record<string, string> = {};
-  for (const name of FORWARD_REQUEST_HEADERS) {
-    const value = req.headers.get(name);
-    if (value) headers[name] = value;
-  }
-  return headers;
+// ----------------------------------------------------------------
+// Session store - module-level, persists for the life of the process
+// ----------------------------------------------------------------
+interface Session {
+  transport: WebStandardStreamableHTTPServerTransport;
+  userId: string;
 }
 
-function buildResponseHeaders(
-  upstream: Response,
-  extra?: Record<string, string>
-): Headers {
-  const responseHeaders = new Headers({
-    "Access-Control-Allow-Origin": "*",
-    "Cache-Control": "no-cache",
-    ...extra,
+const sessions = new Map<string, Session>();
+
+// ----------------------------------------------------------------
+// Create a fresh McpServer with all tools registered for a user
+// ----------------------------------------------------------------
+function createMcpServer(user: McpUser): McpServer {
+  const server = new McpServer({ name: "omg-ai", version: "1.0.0" });
+
+  const userCtx = {
+    userId: user.userId,
+    propertyId: user.propertyId,
+    source: user.source,
+  };
+
+  // GSC tools
+  registerSearchAnalyticsTool(server, userCtx);
+  registerTopKeywordsTool(server, userCtx);
+  registerTopPagesTool(server, userCtx);
+  registerKeywordForPageTool(server, userCtx);
+  registerUrlInspectionTool(server, userCtx);
+  registerListSitemapsTool(server, userCtx);
+  registerGetSitemapTool(server, userCtx);
+  registerSubmitSitemapTool(server, userCtx);
+  registerDeleteSitemapTool(server, userCtx);
+  registerListSitesTool(server, userCtx);
+  registerAddSiteTool(server, userCtx);
+  registerDeleteSiteTool(server, userCtx);
+  registerMobileFriendlyTool(server, userCtx);
+  registerListMyPropertiesTool(server, userCtx);
+
+  // GA4 tools
+  registerGaListPropertiesTool(server, userCtx);
+  registerGaRunReportTool(server, userCtx);
+  registerGaRealtimeTool(server, userCtx);
+  registerGaTopPagesTool(server, userCtx);
+  registerGaTrafficSourcesTool(server, userCtx);
+  registerGaConversionsTool(server, userCtx);
+  registerGaAudienceTool(server, userCtx);
+  registerGaPagePerformanceTool(server, userCtx);
+  registerGaUserJourneyTool(server, userCtx);
+  registerGaEventsTool(server, userCtx);
+
+  return server;
+}
+
+// ----------------------------------------------------------------
+// Add CORS headers to a Web Standard Response
+// ----------------------------------------------------------------
+function withCors(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Cache-Control", "no-cache");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
   });
-  for (const name of FORWARD_RESPONSE_HEADERS) {
-    const value = upstream.headers.get(name);
-    if (value) responseHeaders.set(name, value);
-  }
-  return responseHeaders;
 }
 
+// ----------------------------------------------------------------
+// CORS preflight
+// ----------------------------------------------------------------
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
@@ -70,6 +136,9 @@ export async function OPTIONS() {
   });
 }
 
+// ----------------------------------------------------------------
+// HEAD - protocol discovery probe
+// ----------------------------------------------------------------
 export async function HEAD() {
   return new NextResponse(null, {
     status: 200,
@@ -80,139 +149,123 @@ export async function HEAD() {
   });
 }
 
-export async function GET(req: NextRequest) {
+// ----------------------------------------------------------------
+// Core MCP handler - shared by GET, POST, DELETE
+// ----------------------------------------------------------------
+async function handleMcp(req: NextRequest): Promise<Response> {
+  // --- Validate Bearer token ---
+  let user: McpUser;
   try {
-    const upstream = await fetch(INTERNAL_MCP_URL, {
-      method: "GET",
-      headers: buildForwardHeaders(req),
-      keepalive: true,
+    user = await validateMcpToken(req.headers.get("authorization"));
+  } catch (err) {
+    if (err instanceof McpAuthError) {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (err.wwwAuthenticate) headers["WWW-Authenticate"] = err.wwwAuthenticate;
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: err.status,
+        headers,
+      });
+    }
+    console.error("[mcp-route] Unexpected auth error:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
     });
+  }
 
-    return new NextResponse(upstream.body, {
-      status: upstream.status,
-      headers: buildResponseHeaders(upstream),
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "MCP server unavailable" },
-      { status: 503 }
+  const sessionId = req.headers.get("mcp-session-id");
+
+  // --- Route to existing session ---
+  if (sessionId && sessions.has(sessionId)) {
+    const session = sessions.get(sessionId)!;
+    if (session.userId !== user.userId) {
+      return new Response(
+        JSON.stringify({ error: "Session belongs to a different user" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    try {
+      return withCors(await session.transport.handleRequest(req));
+    } catch (err) {
+      console.error(`[mcp-route] Transport error for session ${sessionId}:`, err);
+      return new Response(
+        JSON.stringify({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error" }, id: null }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }
+
+  // --- No session: only POST can initialize ---
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Session not found" }),
+      { status: 404, headers: { "Content-Type": "application/json" } }
     );
   }
+
+  // Parse body to verify it is an initialize request
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON body" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  if (!isInitializeRequest(body)) {
+    return new Response(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        error: { code: -32000, message: "Bad Request: No valid session ID provided" },
+        id: null,
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // --- Create new transport + server ---
+  // `let` is used so the onsessioninitialized closure can capture the reference.
+  // By the time the callback fires (after handleRequest), `transport` is assigned.
+  // eslint-disable-next-line prefer-const
+  let transport: WebStandardStreamableHTTPServerTransport;
+  transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+    enableJsonResponse: true,
+    onsessioninitialized: (id) => {
+      sessions.set(id, { transport, userId: user.userId });
+      console.log(`[MCP] Session created: ${id} for user ${user.userId}`);
+    },
+    onsessionclosed: (id) => {
+      sessions.delete(id);
+      console.log(`[MCP] Session closed: ${id}`);
+    },
+  });
+
+  const server = createMcpServer(user);
+  await server.connect(transport);
+
+  // Pass the already-parsed body so the transport does not attempt to re-read the stream
+  try {
+    return withCors(await transport.handleRequest(req, { parsedBody: body }));
+  } catch (err) {
+    console.error("[mcp-route] Initialize error:", err);
+    return new Response(
+      JSON.stringify({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error" }, id: null }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  return handleMcp(req);
 }
 
 export async function POST(req: NextRequest) {
-  const startTime = Date.now();
-  let parsedBody: unknown;
-  let bodyBuffer: ArrayBuffer;
-
-  try {
-    bodyBuffer = await req.arrayBuffer();
-  } catch {
-    return NextResponse.json({ error: "Failed to read request body" }, { status: 400 });
-  }
-
-  // Parse body for logging (non-destructive - we still have the buffer)
-  try {
-    const text = new TextDecoder().decode(bodyBuffer);
-    parsedBody = JSON.parse(text);
-  } catch {
-    parsedBody = null;
-  }
-
-  const toolName =
-    (parsedBody as { params?: { name?: string }; method?: string })?.params?.name ||
-    (parsedBody as { method?: string })?.method ||
-    "unknown";
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
-
-  try {
-    const upstream = await fetch(INTERNAL_MCP_URL, {
-      method: "POST",
-      headers: buildForwardHeaders(req),
-      body: bodyBuffer,
-      keepalive: true,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    const responseTimeMs = Date.now() - startTime;
-
-    // Log non-auth requests for debugging (skip initialize spam)
-    if (toolName !== "unknown" && toolName !== "initialize") {
-      logMcpRequest({
-        timestamp: new Date().toISOString(),
-        tool: toolName,
-        site_url: "proxy",
-        user_id: req.headers.get("authorization")?.slice(-8) ?? "unknown",
-        status: upstream.status < 400 ? "success" : "error",
-        response_time_ms: responseTimeMs,
-        request_body: parsedBody,
-        error_message: upstream.status >= 400 ? `HTTP ${upstream.status}` : undefined,
-      }).catch(() => undefined);
-    }
-
-    // Log 4xx/5xx responses as errors
-    if (upstream.status >= 400) {
-      console.error(
-        `[mcp-proxy] Upstream error ${upstream.status} for ${toolName} (${responseTimeMs}ms)`
-      );
-    }
-
-    return new NextResponse(upstream.body, {
-      status: upstream.status,
-      headers: buildResponseHeaders(upstream),
-    });
-  } catch (err) {
-    clearTimeout(timeoutId);
-    const responseTimeMs = Date.now() - startTime;
-    const isTimeout = err instanceof Error && err.name === "AbortError";
-    const errorMessage = isTimeout
-      ? `MCP server did not respond within ${PROXY_TIMEOUT_MS / 1000}s`
-      : "MCP server unavailable";
-
-    logMcpError({
-      timestamp: new Date().toISOString(),
-      tool: toolName,
-      site_url: "proxy",
-      user_id: req.headers.get("authorization")?.slice(-8) ?? "unknown",
-      status: isTimeout ? "timeout" : "error",
-      error_message: errorMessage,
-      stack: err instanceof Error ? err.stack : undefined,
-      response_time_ms: responseTimeMs,
-      request_body: parsedBody,
-    }).catch(() => undefined);
-
-    return NextResponse.json(
-      {
-        jsonrpc: "2.0",
-        error: {
-          code: -32603,
-          message: errorMessage,
-        },
-        id: null,
-      },
-      { status: 503 }
-    );
-  }
+  return handleMcp(req);
 }
 
 export async function DELETE(req: NextRequest) {
-  try {
-    const upstream = await fetch(INTERNAL_MCP_URL, {
-      method: "DELETE",
-      headers: buildForwardHeaders(req),
-    });
-
-    return new NextResponse(upstream.body, {
-      status: upstream.status,
-      headers: buildResponseHeaders(upstream),
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "MCP server unavailable" },
-      { status: 503 }
-    );
-  }
+  return handleMcp(req);
 }
