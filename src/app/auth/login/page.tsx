@@ -9,10 +9,27 @@ interface LoginPageProps {
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
-  access_denied: "Access was denied. Please try again.",
-  no_code: "Authentication failed - no code received from Google. Please try again.",
-  token_exchange: "Failed to exchange token with Google. Please try again.",
+  // Google denied or user cancelled at consent screen
+  access_denied: "Sign-in was cancelled. Please try again.",
+  google_denied: "Sign-in was cancelled. Please try again.",
+  // No authorization code returned
+  no_code: "Sign-in failed - no code received from Google. Please try again.",
+  missing_code: "Sign-in failed - no code received from Google. Please try again.",
+  // CSRF state mismatch - usually a stale or missing cookie
+  state_mismatch: "Sign-in session expired. Please try again.",
+  // Token exchange with Google failed
+  token_exchange: "Failed to complete sign-in with Google. Please try again.",
+  token_exchange_failed: "Failed to complete sign-in with Google. Please try again.",
+  // Could not fetch Google profile
+  userinfo_failed: "Could not retrieve your Google profile. Please try again.",
+  missing_email: "Your Google account did not provide an email address.",
+  // Database error
+  db_error: "A database error occurred during sign-in. Please try again.",
+  // Session creation failed
+  session_error: "Could not create your session. Please try again.",
+  // Generic fallbacks kept for backwards compatibility
   callback_failed: "Sign-in callback failed. Please try again.",
+  server_error: "An unexpected error occurred during sign-in. Please try again.",
   default: "Something went wrong during sign-in. Please try again.",
 };
 

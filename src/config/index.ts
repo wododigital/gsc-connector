@@ -35,7 +35,7 @@ export const config = {
   env: optionalEnv("NODE_ENV", "development") as "development" | "production" | "test",
 
   app: {
-    url: optionalEnv("APP_URL", "http://localhost:3000"),
+    url: optionalEnv("APP_URL", "http://localhost:3000").replace(/\/$/, ""),
     secret: optionalEnv("APP_SECRET"),
     encryptionKey: optionalEnv("ENCRYPTION_KEY"),
   },

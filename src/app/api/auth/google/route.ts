@@ -34,8 +34,9 @@ export async function GET(req: NextRequest) {
       path: "/",
     });
 
-    // Optionally store the "next" param to redirect after login
-    const next = new URL(req.url).searchParams.get("next");
+    // Optionally store the post-login redirect destination (supports both "next" and "return_to")
+    const reqUrl = new URL(req.url);
+    const next = reqUrl.searchParams.get("next") ?? reqUrl.searchParams.get("return_to");
     if (next) {
       response.cookies.set("oauth_next", next, {
         httpOnly: true,
