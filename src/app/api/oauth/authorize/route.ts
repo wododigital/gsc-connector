@@ -209,26 +209,28 @@ export async function POST(req: NextRequest) {
       data: { isActive: true },
     });
 
-    // Persist GA4 property selection if any were provided.
+    // Persist GA4 property selection: always deactivate all first, then activate selected.
     // Non-fatal - GA4 access is optional.
-    if (ga4PropertyIds.length > 0) {
-      try {
+    try {
+      await db.ga4Property.updateMany({
+        where: { userId: session.id },
+        data: { isActive: false },
+      });
+      if (ga4PropertyIds.length > 0) {
         const ownedGA4 = await db.ga4Property.findMany({
           where: { id: { in: ga4PropertyIds }, userId: session.id },
           select: { id: true },
         });
         const validGA4Ids = new Set(ownedGA4.map((p) => p.id));
-        await db.ga4Property.updateMany({
-          where: { userId: session.id },
-          data: { isActive: false },
-        });
-        await db.ga4Property.updateMany({
-          where: { id: { in: Array.from(validGA4Ids) }, userId: session.id },
-          data: { isActive: true },
-        });
-      } catch (ga4Err) {
-        console.error("[oauth/authorize] Failed to persist GA4 selection:", ga4Err);
+        if (validGA4Ids.size > 0) {
+          await db.ga4Property.updateMany({
+            where: { id: { in: Array.from(validGA4Ids) }, userId: session.id },
+            data: { isActive: true },
+          });
+        }
       }
+    } catch (ga4Err) {
+      console.error("[oauth/authorize] Failed to persist GA4 selection:", ga4Err);
     }
 
     // Generate a cryptographically random authorization code

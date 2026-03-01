@@ -1,5 +1,7 @@
 import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
+import { decrypt, encrypt } from "@/lib/encryption";
+import { listGA4Properties } from "@/lib/ga4/api";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -54,6 +56,114 @@ async function getUserProperties(userId: string) {
 
 async function getUserGA4Properties(userId: string) {
   try {
+    // Read from DB first - populated during GSC connect callback
+    const dbProps = await db.ga4Property.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        propertyId: true,
+        displayName: true,
+        accountName: true,
+        isActive: true,
+      },
+    });
+
+    if (dbProps.length > 0) return dbProps;
+
+    // DB is empty - user may not have re-connected since analytics scope was added.
+    // Fetch from Google Admin API using the stored credential.
+    const credential = await db.googleCredential.findFirst({
+      where: { userId },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        accessTokenEncrypted: true,
+        refreshTokenEncrypted: true,
+        tokenExpiry: true,
+      },
+    });
+
+    if (!credential) return [];
+
+    // Get a valid access token (refresh if expired)
+    let accessToken: string;
+    const expiryBuffer = new Date(Date.now() + 5 * 60 * 1000);
+
+    if (credential.tokenExpiry > expiryBuffer) {
+      accessToken = decrypt(credential.accessTokenEncrypted);
+    } else {
+      const refreshToken = decrypt(credential.refreshTokenEncrypted);
+      const res = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+          client_id: process.env.GOOGLE_CLIENT_ID!,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        }),
+      });
+
+      if (!res.ok) return [];
+
+      const data = (await res.json()) as {
+        access_token: string;
+        expires_in: number;
+      };
+      accessToken = data.access_token;
+
+      // Persist refreshed token
+      await db.googleCredential.update({
+        where: { id: credential.id },
+        data: {
+          accessTokenEncrypted: encrypt(accessToken),
+          tokenExpiry: new Date(Date.now() + data.expires_in * 1000),
+        },
+      });
+    }
+
+    // Fetch GA4 properties from Google Admin API
+    // 403 = analytics scope not granted by user - that's OK, just return empty
+    let ga4Props;
+    try {
+      ga4Props = await listGA4Properties(accessToken);
+    } catch {
+      // User likely hasn't granted analytics.readonly scope yet
+      return [];
+    }
+
+    if (ga4Props.length === 0) return [];
+
+    // Upsert all fetched properties into DB (default active=true)
+    for (const prop of ga4Props) {
+      try {
+        await db.ga4Property.upsert({
+          where: {
+            userId_propertyId: { userId, propertyId: prop.property },
+          },
+          update: {
+            displayName: prop.displayName,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            accountName: (prop as any).accountName ?? null,
+            credentialId: credential.id,
+          },
+          create: {
+            userId,
+            credentialId: credential.id,
+            propertyId: prop.property,
+            displayName: prop.displayName,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            accountName: (prop as any).accountName ?? null,
+            isActive: true,
+          },
+        });
+      } catch {
+        // Non-fatal - skip this property
+      }
+    }
+
+    // Return from DB now that we've populated it
     return await db.ga4Property.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
