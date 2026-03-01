@@ -31,8 +31,150 @@ model User {
   apiKeys           ApiKey[]
   oauthTokens       OAuthToken[]
   authCodes         OAuthAuthorizationCode[]
+  subscription      UserSubscription?
+  couponRedemptions CouponRedemption[]
+  tickets           SupportTicket[]
 
   @@map("users")
+}
+
+// ============================================================
+// Pricing Plans
+// ============================================================
+model Plan {
+  id                       String   @id // e.g. "plan_free", "plan_pro", "plan_premium"
+  name                     String   @unique // "free", "pro", "premium"
+  displayName              String   @map("display_name")
+  monthlyCalls             Int      @map("monthly_calls")
+  priceCents               Int      @default(0) @map("price_cents")
+  overagePricePer1000Cents Int      @default(0) @map("overage_price_per_1000_cents")
+  maxGoogleAccounts        Int      @default(1) @map("max_google_accounts")
+  features                 Json     @default("[]")
+  isActive                 Boolean  @default(true) @map("is_active")
+  sortOrder                Int      @default(0) @map("sort_order")
+  createdAt                DateTime @default(now()) @map("created_at")
+
+  subscriptions UserSubscription[]
+  coupons       CouponCode[]
+
+  @@map("plans")
+}
+
+// ============================================================
+// User Plan Subscriptions
+// ============================================================
+model UserSubscription {
+  id                   String    @id @default(uuid())
+  userId               String    @unique @map("user_id")
+  planId               String    @default("plan_free") @map("plan_id")
+  status               String    @default("active") // active, past_due, cancelled, trialing
+  callsUsed            Int       @default(0) @map("calls_used")
+  periodStart          DateTime  @default(now()) @map("period_start")
+  periodEnd            DateTime  @map("period_end")
+  stripeCustomerId     String?   @map("stripe_customer_id")
+  stripeSubscriptionId String?   @map("stripe_subscription_id")
+  cancelledAt          DateTime? @map("cancelled_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@map("user_subscriptions")
+}
+
+// ============================================================
+// Coupon Codes
+// ============================================================
+model CouponCode {
+  id             String    @id @default(uuid())
+  code           String    @unique
+  planId         String    @map("plan_id")
+  durationMonths Int       @default(1) @map("duration_months")
+  maxRedemptions Int       @default(1) @map("max_redemptions")
+  timesRedeemed  Int       @default(0) @map("times_redeemed")
+  expiresAt      DateTime? @map("expires_at")
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  plan        Plan               @relation(fields: [planId], references: [id])
+  redemptions CouponRedemption[]
+
+  @@map("coupon_codes")
+}
+
+model CouponRedemption {
+  id         String   @id @default(uuid())
+  couponId   String   @map("coupon_id")
+  userId     String   @map("user_id")
+  redeemedAt DateTime @default(now()) @map("redeemed_at")
+
+  coupon CouponCode @relation(fields: [couponId], references: [id])
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, userId])
+  @@map("coupon_redemptions")
+}
+
+// ============================================================
+// Support Tickets
+// ============================================================
+model SupportTicket {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  subject    String
+  category   String    @default("general")
+  status     String    @default("open") // open, in_progress, resolved, closed
+  priority   String    @default("medium") // low, medium, high, urgent
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  resolvedAt DateTime? @map("resolved_at")
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages TicketMessage[]
+
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id         String   @id @default(uuid())
+  ticketId   String   @map("ticket_id")
+  userId     String?  @map("user_id")
+  senderType String   @map("sender_type") // "user" | "admin"
+  message    String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_messages")
+}
+
+// ============================================================
+// Admin Notifications
+// ============================================================
+model AdminNotification {
+  id        String   @id @default(uuid())
+  type      String
+  title     String
+  message   String
+  severity  String   @default("info") // info, warning, error, success
+  isRead    Boolean  @default(false) @map("is_read")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("admin_notifications")
+}
+
+// ============================================================
+// Activity Log (audit trail)
+// ============================================================
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  action    String
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("activity_log")
 }
 
 // ============================================================

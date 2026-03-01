@@ -8,6 +8,7 @@ import { Request, Response, NextFunction } from "express";
 import { createHash } from "crypto";
 import db from "../../lib/db.js";
 import { AppError } from "../../types/index.js";
+import { checkAndIncrementUsage } from "../../lib/usage.js";
 
 // Extend Express Request to carry validated user context
 declare global {
@@ -91,6 +92,19 @@ export async function validateAuth(
         scopes: oauthToken.scopes,
         source,
       };
+
+      // Check and increment usage quota
+      const usageCheck = await checkAndIncrementUsage(oauthToken.userId);
+      if (!usageCheck.allowed) {
+        res.status(429).json({
+          error: usageCheck.reason ?? "Monthly tool call limit reached",
+          callsUsed: usageCheck.callsUsed,
+          callsLimit: usageCheck.callsLimit,
+          upgradeUrl: `${process.env.APP_URL || "http://localhost:3000"}/dashboard/billing`,
+        });
+        return;
+      }
+
       next();
       return;
     }
@@ -136,6 +150,19 @@ export async function validateAuth(
         scopes: "gsc:read",
         source: apiKey.name || "API Key",
       };
+
+      // Check and increment usage quota
+      const usageCheck = await checkAndIncrementUsage(apiKey.userId);
+      if (!usageCheck.allowed) {
+        res.status(429).json({
+          error: usageCheck.reason ?? "Monthly tool call limit reached",
+          callsUsed: usageCheck.callsUsed,
+          callsLimit: usageCheck.callsLimit,
+          upgradeUrl: `${process.env.APP_URL || "http://localhost:3000"}/dashboard/billing`,
+        });
+        return;
+      }
+
       next();
       return;
     }

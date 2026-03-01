@@ -17,6 +17,7 @@ import { createSessionToken, getSessionCookieOptions } from "@/lib/auth";
 import db from "@/lib/db";
 import { config } from "@/config/index";
 import type { SessionUser } from "@/types/index";
+import { provisionFreePlan } from "@/lib/usage";
 
 export async function GET(req: NextRequest) {
   try {
@@ -79,6 +80,9 @@ export async function GET(req: NextRequest) {
         subscriptionTier: "free",
       },
     });
+
+    // Auto-provision free plan for new users (no-op if subscription already exists)
+    await provisionFreePlan(user.id);
 
     // Create session JWT
     const sessionUser: SessionUser = {
