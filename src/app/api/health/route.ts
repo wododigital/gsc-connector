@@ -13,7 +13,7 @@ export async function GET() {
   const checks: Record<string, string> = {
     nextjs: "ok",
     database: "pending",
-    mcp_server: "ok (integrated)",
+    mcp_server: "pending",
     env_vars: "pending",
     app_url: "pending",
   };
@@ -27,8 +27,16 @@ export async function GET() {
     console.error("[health] DB check failed:", err);
   }
 
-  // MCP is now integrated into Next.js at /api/mcp (no separate server needed)
-  checks.mcp_server = "ok (integrated)";
+  // MCP server check (standalone Express server on port 3001)
+  try {
+    const mcpPort = process.env.MCP_PORT || "3001";
+    const res = await fetch(`http://localhost:${mcpPort}/health`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    checks.mcp_server = res.ok ? "ok" : `http_${res.status}`;
+  } catch (err) {
+    checks.mcp_server = `unreachable: ${err instanceof Error ? err.message : "connection refused"}`;
+  }
 
   // Required env vars
   const required = ["DATABASE_URL", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "APP_SECRET", "ENCRYPTION_KEY"];
