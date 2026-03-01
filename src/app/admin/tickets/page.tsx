@@ -82,6 +82,17 @@ export default function AdminTickets() {
     fetchTickets();
   };
 
+  const changePriority = async (priority: string) => {
+    if (!selected) return;
+    await fetch(`/api/admin/tickets/${selected.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priority }),
+    });
+    fetchDetail(selected.id);
+    fetchTickets();
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-white">Support Tickets</h1>
@@ -139,7 +150,7 @@ export default function AdminTickets() {
                 <div className="flex gap-2">
                   <select
                     value={selected.priority}
-                    onChange={(e) => changeStatus(e.target.value)}
+                    onChange={(e) => changePriority(e.target.value)}
                     className="bg-zinc-800 border border-zinc-700 text-white text-xs rounded px-2 py-1"
                   >
                     {["low", "medium", "high", "urgent"].map((p) => (

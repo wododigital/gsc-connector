@@ -109,229 +109,179 @@ export default async function DashboardPage() {
   const { hasCredential, hasAnalyticsScope } = credentialInfo;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
-        <p className="text-zinc-400 text-sm mt-1">
-          Manage your OMG AI setup and integrations.
-        </p>
-      </div>
-
-      {/* GSC Connection Status */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-zinc-100">
-            Google Search Console
-          </h2>
-          {hasGscConnected ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-950 border border-green-800 text-green-400 text-xs font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-              Connected
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
-              Not connected
-            </span>
-          )}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
+          <p className="text-zinc-400 text-sm mt-0.5">
+            Manage your OMG AI setup and integrations.
+          </p>
         </div>
-
-        {properties.length > 0 ? (
-          <div>
-            <p className="text-zinc-400 text-sm mb-3">
-              Check the properties you want AI assistants to access. Uncheck to hide from MCP tools.
-            </p>
-            <PropertyManager properties={properties} />
-            <div className="mt-4">
-              <a
-                href="/api/gsc/connect"
-                className="text-sm text-green-400 hover:text-green-300 transition-colors"
-              >
-                + Connect another Google account
-              </a>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-6">
-            <p className="text-zinc-400 text-sm mb-4">
-              Connect your Google Search Console account to get started.
-            </p>
-            <a
-              href="/api/gsc/connect"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition-colors"
-            >
-              Connect Google Search Console
-            </a>
-          </div>
-        )}
-      </section>
-
-      {/* GA4 Properties Section */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-zinc-100">
-            Google Analytics 4
-          </h2>
-          {hasAnalyticsScope ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-950 border border-blue-800 text-blue-400 text-xs font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-              Authorized
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950 border border-amber-800 text-amber-400 text-xs font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              Not authorized
-            </span>
-          )}
-        </div>
-
-        {!hasAnalyticsScope ? (
-          <div className="flex gap-3 p-4 rounded-lg bg-amber-950/30 border border-amber-800/50">
-            <span className="text-amber-400 text-lg shrink-0 leading-none mt-0.5">!</span>
-            <div>
-              <p className="text-sm font-medium text-amber-200 mb-1">
-                Analytics access not authorized
-              </p>
-              <p className="text-zinc-400 text-sm mb-3">
-                {hasCredential
-                  ? "Your account was connected before GA4 support was added."
-                  : "Your account is not yet connected."}{" "}
-                Reconnect to grant Google Analytics permission.
-              </p>
-              <a
-                href="/api/gsc/connect"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-sm font-medium transition-colors"
-              >
-                Reconnect Google Account
-              </a>
-            </div>
-          </div>
-        ) : ga4Properties.length > 0 ? (
-          <div>
-            <p className="text-zinc-400 text-sm mb-3">
-              Check the GA4 properties you want AI assistants to access. Uncheck to hide from MCP tools.
-            </p>
-            <GA4PropertyManager properties={ga4Properties} />
-          </div>
-        ) : (
-          <div className="p-4 rounded-lg bg-zinc-800/50 border border-zinc-700">
-            <p className="text-sm text-zinc-400">
-              No Google Analytics 4 properties found for your Google account. Make sure you have access to GA4 properties in Google Analytics.
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* Connection Status */}
-      {hasCredential && (
-        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-          <h2 className="text-base font-semibold text-zinc-100 mb-4">
-            Connection Status
-          </h2>
-          <div className="flex flex-wrap items-center gap-6 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-zinc-400">Search Console:</span>
-              {properties.length > 0 ? (
-                <span className="text-sm font-medium text-green-400">Connected</span>
-              ) : (
-                <span className="text-sm font-medium text-zinc-500">Not connected</span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-zinc-400">Analytics:</span>
-              {hasAnalyticsScope ? (
-                <span className="text-sm font-medium text-blue-400">Authorized</span>
-              ) : (
-                <span className="text-sm font-medium text-amber-400">Not authorized</span>
-              )}
-            </div>
-          </div>
+        {hasCredential && (
           <ConnectionActions
             hasGsc={properties.length > 0}
             hasAnalyticsScope={hasAnalyticsScope}
           />
+        )}
+      </div>
+
+      {/* GSC + GA4 side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* GSC */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-zinc-100">Google Search Console</h2>
+            {hasGscConnected ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-950 border border-green-800 text-green-400 text-xs font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                Connected
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
+                Not connected
+              </span>
+            )}
+          </div>
+
+          {properties.length > 0 ? (
+            <>
+              <p className="text-zinc-500 text-xs mb-3">
+                Toggle properties to control AI access.
+              </p>
+              <PropertyManager properties={properties} />
+              <div className="mt-3 pt-3 border-t border-zinc-800">
+                <a href="/api/gsc/connect" className="text-xs text-green-400 hover:text-green-300 transition-colors">
+                  + Connect another account
+                </a>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-zinc-400 text-sm mb-4">
+                Connect your Google Search Console to get started.
+              </p>
+              <a
+                href="/api/gsc/connect"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition-colors"
+              >
+                Connect GSC
+              </a>
+            </div>
+          )}
         </section>
-      )}
 
-      {/* MCP Endpoint section */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <h2 className="text-base font-semibold text-zinc-100 mb-1">
-          MCP Endpoint
-        </h2>
-        <p className="text-zinc-400 text-sm mb-4">
-          Use this URL to connect OMG AI to your AI tools.
-        </p>
+        {/* GA4 */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-zinc-100">Google Analytics 4</h2>
+            {hasAnalyticsScope ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-950 border border-blue-800 text-blue-400 text-xs font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                Authorized
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-950 border border-amber-800 text-amber-400 text-xs font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                Not authorized
+              </span>
+            )}
+          </div>
 
-        {/* Endpoint URL */}
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800 border border-zinc-700 mb-6">
+          {!hasAnalyticsScope ? (
+            <div className="flex gap-3 p-3 rounded-lg bg-amber-950/30 border border-amber-800/50">
+              <span className="text-amber-400 shrink-0 mt-0.5">!</span>
+              <div>
+                <p className="text-sm font-medium text-amber-200 mb-1">Analytics not authorized</p>
+                <p className="text-zinc-400 text-xs mb-3">
+                  {hasCredential
+                    ? "Connected before GA4 support was added."
+                    : "Account not yet connected."}{" "}
+                  Reconnect to grant Analytics permission.
+                </p>
+                <a
+                  href="/api/gsc/connect"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-medium transition-colors"
+                >
+                  Reconnect Google
+                </a>
+              </div>
+            </div>
+          ) : ga4Properties.length > 0 ? (
+            <>
+              <p className="text-zinc-500 text-xs mb-3">
+                Toggle properties to control AI access.
+              </p>
+              <GA4PropertyManager properties={ga4Properties} />
+            </>
+          ) : (
+            <div className="p-4 rounded-lg bg-zinc-800/50 border border-zinc-700">
+              <p className="text-sm text-zinc-400">
+                No GA4 properties found. Make sure your Google account has access to GA4.
+              </p>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* MCP Endpoint */}
+      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-100">MCP Endpoint</h2>
+            <p className="text-zinc-500 text-xs mt-0.5">Use this URL to connect OMG AI to Claude, Cursor, or ChatGPT.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800 border border-zinc-700 mb-5">
           <code className="flex-1 text-sm text-green-300 font-mono truncate">
             {MCP_ENDPOINT}
           </code>
           <CopyButton text={MCP_ENDPOINT} label="Copy URL" />
         </div>
 
-        {/* Setup instructions - tab-style */}
         <SetupInstructions />
       </section>
 
-      {/* API Keys summary */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-base font-semibold text-zinc-100 mb-1">
-              API Keys
-            </h2>
-            <p className="text-zinc-400 text-sm">
-              Used for Claude Desktop and Cursor integrations.
-            </p>
+      {/* Quick links: API Keys | Usage Logs | Billing */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <a
+          href="/dashboard/keys"
+          className="bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-4 transition-colors group"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-zinc-100">API Keys</span>
+            <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors text-xs">Manage →</span>
           </div>
-          <a
-            href="/dashboard/keys"
-            className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors"
-          >
-            Manage keys
-          </a>
-        </div>
-        {apiKeyCount > 0 ? (
-          <p className="text-zinc-300 text-sm">
-            You have{" "}
-            <span className="font-semibold text-green-400">{apiKeyCount}</span>{" "}
-            active {apiKeyCount === 1 ? "key" : "keys"}.
+          <p className="text-zinc-500 text-xs">For Claude Desktop and Cursor.</p>
+          <p className="text-green-400 text-sm font-semibold mt-2">
+            {apiKeyCount > 0 ? `${apiKeyCount} active` : "No keys yet"}
           </p>
-        ) : (
-          <p className="text-zinc-400 text-sm">
-            No API keys yet.{" "}
-            <a
-              href="/dashboard/keys"
-              className="text-green-400 hover:text-green-300 transition-colors"
-            >
-              Create your first key
-            </a>{" "}
-            to use Claude Desktop or Cursor.
-          </p>
-        )}
-      </section>
+        </a>
 
-      {/* Usage logs link */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-zinc-100 mb-1">
-              Usage Logs
-            </h2>
-            <p className="text-zinc-400 text-sm">
-              View a history of all MCP tool calls made on your account.
-            </p>
+        <a
+          href="/dashboard/logs"
+          className="bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-4 transition-colors group"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-zinc-100">Usage Logs</span>
+            <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors text-xs">View →</span>
           </div>
-          <a
-            href="/dashboard/logs"
-            className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors"
-          >
-            View logs
-          </a>
-        </div>
-      </section>
+          <p className="text-zinc-500 text-xs">History of all MCP tool calls.</p>
+        </a>
+
+        <a
+          href="/dashboard/billing"
+          className="bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-4 transition-colors group"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-zinc-100">Billing</span>
+            <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors text-xs">View →</span>
+          </div>
+          <p className="text-zinc-500 text-xs">Manage your plan and usage.</p>
+        </a>
+      </div>
     </div>
   );
 }

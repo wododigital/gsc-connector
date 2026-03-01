@@ -61,7 +61,7 @@ export function PropertyManager({ properties }: PropertyManagerProps) {
 
   return (
     <div>
-      <div className="space-y-2 mb-4">
+      <div className="space-y-2 mb-4 max-h-56 overflow-y-auto pr-1">
         {properties.map((property) => (
           <label
             key={property.id}

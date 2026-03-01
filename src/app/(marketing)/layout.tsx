@@ -23,16 +23,28 @@ export default function MarketingLayout({
                 How it works
               </a>
               <a
-                href="#features"
+                href="/features"
                 className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
               >
                 Features
               </a>
               <a
-                href="#pricing"
+                href="/pricing"
                 className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
               >
                 Pricing
+              </a>
+              <a
+                href="/guides"
+                className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
+              >
+                Guides
+              </a>
+              <a
+                href="/faq"
+                className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
+              >
+                FAQ
               </a>
             </nav>
             <div className="flex items-center gap-3">
