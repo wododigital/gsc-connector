@@ -35,9 +35,10 @@ export async function GET(req: NextRequest) {
     });
 
     // Optionally store the post-login redirect destination (supports both "next" and "return_to")
+    // Only allow relative paths to prevent open redirect attacks
     const reqUrl = new URL(req.url);
     const next = reqUrl.searchParams.get("next") ?? reqUrl.searchParams.get("return_to");
-    if (next) {
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
       response.cookies.set("oauth_next", next, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

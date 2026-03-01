@@ -63,6 +63,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Validate all redirect_uris are valid URLs with safe schemes
+    const BLOCKED_SCHEMES = ["javascript:", "data:", "vbscript:"];
+    for (const uri of redirect_uris) {
+      let parsed: URL;
+      try {
+        parsed = new URL(uri);
+      } catch {
+        return NextResponse.json(
+          {
+            error: "invalid_client_metadata",
+            error_description: `Invalid redirect_uri: ${uri} is not a valid URL`,
+          },
+          { status: 400 }
+        );
+      }
+      if (BLOCKED_SCHEMES.includes(parsed.protocol)) {
+        return NextResponse.json(
+          {
+            error: "invalid_client_metadata",
+            error_description: `Invalid redirect_uri scheme in: ${uri}`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const clientId = randomUUID();
     const clientSecret = randomBytes(32).toString("hex");
     const clientSecretHash = createHash("sha256")

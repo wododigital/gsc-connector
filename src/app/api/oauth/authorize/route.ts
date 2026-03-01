@@ -149,6 +149,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Enforce S256 as the only accepted PKCE method
+    if (code_challenge && code_challenge_method !== "S256") {
+      return NextResponse.json(
+        { error: "invalid_request", error_description: "code_challenge_method must be S256" },
+        { status: 400 }
+      );
+    }
+
     // Validate client and redirect_uri
     const client = await db.oAuthClient.findUnique({
       where: { clientId: client_id },

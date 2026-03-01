@@ -196,6 +196,13 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+      // Only S256 is accepted - plain method is insecure and not supported
+      if (authCode.codeChallengeMethod !== "S256") {
+        return NextResponse.json(
+          { error: "invalid_grant", error_description: "Unsupported code_challenge_method" },
+          { status: 400 }
+        );
+      }
       if (!verifyPkce(code_verifier, authCode.codeChallenge)) {
         return NextResponse.json(
           { error: "invalid_grant", error_description: "PKCE verification failed" },

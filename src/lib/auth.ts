@@ -7,8 +7,13 @@ import { cookies } from "next/headers";
 import type { JwtPayload, SessionUser, SubscriptionTier } from "@/types/index";
 import { AppError } from "@/types/index";
 
+const appSecret = process.env.APP_SECRET;
+if (!appSecret && process.env.NODE_ENV === "production") {
+  throw new Error("[auth] APP_SECRET environment variable is required in production");
+}
+
 const SECRET = new TextEncoder().encode(
-  process.env.APP_SECRET || "dev-secret-change-in-production"
+  appSecret ?? "dev-secret-change-in-production"
 );
 
 const COOKIE_NAME = "gsc_session";
