@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import db from "@/lib/db";
 import { CopyButton } from "@/components/copy-button";
 import { PropertyManager } from "@/components/property-manager";
+import { GA4PropertyManager } from "@/components/ga4-property-manager";
+import { ConnectionActions } from "@/components/connection-actions";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -24,6 +26,41 @@ async function getProperties(userId: string) {
     });
   } catch {
     return [];
+  }
+}
+
+// Fetch ALL GA4 properties (active + inactive) for the dashboard manager
+async function getGA4Properties(userId: string) {
+  try {
+    return await db.ga4Property.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        propertyId: true,
+        displayName: true,
+        accountName: true,
+        isActive: true,
+      },
+    });
+  } catch {
+    return [];
+  }
+}
+
+// Check whether the user has a Google credential and whether it includes analytics scope
+async function getCredentialInfo(userId: string) {
+  try {
+    const credential = await db.googleCredential.findFirst({
+      where: { userId },
+      select: { scopes: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (!credential) return { hasCredential: false, hasAnalyticsScope: false };
+    const hasAnalyticsScope = credential.scopes.includes("analytics.readonly");
+    return { hasCredential: true, hasAnalyticsScope };
+  } catch {
+    return { hasCredential: false, hasAnalyticsScope: false };
   }
 }
 
@@ -61,12 +98,15 @@ export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  const [properties, apiKeyCount] = await Promise.all([
+  const [properties, ga4Properties, credentialInfo, apiKeyCount] = await Promise.all([
     getProperties(session.id),
+    getGA4Properties(session.id),
+    getCredentialInfo(session.id),
     getApiKeyCount(session.id),
   ]);
 
   const hasGscConnected = properties.some((p) => p.isActive);
+  const { hasCredential, hasAnalyticsScope } = credentialInfo;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -126,6 +166,93 @@ export default async function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* GA4 Properties Section */}
+      <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-zinc-100">
+            Google Analytics 4
+          </h2>
+          {hasAnalyticsScope ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-950 border border-blue-800 text-blue-400 text-xs font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+              Authorized
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950 border border-amber-800 text-amber-400 text-xs font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              Not authorized
+            </span>
+          )}
+        </div>
+
+        {!hasAnalyticsScope ? (
+          <div className="flex gap-3 p-4 rounded-lg bg-amber-950/30 border border-amber-800/50">
+            <span className="text-amber-400 text-lg shrink-0 leading-none mt-0.5">!</span>
+            <div>
+              <p className="text-sm font-medium text-amber-200 mb-1">
+                Analytics access not authorized
+              </p>
+              <p className="text-zinc-400 text-sm mb-3">
+                {hasCredential
+                  ? "Your account was connected before GA4 support was added."
+                  : "Your account is not yet connected."}{" "}
+                Reconnect to grant Google Analytics permission.
+              </p>
+              <a
+                href="/api/gsc/connect"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-sm font-medium transition-colors"
+              >
+                Reconnect Google Account
+              </a>
+            </div>
+          </div>
+        ) : ga4Properties.length > 0 ? (
+          <div>
+            <p className="text-zinc-400 text-sm mb-3">
+              Check the GA4 properties you want AI assistants to access. Uncheck to hide from MCP tools.
+            </p>
+            <GA4PropertyManager properties={ga4Properties} />
+          </div>
+        ) : (
+          <div className="p-4 rounded-lg bg-zinc-800/50 border border-zinc-700">
+            <p className="text-sm text-zinc-400">
+              No Google Analytics 4 properties found for your Google account. Make sure you have access to GA4 properties in Google Analytics.
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* Connection Status */}
+      {hasCredential && (
+        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-zinc-100 mb-4">
+            Connection Status
+          </h2>
+          <div className="flex flex-wrap items-center gap-6 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-zinc-400">Search Console:</span>
+              {properties.length > 0 ? (
+                <span className="text-sm font-medium text-green-400">Connected</span>
+              ) : (
+                <span className="text-sm font-medium text-zinc-500">Not connected</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-zinc-400">Analytics:</span>
+              {hasAnalyticsScope ? (
+                <span className="text-sm font-medium text-blue-400">Authorized</span>
+              ) : (
+                <span className="text-sm font-medium text-amber-400">Not authorized</span>
+              )}
+            </div>
+          </div>
+          <ConnectionActions
+            hasGsc={properties.length > 0}
+            hasAnalyticsScope={hasAnalyticsScope}
+          />
+        </section>
+      )}
 
       {/* MCP Endpoint section */}
       <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
