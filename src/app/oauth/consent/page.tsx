@@ -208,7 +208,11 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <span className="text-2xl font-bold text-green-400">OMG AI</span>
+            <img
+              src="/OMG Rectangle LOGO Dark BG.svg"
+              alt="OMG AI"
+              className="h-8 w-auto mx-auto"
+            />
           </div>
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
             <h1 className="text-lg font-semibold text-zinc-100 mb-3">Sign in required</h1>
@@ -280,7 +284,11 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-6">
-          <span className="text-xl font-bold text-green-400">OMG AI</span>
+          <img
+            src="/OMG Rectangle LOGO Dark BG.svg"
+            alt="OMG AI"
+            className="h-7 w-auto mx-auto"
+          />
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
@@ -462,7 +470,11 @@ function ErrorPage({ message }: { message: string }) {
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         <div className="mb-6">
-          <span className="text-xl font-bold text-green-400">OMG AI</span>
+          <img
+            src="/OMG Rectangle LOGO Dark BG.svg"
+            alt="OMG AI"
+            className="h-7 w-auto mx-auto"
+          />
         </div>
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8">
           <div className="w-12 h-12 rounded-full bg-red-950 border border-red-800 flex items-center justify-center mx-auto mb-4">

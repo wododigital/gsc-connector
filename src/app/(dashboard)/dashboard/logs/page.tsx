@@ -113,7 +113,11 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
       {/* Nav */}
       <nav className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <span className="text-green-400 font-bold">OMG AI</span>
+          <img
+            src="/OMG Rectangle LOGO Dark BG.svg"
+            alt="OMG AI"
+            className="h-6 w-auto"
+          />
           <span className="text-zinc-600">/</span>
           <span className="text-zinc-300 text-sm">Usage Logs</span>
         </div>

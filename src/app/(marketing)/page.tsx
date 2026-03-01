@@ -264,9 +264,11 @@ export default function LandingPage() {
       <footer className="border-t border-zinc-800 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <span className="text-zinc-400 text-sm font-semibold text-green-400">
-              GSC Connect
-            </span>
+            <img
+              src="/OMG Rectangle LOGO Dark BG.svg"
+              alt="OMG AI"
+              className="h-6 w-auto opacity-80"
+            />
             <p className="text-zinc-500 text-sm">
               &copy; {new Date().getFullYear()} OMG AI. All rights reserved.
             </p>

@@ -8,8 +8,12 @@ export default function MarketingLayout({
       <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <a href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold text-green-400">GSC Connect</span>
+            <a href="/" className="flex items-center">
+              <img
+                src="/OMG Rectangle LOGO Dark BG.svg"
+                alt="OMG AI"
+                className="h-8 w-auto"
+              />
             </a>
             <nav className="hidden md:flex items-center gap-6">
               <a

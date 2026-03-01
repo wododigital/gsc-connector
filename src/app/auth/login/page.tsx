@@ -36,7 +36,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         {/* Logo */}
         <div className="text-center mb-8">
           <a href="/" className="inline-block">
-            <span className="text-2xl font-bold text-green-400">OMG AI</span>
+            <img
+              src="/OMG Rectangle LOGO Dark BG.svg"
+              alt="OMG AI"
+              className="h-9 w-auto mx-auto"
+            />
           </a>
           <p className="mt-2 text-zinc-400 text-sm">
             Connect Google Search Console to your AI tools
