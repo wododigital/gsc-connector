@@ -169,3 +169,26 @@ model UsageLog {
   @@index([userId, toolName])
   @@map("usage_logs")
 }
+
+// ============================================================
+// MCP Debug Logs (structured request/response/error logging)
+// ============================================================
+model McpDebugLog {
+  id             String   @id @default(uuid())
+  timestamp      DateTime @default(now())
+  tool           String   @default("unknown")
+  siteUrl        String   @default("unknown") @map("site_url")
+  userId         String   @default("unknown") @map("user_id")
+  status         String   @default("unknown") // "success" | "error" | "timeout"
+  errorMessage   String?  @map("error_message")
+  stack          String?
+  responseTimeMs Int?     @map("response_time_ms")
+  requestBody    String?  @map("request_body")
+  responseBody   String?  @map("response_body")
+
+  @@index([timestamp])
+  @@index([userId, timestamp])
+  @@index([status, timestamp])
+  @@index([tool, timestamp])
+  @@map("mcp_debug_logs")
+}

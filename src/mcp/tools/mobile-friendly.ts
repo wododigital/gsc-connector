@@ -10,6 +10,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { runMobileFriendlyTest } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
 import { logToolCall } from "../../lib/usage-logger.js";
+import { logMcpError } from "../../lib/error-logger.js";
 
 interface UserContext {
   userId: string;
@@ -64,11 +65,13 @@ export function registerMobileFriendlyTool(
           ],
         };
       } catch (error) {
-        logToolCall({ userId: user.userId, toolName: "run_mobile_friendly_test", siteUrl: params.url, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
+        const responseTimeMs = Date.now() - startTime;
         const msg =
           error instanceof AppError
             ? error.message
             : "Failed to run mobile-friendly test";
+        logToolCall({ userId: user.userId, toolName: "run_mobile_friendly_test", siteUrl: params.url, source: user.source, status: "error", responseTimeMs }).catch(() => undefined);
+        logMcpError({ timestamp: new Date().toISOString(), tool: "run_mobile_friendly_test", site_url: params.url, user_id: user.userId, status: "error", error_message: msg, stack: error instanceof Error ? error.stack : undefined, response_time_ms: responseTimeMs }).catch(() => undefined);
         return {
           content: [
             {

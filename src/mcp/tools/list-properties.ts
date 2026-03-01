@@ -9,6 +9,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import db from "../../lib/db.js";
 import { AppError } from "../../types/index.js";
 import { logToolCall } from "../../lib/usage-logger.js";
+import { logMcpError } from "../../lib/error-logger.js";
+import { shortLabel } from "../../lib/resolve-site-url.js";
 
 interface UserContext {
   userId: string;
@@ -49,6 +51,7 @@ export function registerListMyPropertiesTool(
                   success: true,
                   data: {
                     properties: properties.map((p) => ({
+                      label: `${shortLabel(p.siteUrl)} (${p.siteUrl})`,
                       site_url: p.siteUrl,
                       permission: p.permissionLevel
                         .replace("site", "")
@@ -66,11 +69,13 @@ export function registerListMyPropertiesTool(
           ],
         };
       } catch (error) {
-        logToolCall({ userId: user.userId, toolName: "list_my_properties", siteUrl: "N/A", source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
+        const responseTimeMs = Date.now() - startTime;
         const msg =
           error instanceof AppError
             ? error.message
             : "Failed to list properties";
+        logToolCall({ userId: user.userId, toolName: "list_my_properties", siteUrl: "N/A", source: user.source, status: "error", responseTimeMs }).catch(() => undefined);
+        logMcpError({ timestamp: new Date().toISOString(), tool: "list_my_properties", site_url: "N/A", user_id: user.userId, status: "error", error_message: msg, stack: error instanceof Error ? error.stack : undefined, response_time_ms: responseTimeMs }).catch(() => undefined);
         return {
           content: [
             {

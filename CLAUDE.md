@@ -273,3 +273,23 @@ See **swarm-prompt.md** for full agent assignments, task breakdown, and build ph
 | Security | Security audit reports |
 
 **File Ownership Rule:** Agents must NOT modify files outside their owned directories. Cross-directory changes go through the PM.
+
+---
+
+## QA Checklist (Run Before Every Commit)
+
+Before committing, an agent or developer must verify all 10 items PASS:
+
+1. **Build passes** - `npm run build` exits 0 with zero TypeScript errors
+2. **MCP server starts** - `node dist/mcp/server.js` starts without crashing; `curl localhost:3001/health` returns 200
+3. **Health endpoint** - `curl localhost:3000/api/health` returns `{"status":"ok",...}` with all checks true
+4. **OAuth metadata** - `curl localhost:3000/.well-known/oauth-authorization-server` returns JSON with `issuer`, `authorization_endpoint`, `token_endpoint`
+5. **MCP proxy** - `curl -I localhost:3000/api/mcp` returns 200 with `MCP-Protocol-Version` header
+6. **Dynamic Client Registration** - POST to `/api/oauth/register` with `client_name` + `redirect_uris` returns 201 with `client_id`
+7. **Tool listing** - MCP `tools/list` call returns all 13 tools
+8. **Property listing** - `list_my_properties` tool returns active properties with `label` field showing `"domain.com (https://domain.com/)"`
+9. **Error logging** - After a failed tool call, check `logs/mcp-errors.log` has an entry with tool name, error_message, and stack
+10. **No secrets in logs** - Grep `logs/` for access_token, refresh_token - none should appear
+
+Run automated checks with: `./scripts/health-check.sh`
+Read error logs with: `./scripts/read-logs.sh --errors-only`

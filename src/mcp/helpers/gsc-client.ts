@@ -9,6 +9,7 @@ import db from "../../lib/db.js";
 import { decrypt, encrypt } from "../../lib/encryption.js";
 import { refreshGoogleToken } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
+import { resolveSiteUrl } from "../../lib/resolve-site-url.js";
 
 export interface GscContext {
   accessToken: string;
@@ -118,30 +119,47 @@ export async function getGscContext(
  */
 export async function getGscContextBySiteUrl(
   userId: string,
-  siteUrl: string
+  input: string
 ): Promise<GscContext> {
   try {
-    const property = await db.gscProperty.findFirst({
-      where: { userId, siteUrl, isActive: true },
-      include: { credential: true },
+    // Get all active properties and fuzzy-match the input
+    const activeProperties = await db.gscProperty.findMany({
+      where: { userId, isActive: true },
+      select: { siteUrl: true },
     });
 
-    if (!property) {
-      // Check if it exists but is inactive, to give a better error message
-      const inactiveProperty = await db.gscProperty.findFirst({
-        where: { userId, siteUrl, isActive: false },
-        select: { id: true },
+    const resolved = resolveSiteUrl(input, activeProperties);
+
+    if ("ambiguous" in resolved) {
+      throw new AppError("PROPERTY_NOT_FOUND", resolved.message, 400);
+    }
+
+    if ("notFound" in resolved) {
+      // Check if the input matches an inactive property for a better error
+      const inactiveProperties = await db.gscProperty.findMany({
+        where: { userId, isActive: false },
+        select: { siteUrl: true },
       });
-      if (inactiveProperty) {
+      const inactiveMatch = resolveSiteUrl(input, inactiveProperties);
+      if ("resolved" in inactiveMatch) {
         throw new AppError(
           "PROPERTY_NOT_ACTIVE",
           `This property is not in your active selection. Use list_my_properties to see your active properties.`,
           403
         );
       }
+      throw new AppError("PROPERTY_NOT_FOUND", resolved.message, 404);
+    }
+
+    const property = await db.gscProperty.findFirst({
+      where: { userId, siteUrl: resolved.resolved, isActive: true },
+      include: { credential: true },
+    });
+
+    if (!property) {
       throw new AppError(
         "PROPERTY_NOT_FOUND",
-        `No active GSC property found for "${siteUrl}". Use list_my_properties to see available properties.`,
+        `Property not found. Use list_my_properties to see available properties.`,
         404
       );
     }

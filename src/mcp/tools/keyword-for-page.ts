@@ -10,6 +10,7 @@ import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js"
 import { querySearchAnalytics } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
 import { logToolCall } from "../../lib/usage-logger.js";
+import { logMcpError } from "../../lib/error-logger.js";
 
 interface UserContext {
   userId: string;
@@ -117,11 +118,13 @@ export function registerKeywordForPageTool(
           ],
         };
       } catch (error) {
-        logToolCall({ userId: user.userId, toolName: "get_keyword_for_page", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
+        const responseTimeMs = Date.now() - startTime;
         const msg =
           error instanceof AppError
             ? error.message
             : "Failed to fetch keywords for page";
+        logToolCall({ userId: user.userId, toolName: "get_keyword_for_page", siteUrl, source: user.source, status: "error", responseTimeMs }).catch(() => undefined);
+        logMcpError({ timestamp: new Date().toISOString(), tool: "get_keyword_for_page", site_url: siteUrl, user_id: user.userId, status: "error", error_message: msg, stack: error instanceof Error ? error.stack : undefined, response_time_ms: responseTimeMs }).catch(() => undefined);
         return {
           content: [
             {

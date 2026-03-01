@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack(config) {
+    // Allow TypeScript files to be imported using .js extensions (ESM style).
+    // Shared lib files (error-logger, usage-logger) use ./db.js which webpack
+    // needs to resolve to ./db.ts.
+    config.resolve.extensionAlias = {
+      ".js": [".ts", ".tsx", ".js"],
+      ".jsx": [".tsx", ".jsx"],
+    };
+    return config;
+  },
   async rewrites() {
     return [
       // RFC 8414 - Claude.ai fetches /.well-known/oauth-authorization-server at the root.

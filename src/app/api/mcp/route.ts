@@ -10,8 +10,10 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server";
+import { logMcpRequest, logMcpError } from "@/lib/error-logger";
 
 const INTERNAL_MCP_URL = `http://localhost:${process.env.MCP_PORT || 3001}/mcp`;
+const PROXY_TIMEOUT_MS = 30_000;
 
 // Headers to forward from client -> MCP server
 const FORWARD_REQUEST_HEADERS = [
@@ -99,24 +101,98 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.arrayBuffer();
+  const startTime = Date.now();
+  let parsedBody: unknown;
+  let bodyBuffer: ArrayBuffer;
 
+  try {
+    bodyBuffer = await req.arrayBuffer();
+  } catch {
+    return NextResponse.json({ error: "Failed to read request body" }, { status: 400 });
+  }
+
+  // Parse body for logging (non-destructive - we still have the buffer)
+  try {
+    const text = new TextDecoder().decode(bodyBuffer);
+    parsedBody = JSON.parse(text);
+  } catch {
+    parsedBody = null;
+  }
+
+  const toolName =
+    (parsedBody as { params?: { name?: string }; method?: string })?.params?.name ||
+    (parsedBody as { method?: string })?.method ||
+    "unknown";
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+
+  try {
     const upstream = await fetch(INTERNAL_MCP_URL, {
       method: "POST",
       headers: buildForwardHeaders(req),
-      body,
+      body: bodyBuffer,
       keepalive: true,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
-    // Stream the response body back (MCP uses streaming JSON)
+    const responseTimeMs = Date.now() - startTime;
+
+    // Log non-auth requests for debugging (skip initialize spam)
+    if (toolName !== "unknown" && toolName !== "initialize") {
+      logMcpRequest({
+        timestamp: new Date().toISOString(),
+        tool: toolName,
+        site_url: "proxy",
+        user_id: req.headers.get("authorization")?.slice(-8) ?? "unknown",
+        status: upstream.status < 400 ? "success" : "error",
+        response_time_ms: responseTimeMs,
+        request_body: parsedBody,
+        error_message: upstream.status >= 400 ? `HTTP ${upstream.status}` : undefined,
+      }).catch(() => undefined);
+    }
+
+    // Log 4xx/5xx responses as errors
+    if (upstream.status >= 400) {
+      console.error(
+        `[mcp-proxy] Upstream error ${upstream.status} for ${toolName} (${responseTimeMs}ms)`
+      );
+    }
+
     return new NextResponse(upstream.body, {
       status: upstream.status,
       headers: buildResponseHeaders(upstream),
     });
-  } catch {
+  } catch (err) {
+    clearTimeout(timeoutId);
+    const responseTimeMs = Date.now() - startTime;
+    const isTimeout = err instanceof Error && err.name === "AbortError";
+    const errorMessage = isTimeout
+      ? `MCP server did not respond within ${PROXY_TIMEOUT_MS / 1000}s`
+      : "MCP server unavailable";
+
+    logMcpError({
+      timestamp: new Date().toISOString(),
+      tool: toolName,
+      site_url: "proxy",
+      user_id: req.headers.get("authorization")?.slice(-8) ?? "unknown",
+      status: isTimeout ? "timeout" : "error",
+      error_message: errorMessage,
+      stack: err instanceof Error ? err.stack : undefined,
+      response_time_ms: responseTimeMs,
+      request_body: parsedBody,
+    }).catch(() => undefined);
+
     return NextResponse.json(
-      { error: "MCP server unavailable" },
+      {
+        jsonrpc: "2.0",
+        error: {
+          code: -32603,
+          message: errorMessage,
+        },
+        id: null,
+      },
       { status: 503 }
     );
   }
