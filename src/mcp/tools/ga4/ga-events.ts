@@ -23,10 +23,11 @@ export function registerGaEventsTool(server: McpServer, user: UserContext): void
     "ga_events",
     "Get event data - see which events are firing and how often",
     {
-      property_id: z.string().describe("GA4 property to query. Use ga_list_properties to see options."),
+      property_id: z.string().max(200).describe("GA4 property to query. Use ga_list_properties to see options."),
       days: z.number().min(1).max(365).default(28).describe("Days to analyze (default 28)"),
       event_name: z
         .string()
+        .max(200)
         .optional()
         .describe("Filter to a specific event name (optional, e.g., 'page_view', 'click')"),
       limit: z.number().min(1).max(100).default(20).describe("Number of events (default 20)"),

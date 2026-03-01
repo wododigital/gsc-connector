@@ -18,8 +18,9 @@ export async function GET(req: NextRequest) {
     // User must already be authenticated on the platform
     const session = await getSession();
     if (!session) {
+      // Use a safe relative path instead of the full request URL
       return NextResponse.redirect(
-        new URL(`/auth/login?next=${encodeURIComponent(req.url)}`, config.app.url)
+        new URL("/auth/login?next=%2Fapi%2Fgsc%2Fconnect", config.app.url)
       );
     }
 

@@ -1,6 +1,7 @@
 /**
  * MCP Auth Middleware
  * Validates Bearer tokens from the oauth_tokens and api_keys tables.
+ * Includes per-user sliding window rate limiting (60 req/min).
  * Owned by: Coder-MCP agent
  */
 
@@ -9,6 +10,41 @@ import { createHash } from "crypto";
 import db from "../../lib/db.js";
 import { AppError } from "../../types/index.js";
 import { checkAndIncrementUsage } from "../../lib/usage.js";
+
+// ----------------------------------------------------------------
+// Per-user sliding window rate limiter (in-memory)
+// Separate from the usage quota - this prevents burst abuse.
+// ----------------------------------------------------------------
+const rateLimitMap = new Map<string, number[]>();
+const RATE_LIMIT = 60; // max requests per window
+const WINDOW_MS = 60_000; // 1 minute window
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const timestamps = (rateLimitMap.get(userId) ?? []).filter(
+    (t) => now - t < WINDOW_MS
+  );
+  if (timestamps.length >= RATE_LIMIT) {
+    rateLimitMap.set(userId, timestamps);
+    return false;
+  }
+  timestamps.push(now);
+  rateLimitMap.set(userId, timestamps);
+  return true;
+}
+
+// Periodic cleanup: remove entries for users with no recent requests (every 5 min)
+setInterval(() => {
+  const now = Date.now();
+  for (const [userId, timestamps] of rateLimitMap.entries()) {
+    const recent = timestamps.filter((t) => now - t < WINDOW_MS);
+    if (recent.length === 0) {
+      rateLimitMap.delete(userId);
+    } else {
+      rateLimitMap.set(userId, recent);
+    }
+  }
+}, 5 * 60 * 1000);
 
 // Extend Express Request to carry validated user context
 declare global {
@@ -85,6 +121,14 @@ export async function validateAuth(
         // Non-critical - keep default source
       }
 
+      // Per-user rate limit check (burst prevention)
+      if (!checkRateLimit(oauthToken.userId)) {
+        res.status(429).json({
+          error: "Rate limit exceeded. Max 60 requests per minute.",
+        });
+        return;
+      }
+
       req.user = {
         userId: oauthToken.userId,
         propertyId: oauthToken.propertyId,
@@ -125,6 +169,14 @@ export async function validateAuth(
     });
 
     if (apiKey) {
+      // Per-user rate limit check (burst prevention)
+      if (!checkRateLimit(apiKey.userId)) {
+        res.status(429).json({
+          error: "Rate limit exceeded. Max 60 requests per minute.",
+        });
+        return;
+      }
+
       // Update last-used timestamp without blocking the request
       db.apiKey
         .update({

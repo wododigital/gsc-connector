@@ -31,7 +31,7 @@ export function registerGaTrafficSourcesTool(server: McpServer, user: UserContex
     "ga_traffic_sources",
     "Get traffic source breakdown - where visitors come from (channels, sources, mediums, campaigns)",
     {
-      property_id: z.string().describe("GA4 property to query. Use ga_list_properties to see options."),
+      property_id: z.string().max(200).describe("GA4 property to query. Use ga_list_properties to see options."),
       days: z.number().min(1).max(365).default(28).describe("Days to analyze (default 28)"),
       group_by: z
         .enum(["channel", "source", "medium", "source_medium", "campaign"])

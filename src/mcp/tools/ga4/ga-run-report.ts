@@ -33,27 +33,32 @@ export function registerGaRunReportTool(
     {
       property_id: z
         .string()
+        .max(200)
         .describe(
           "GA4 property to query (e.g., 'properties/987654321' or display name like 'nandhini.com'). Use ga_list_properties to see available options."
         ),
       dimensions: z
-        .array(z.string())
+        .array(z.string().max(100))
+        .max(9)
         .default(["date"])
         .describe(
           "Dimensions to group by (e.g., 'date', 'pagePath', 'country', 'sessionSource', 'deviceCategory')"
         ),
       metrics: z
-        .array(z.string())
+        .array(z.string().max(100))
+        .max(10)
         .default(["sessions", "activeUsers"])
         .describe(
           "Metrics to retrieve (e.g., 'sessions', 'activeUsers', 'bounceRate', 'keyEvents', 'screenPageViews')"
         ),
       start_date: z
         .string()
+        .max(20)
         .default("28daysAgo")
         .describe("Start date (YYYY-MM-DD or relative like '28daysAgo', '7daysAgo')"),
       end_date: z
         .string()
+        .max(20)
         .default("today")
         .describe("End date (YYYY-MM-DD or 'today')"),
       dimension_filter: z
@@ -70,6 +75,7 @@ export function registerGaRunReportTool(
         .describe("Max rows (default 100, max 10000)"),
       order_by: z
         .string()
+        .max(100)
         .optional()
         .describe(
           "Metric or dimension to sort by (prefix with '-' for descending, e.g., '-sessions')"

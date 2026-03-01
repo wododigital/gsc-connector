@@ -32,7 +32,7 @@ export function registerGaConversionsTool(server: McpServer, user: UserContext):
     "ga_conversions",
     "Get conversion/key event data with optional breakdown by source, page, or country",
     {
-      property_id: z.string().describe("GA4 property to query. Use ga_list_properties to see options."),
+      property_id: z.string().max(200).describe("GA4 property to query. Use ga_list_properties to see options."),
       days: z.number().min(1).max(365).default(28).describe("Days to analyze (default 28)"),
       breakdown_by: z
         .enum(["event_name", "source", "medium", "page", "country", "date"])

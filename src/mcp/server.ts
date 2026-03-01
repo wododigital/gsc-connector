@@ -66,14 +66,29 @@ interface UserContext {
 }
 
 // ----------------------------------------------------------------
-// Session store: maps MCP-Session-Id -> { transport, userId }
+// Session store: maps MCP-Session-Id -> { transport, userId, createdAt }
 // ----------------------------------------------------------------
 interface Session {
   transport: StreamableHTTPServerTransport;
   userId: string;
+  createdAt: number;
 }
 
 const sessions = new Map<string, Session>();
+
+// Clean up stale sessions older than 2 hours every 30 minutes.
+// Prevents memory leaks when clients disconnect without sending DELETE.
+const SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+setInterval(() => {
+  const cutoff = Date.now() - SESSION_MAX_AGE_MS;
+  for (const [id, session] of sessions.entries()) {
+    if (session.createdAt < cutoff) {
+      session.transport.close().catch(() => undefined);
+      sessions.delete(id);
+      console.log(`[MCP] Stale session cleaned up: ${id}`);
+    }
+  }
+}, 30 * 60 * 1000);
 
 // ----------------------------------------------------------------
 // Factory: create a fresh McpServer per session (not per request)
@@ -201,7 +216,7 @@ app.post("/mcp", validateAuth, async (req: Request, res: Response) => {
         onsessioninitialized: (id) => {
           // Register session in the store as soon as the ID is assigned.
           // Using the callback (not after handleRequest) avoids race conditions.
-          sessions.set(id, { transport, userId: user.userId });
+          sessions.set(id, { transport, userId: user.userId, createdAt: Date.now() });
           console.log(`[MCP] Session created: ${id} for user ${user.userId}`);
 
           // Auto-cleanup when transport closes

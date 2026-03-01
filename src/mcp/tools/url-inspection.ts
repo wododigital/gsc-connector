@@ -28,10 +28,12 @@ export function registerUrlInspectionTool(
     {
       url: z
         .string()
+        .max(2000)
         .url()
         .describe("The full URL to inspect (must belong to your verified property)"),
       site_url: z
         .string()
+        .max(500)
         .optional()
         .describe(
           "GSC property that owns this URL (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see all available properties."

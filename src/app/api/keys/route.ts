@@ -68,6 +68,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Limit total keys per user to prevent abuse
+    const existingKeyCount = await db.apiKey.count({
+      where: { userId: user.id, isActive: true },
+    });
+    if (existingKeyCount >= 10) {
+      return NextResponse.json(
+        { error: "Maximum of 10 active API keys allowed. Revoke an existing key first." },
+        { status: 400 }
+      );
+    }
+
     // Generate the raw key: format gsc_<64 hex chars>
     const rawKeyHex = randomBytes(32).toString("hex");
     const fullKey = `gsc_${rawKeyHex}`;

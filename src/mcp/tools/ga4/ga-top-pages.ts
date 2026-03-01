@@ -31,7 +31,7 @@ export function registerGaTopPagesTool(server: McpServer, user: UserContext): vo
     "ga_top_pages",
     "Get top performing pages by sessions, pageviews, engagement rate, or conversions",
     {
-      property_id: z.string().describe("GA4 property to query. Use ga_list_properties to see options."),
+      property_id: z.string().max(200).describe("GA4 property to query. Use ga_list_properties to see options."),
       days: z.number().min(1).max(90).default(28).describe("Number of days to analyze (default 28, max 90)"),
       sort_by: z
         .enum(["sessions", "pageviews", "engagement_rate", "bounce_rate", "conversions"])

@@ -40,14 +40,17 @@ export function registerSearchAnalyticsTool(
         .object({
           query: z
             .string()
+            .max(500)
             .optional()
             .describe("Filter by search query (contains)"),
           page: z
             .string()
+            .max(2000)
             .optional()
             .describe("Filter by page URL (contains)"),
           country: z
             .string()
+            .max(10)
             .optional()
             .describe("Filter by country code (e.g., 'USA')"),
         })
@@ -61,14 +64,19 @@ export function registerSearchAnalyticsTool(
         .describe("Number of rows to return"),
       start_date: z
         .string()
+        .max(10)
+        .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format")
         .optional()
         .describe("Explicit start date (YYYY-MM-DD), overrides 'days'"),
       end_date: z
         .string()
+        .max(10)
+        .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format")
         .optional()
         .describe("Explicit end date (YYYY-MM-DD)"),
       site_url: z
         .string()
+        .max(500)
         .optional()
         .describe(
           "GSC property to query (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see all available properties."

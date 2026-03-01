@@ -52,6 +52,7 @@ export function registerTopKeywordsTool(
         .describe("Sort metric"),
       site_url: z
         .string()
+        .max(500)
         .optional()
         .describe(
           "GSC property to query (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see all available properties."

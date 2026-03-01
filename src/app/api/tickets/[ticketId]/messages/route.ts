@@ -29,6 +29,13 @@ export async function POST(
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
+    if (message.trim().length > 5000) {
+      return NextResponse.json(
+        { error: "Message must be 5000 characters or fewer" },
+        { status: 400 }
+      );
+    }
+
     // Verify ticket ownership
     const ticket = await db.supportTicket.findFirst({
       where: { id: params.ticketId, userId: user.id },

@@ -25,6 +25,7 @@ interface UserContext {
 
 const siteUrlParam = z
   .string()
+  .max(500)
   .optional()
   .describe(
     "GSC property to query (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see all available properties."
@@ -108,6 +109,7 @@ export function registerGetSitemapTool(
     {
       sitemap_url: z
         .string()
+        .max(2000)
         .url()
         .describe(
           "The full URL of the sitemap (e.g., https://example.com/sitemap.xml)"
@@ -184,6 +186,7 @@ export function registerSubmitSitemapTool(
     {
       sitemap_url: z
         .string()
+        .max(2000)
         .url()
         .describe(
           "The full URL of the sitemap to submit (e.g., https://example.com/sitemap.xml)"
@@ -257,6 +260,7 @@ export function registerDeleteSitemapTool(
     {
       sitemap_url: z
         .string()
+        .max(2000)
         .url()
         .describe("The full URL of the sitemap to delete"),
       site_url: siteUrlParam,

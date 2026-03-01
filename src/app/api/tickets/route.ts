@@ -46,8 +46,14 @@ export async function POST(req: NextRequest) {
   if (userOrResponse instanceof NextResponse) return userOrResponse;
   const user = userOrResponse;
 
+  let body: { subject?: string; category?: string; description?: string };
   try {
-    const body = await req.json();
+    body = (await req.json()) as { subject?: string; category?: string; description?: string };
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON" }, { status: 400 });
+  }
+
+  try {
     const { subject, category = "general", description } = body as {
       subject?: string;
       category?: string;
@@ -61,11 +67,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (subject.trim().length > 200) {
+      return NextResponse.json(
+        { error: "Subject must be 200 characters or fewer" },
+        { status: 400 }
+      );
+    }
+
+    if (description.trim().length > 5000) {
+      return NextResponse.json(
+        { error: "Description must be 5000 characters or fewer" },
+        { status: 400 }
+      );
+    }
+
+    const validCategories = ["general", "billing", "technical", "account", "feature_request"];
+    const safeCategory = validCategories.includes(category) ? category : "general";
+
     const ticket = await db.supportTicket.create({
       data: {
         userId: user.id,
         subject: subject.trim(),
-        category,
+        category: safeCategory,
         messages: {
           create: {
             userId: user.id,

@@ -28,6 +28,7 @@ export function registerMobileFriendlyTool(
     {
       url: z
         .string()
+        .max(2000)
         .url()
         .describe("The full URL to test for mobile-friendliness"),
     },

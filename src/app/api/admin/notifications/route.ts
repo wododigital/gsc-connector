@@ -35,8 +35,13 @@ export async function PATCH(req: NextRequest) {
     if (body.markAll) {
       await db.adminNotification.updateMany({ data: { isRead: true } });
     } else if (Array.isArray(body.ids) && body.ids.length > 0) {
+      // Validate all ids are strings to prevent injection
+      const ids = body.ids.filter((id: unknown) => typeof id === "string");
+      if (ids.length === 0) {
+        return NextResponse.json({ error: "ids must be an array of strings" }, { status: 400 });
+      }
       await db.adminNotification.updateMany({
-        where: { id: { in: body.ids } },
+        where: { id: { in: ids } },
         data: { isRead: true },
       });
     }

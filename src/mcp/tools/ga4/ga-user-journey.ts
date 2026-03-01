@@ -23,7 +23,7 @@ export function registerGaUserJourneyTool(server: McpServer, user: UserContext):
     "ga_user_journey",
     "See which pages users land on and how they engage - landing page performance and entry point analysis",
     {
-      property_id: z.string().describe("GA4 property to query. Use ga_list_properties to see options."),
+      property_id: z.string().max(200).describe("GA4 property to query. Use ga_list_properties to see options."),
       days: z.number().min(1).max(365).default(28).describe("Days to analyze (default 28)"),
       limit: z.number().min(1).max(100).default(10).describe("Number of pages (default 10)"),
     },

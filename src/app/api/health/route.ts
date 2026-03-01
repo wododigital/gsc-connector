@@ -23,7 +23,7 @@ export async function GET() {
     await db.$queryRaw`SELECT 1`;
     checks.database = "ok";
   } catch (err) {
-    checks.database = `failed: ${err instanceof Error ? err.message : String(err)}`;
+    checks.database = "failed";
     console.error("[health] DB check failed:", err);
   }
 
@@ -33,24 +33,28 @@ export async function GET() {
     const res = await fetch(`http://localhost:${mcpPort}/health`, {
       signal: AbortSignal.timeout(5000),
     });
-    checks.mcp_server = res.ok ? "ok" : `http_${res.status}`;
+    checks.mcp_server = res.ok ? "ok" : "degraded";
   } catch (err) {
-    checks.mcp_server = `unreachable: ${err instanceof Error ? err.message : "connection refused"}`;
+    checks.mcp_server = "unreachable";
+    console.error("[health] MCP check failed:", err);
   }
 
-  // Required env vars
+  // Required env vars - do not leak var names to the response
   const required = ["DATABASE_URL", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "APP_SECRET", "ENCRYPTION_KEY"];
   const missing = required.filter((k) => !process.env[k]);
-  checks.env_vars = missing.length === 0 ? "ok" : `missing: ${missing.join(", ")}`;
+  checks.env_vars = missing.length === 0 ? "ok" : "incomplete";
+  if (missing.length > 0) {
+    console.warn("[health] Missing env vars:", missing.join(", "));
+  }
 
-  // APP_URL check
+  // APP_URL check - do not leak internal URL
   const appUrl = process.env.APP_URL;
   if (!appUrl) {
-    checks.app_url = "NOT SET - redirect URIs will use localhost:3000";
+    checks.app_url = "not configured";
   } else if (appUrl.endsWith("/")) {
-    checks.app_url = `trailing slash detected: ${appUrl}`;
+    checks.app_url = "misconfigured";
   } else {
-    checks.app_url = `ok (${appUrl})`;
+    checks.app_url = "ok";
   }
 
   const allOk = Object.values(checks).every((v) => v === "ok" || v.startsWith("ok ("));

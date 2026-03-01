@@ -23,9 +23,10 @@ export function registerGaPagePerformanceTool(server: McpServer, user: UserConte
     "ga_page_performance",
     "Get detailed performance metrics for a specific page URL - complements GSC keyword data with behavior metrics",
     {
-      property_id: z.string().describe("GA4 property to query. Use ga_list_properties to see options."),
+      property_id: z.string().max(200).describe("GA4 property to query. Use ga_list_properties to see options."),
       page_path: z
         .string()
+        .max(2000)
         .describe("Page URL path to analyze (partial match supported, e.g., '/blog/my-post')"),
       days: z.number().min(1).max(365).default(28).describe("Days to analyze (default 28)"),
     },

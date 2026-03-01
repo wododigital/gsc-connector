@@ -38,7 +38,7 @@ export function registerGaAudienceTool(server: McpServer, user: UserContext): vo
     "ga_audience",
     "Get audience demographics, technology, or geographic data",
     {
-      property_id: z.string().describe("GA4 property to query. Use ga_list_properties to see options."),
+      property_id: z.string().max(200).describe("GA4 property to query. Use ga_list_properties to see options."),
       days: z.number().min(1).max(365).default(28).describe("Days to analyze (default 28)"),
       report_type: z
         .enum(["demographics", "technology", "geo"])

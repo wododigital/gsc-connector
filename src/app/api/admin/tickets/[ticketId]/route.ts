@@ -40,6 +40,16 @@ export async function PATCH(
     const body = await req.json();
     const { status, priority } = body;
 
+    const validStatuses = ["open", "in_progress", "resolved", "closed"];
+    const validPriorities = ["low", "medium", "high", "urgent"];
+
+    if (status && !validStatuses.includes(status)) {
+      return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
+    }
+    if (priority && !validPriorities.includes(priority)) {
+      return NextResponse.json({ error: "Invalid priority value" }, { status: 400 });
+    }
+
     const updateData: Record<string, unknown> = {};
     if (status) updateData.status = status;
     if (priority) updateData.priority = priority;

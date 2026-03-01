@@ -32,15 +32,18 @@ export function registerGaRealtimeTool(
     {
       property_id: z
         .string()
+        .max(200)
         .describe("GA4 property to query. Use ga_list_properties to see options."),
       dimensions: z
-        .array(z.string())
+        .array(z.string().max(100))
+        .max(9)
         .default(["unifiedScreenName"])
         .describe(
           "Realtime dimensions: 'country', 'city', 'unifiedScreenName', 'deviceCategory', 'eventName', 'platform', 'minutesAgo'"
         ),
       metrics: z
-        .array(z.string())
+        .array(z.string().max(100))
+        .max(10)
         .default(["activeUsers"])
         .describe(
           "Realtime metrics: 'activeUsers', 'eventCount', 'keyEvents', 'screenPageViews'"

@@ -30,8 +30,31 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { code, planId, durationMonths = 1, maxRedemptions = 100, expiresAt } = body;
 
-    if (!code?.trim() || !planId) {
+    if (typeof code !== "string" || !code.trim() || !planId) {
       return NextResponse.json({ error: "code and planId are required" }, { status: 400 });
+    }
+
+    // Validate code format - alphanumeric + underscores, max 50 chars
+    const sanitizedCode = code.trim().toUpperCase();
+    if (!/^[A-Z0-9_]{1,50}$/.test(sanitizedCode)) {
+      return NextResponse.json(
+        { error: "Code must be 1-50 alphanumeric characters or underscores" },
+        { status: 400 }
+      );
+    }
+
+    const parsedDuration = parseInt(String(durationMonths));
+    const parsedMaxRedemptions = parseInt(String(maxRedemptions));
+
+    if (isNaN(parsedDuration) || parsedDuration < 1 || parsedDuration > 120) {
+      return NextResponse.json({ error: "durationMonths must be between 1 and 120" }, { status: 400 });
+    }
+    if (isNaN(parsedMaxRedemptions) || parsedMaxRedemptions < 1 || parsedMaxRedemptions > 100000) {
+      return NextResponse.json({ error: "maxRedemptions must be between 1 and 100000" }, { status: 400 });
+    }
+
+    if (typeof planId !== "string") {
+      return NextResponse.json({ error: "planId must be a string" }, { status: 400 });
     }
 
     const plan = await db.plan.findUnique({ where: { id: planId } });
@@ -41,10 +64,10 @@ export async function POST(req: NextRequest) {
 
     const coupon = await db.couponCode.create({
       data: {
-        code: code.trim().toUpperCase(),
+        code: sanitizedCode,
         planId,
-        durationMonths: parseInt(String(durationMonths)),
-        maxRedemptions: parseInt(String(maxRedemptions)),
+        durationMonths: parsedDuration,
+        maxRedemptions: parsedMaxRedemptions,
         expiresAt: expiresAt ? new Date(expiresAt) : undefined,
       },
       include: { plan: { select: { displayName: true } } },
@@ -52,8 +75,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ coupon }, { status: 201 });
   } catch (error: unknown) {
-    // Unique constraint violation
-    if ((error as { code?: string }).code === "P2002") {
+    // Handle unique constraint violation without leaking Prisma internals
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: string }).code === "P2002"
+    ) {
       return NextResponse.json({ error: "Coupon code already exists" }, { status: 409 });
     }
     console.error("[admin/coupons] POST error:", error);

@@ -20,6 +20,7 @@ interface UserContext {
 
 const propertyUrlParam = z
   .string()
+  .max(500)
   .optional()
   .describe(
     "Your authenticated GSC property to use for this request (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see available options."
@@ -102,6 +103,7 @@ export function registerAddSiteTool(
     {
       site_url: z
         .string()
+        .max(500)
         .describe(
           "The URL of the site to add (e.g., https://example.com/ or sc-domain:example.com)"
         ),
@@ -174,6 +176,7 @@ export function registerDeleteSiteTool(
     {
       site_url: z
         .string()
+        .max(500)
         .describe("The URL of the site to remove"),
       property_url: propertyUrlParam,
     },

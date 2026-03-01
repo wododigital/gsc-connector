@@ -23,11 +23,21 @@ export async function POST(req: NextRequest) {
   const user = userOrResponse;
 
   try {
-    const body = await req.json();
-    const code = (body.code as string)?.toUpperCase()?.trim();
+    let body: { code?: unknown };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Request body must be valid JSON" }, { status: 400 });
+    }
 
-    if (!code) {
+    if (typeof body.code !== "string" || !body.code.trim()) {
       return NextResponse.json({ error: "Coupon code is required" }, { status: 400 });
+    }
+
+    const code = body.code.toUpperCase().trim();
+
+    if (code.length > 50) {
+      return NextResponse.json({ error: "Invalid coupon code" }, { status: 400 });
     }
 
     // Look up coupon with its associated plan

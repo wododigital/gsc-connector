@@ -28,6 +28,7 @@ export function registerKeywordForPageTool(
     {
       page_url: z
         .string()
+        .max(2000)
         .describe("The page URL to analyze (can be a partial match)"),
       days: z
         .number()
@@ -43,6 +44,7 @@ export function registerKeywordForPageTool(
         .describe("Number of keywords to return"),
       site_url: z
         .string()
+        .max(500)
         .optional()
         .describe(
           "GSC property to query (e.g., 'https://example.com/'). Defaults to your primary property. Use list_my_properties to see all available properties."

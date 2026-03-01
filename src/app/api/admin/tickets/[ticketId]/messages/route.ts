@@ -18,6 +18,13 @@ export async function POST(
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
+    if (message.trim().length > 5000) {
+      return NextResponse.json(
+        { error: "Message must be 5000 characters or fewer" },
+        { status: 400 }
+      );
+    }
+
     const newMessage = await db.ticketMessage.create({
       data: {
         ticketId: params.ticketId,

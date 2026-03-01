@@ -13,8 +13,14 @@ export async function PATCH(
     const body = await req.json();
     const { planId } = body;
 
-    if (!planId) {
+    if (!planId || typeof planId !== "string") {
       return NextResponse.json({ error: "planId is required" }, { status: 400 });
+    }
+
+    // Verify the target user exists
+    const targetUser = await db.user.findUnique({ where: { id: params.userId } });
+    if (!targetUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const plan = await db.plan.findUnique({ where: { id: planId } });
