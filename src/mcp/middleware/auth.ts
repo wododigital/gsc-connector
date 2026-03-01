@@ -93,16 +93,21 @@ export async function validateAuth(
         source,
       };
 
-      // Check and increment usage quota
-      const usageCheck = await checkAndIncrementUsage(oauthToken.userId);
-      if (!usageCheck.allowed) {
-        res.status(429).json({
-          error: usageCheck.reason ?? "Monthly tool call limit reached",
-          callsUsed: usageCheck.callsUsed,
-          callsLimit: usageCheck.callsLimit,
-          upgradeUrl: `${process.env.APP_URL || "http://localhost:3000"}/dashboard/billing`,
-        });
-        return;
+      // Check and increment usage quota (non-blocking if DB error)
+      try {
+        const usageCheck = await checkAndIncrementUsage(oauthToken.userId);
+        if (!usageCheck.allowed) {
+          res.status(429).json({
+            error: usageCheck.reason ?? "Monthly tool call limit reached",
+            callsUsed: usageCheck.callsUsed,
+            callsLimit: usageCheck.callsLimit,
+            upgradeUrl: `${process.env.APP_URL || "http://localhost:3000"}/dashboard/billing`,
+          });
+          return;
+        }
+      } catch (usageErr) {
+        // Non-fatal: allow the call through if usage tracking fails
+        console.error("[auth] Usage check failed (allowing through):", usageErr);
       }
 
       next();
@@ -151,16 +156,21 @@ export async function validateAuth(
         source: apiKey.name || "API Key",
       };
 
-      // Check and increment usage quota
-      const usageCheck = await checkAndIncrementUsage(apiKey.userId);
-      if (!usageCheck.allowed) {
-        res.status(429).json({
-          error: usageCheck.reason ?? "Monthly tool call limit reached",
-          callsUsed: usageCheck.callsUsed,
-          callsLimit: usageCheck.callsLimit,
-          upgradeUrl: `${process.env.APP_URL || "http://localhost:3000"}/dashboard/billing`,
-        });
-        return;
+      // Check and increment usage quota (non-blocking if DB error)
+      try {
+        const usageCheck = await checkAndIncrementUsage(apiKey.userId);
+        if (!usageCheck.allowed) {
+          res.status(429).json({
+            error: usageCheck.reason ?? "Monthly tool call limit reached",
+            callsUsed: usageCheck.callsUsed,
+            callsLimit: usageCheck.callsLimit,
+            upgradeUrl: `${process.env.APP_URL || "http://localhost:3000"}/dashboard/billing`,
+          });
+          return;
+        }
+      } catch (usageErr) {
+        // Non-fatal: allow the call through if usage tracking fails
+        console.error("[auth] Usage check failed (allowing through):", usageErr);
       }
 
       next();
