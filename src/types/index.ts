@@ -235,6 +235,7 @@ export type AppErrorCode =
   | "TOKEN_EXPIRED"
   | "TOKEN_INVALID"
   | "PROPERTY_NOT_FOUND"
+  | "PROPERTY_NOT_ACTIVE"
   | "CREDENTIAL_NOT_FOUND";
 
 export class AppError extends Error {

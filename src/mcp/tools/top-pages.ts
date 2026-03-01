@@ -10,10 +10,12 @@ import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js"
 import { querySearchAnalytics } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
 import type { SearchAnalyticsRow } from "../../types/index.js";
+import { logToolCall } from "../../lib/usage-logger.js";
 
 interface UserContext {
   userId: string;
   propertyId: string;
+  source: string;
 }
 
 const SORT_FIELD_MAP: Record<string, keyof SearchAnalyticsRow> = {
@@ -55,10 +57,13 @@ export function registerTopPagesTool(
         ),
     },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.site_url || "unknown";
       try {
         const ctx = params.site_url
           ? await getGscContextBySiteUrl(user.userId, params.site_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         const { days, limit, sort_by } = params;
 
@@ -96,6 +101,8 @@ export function registerTopPagesTool(
           position: parseFloat(row.position.toFixed(1)),
         }));
 
+        logToolCall({ userId: user.userId, toolName: "get_top_pages", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
+
         return {
           content: [
             {
@@ -118,6 +125,7 @@ export function registerTopPagesTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "get_top_pages", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message

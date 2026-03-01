@@ -14,10 +14,12 @@ import {
   deleteSitemap,
 } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
+import { logToolCall } from "../../lib/usage-logger.js";
 
 interface UserContext {
   userId: string;
   propertyId: string;
+  source: string;
 }
 
 const siteUrlParam = z
@@ -39,12 +41,17 @@ export function registerListSitemapsTool(
     "List all sitemaps submitted for your site",
     { site_url: siteUrlParam },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.site_url || "unknown";
       try {
         const ctx = params.site_url
           ? await getGscContextBySiteUrl(user.userId, params.site_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         const result = await listSitemaps(ctx.accessToken, ctx.siteUrl);
+
+        logToolCall({ userId: user.userId, toolName: "list_sitemaps", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -66,6 +73,7 @@ export function registerListSitemapsTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "list_sitemaps", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message
@@ -104,16 +112,21 @@ export function registerGetSitemapTool(
       site_url: siteUrlParam,
     },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.site_url || "unknown";
       try {
         const ctx = params.site_url
           ? await getGscContextBySiteUrl(user.userId, params.site_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         const result = await getSitemap(
           ctx.accessToken,
           ctx.siteUrl,
           params.sitemap_url
         );
+
+        logToolCall({ userId: user.userId, toolName: "get_sitemap", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -134,6 +147,7 @@ export function registerGetSitemapTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "get_sitemap", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message
@@ -172,12 +186,17 @@ export function registerSubmitSitemapTool(
       site_url: siteUrlParam,
     },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.site_url || "unknown";
       try {
         const ctx = params.site_url
           ? await getGscContextBySiteUrl(user.userId, params.site_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         await submitSitemap(ctx.accessToken, ctx.siteUrl, params.sitemap_url);
+
+        logToolCall({ userId: user.userId, toolName: "submit_sitemap", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -199,6 +218,7 @@ export function registerSubmitSitemapTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "submit_sitemap", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message
@@ -235,12 +255,17 @@ export function registerDeleteSitemapTool(
       site_url: siteUrlParam,
     },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.site_url || "unknown";
       try {
         const ctx = params.site_url
           ? await getGscContextBySiteUrl(user.userId, params.site_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         await deleteSitemap(ctx.accessToken, ctx.siteUrl, params.sitemap_url);
+
+        logToolCall({ userId: user.userId, toolName: "delete_sitemap", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -262,6 +287,7 @@ export function registerDeleteSitemapTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "delete_sitemap", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message

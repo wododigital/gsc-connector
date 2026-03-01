@@ -9,10 +9,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js";
 import { querySearchAnalytics } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
+import { logToolCall } from "../../lib/usage-logger.js";
 
 interface UserContext {
   userId: string;
   propertyId: string;
+  source: string;
 }
 
 export function registerKeywordForPageTool(
@@ -46,10 +48,13 @@ export function registerKeywordForPageTool(
         ),
     },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.site_url || "unknown";
       try {
         const ctx = params.site_url
           ? await getGscContextBySiteUrl(user.userId, params.site_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         const { page_url, days, limit } = params;
 
@@ -88,6 +93,8 @@ export function registerKeywordForPageTool(
           position: parseFloat(row.position.toFixed(1)),
         }));
 
+        logToolCall({ userId: user.userId, toolName: "get_keyword_for_page", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
+
         return {
           content: [
             {
@@ -110,6 +117,7 @@ export function registerKeywordForPageTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "get_keyword_for_page", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message

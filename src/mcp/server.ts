@@ -6,9 +6,9 @@
  * McpServer instance with all 13 GSC tools registered.
  *
  * Session lifecycle (required by MCP Streamable HTTP spec):
- *   1. POST with initialize (no MCP-Session-Id) → create transport + server, return session ID
- *   2. POST with MCP-Session-Id → reuse existing transport, dispatch request
- *   3. DELETE with MCP-Session-Id → close and remove session
+ *   1. POST with initialize (no MCP-Session-Id) -> create transport + server, return session ID
+ *   2. POST with MCP-Session-Id -> reuse existing transport, dispatch request
+ *   3. DELETE with MCP-Session-Id -> close and remove session
  *
  * Owned by: Coder-MCP agent
  */
@@ -19,7 +19,6 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "crypto";
 import { validateAuth } from "./middleware/auth.js";
-import db from "../lib/db.js";
 
 // Tool registration functions
 import { registerSearchAnalyticsTool } from "./tools/search-analytics.js";
@@ -49,10 +48,11 @@ interface UserContext {
   propertyId: string;
   siteUrl: string;
   scopes: string;
+  source: string;
 }
 
 // ----------------------------------------------------------------
-// Session store: maps MCP-Session-Id → { transport, userId }
+// Session store: maps MCP-Session-Id -> { transport, userId }
 // ----------------------------------------------------------------
 interface Session {
   transport: StreamableHTTPServerTransport;
@@ -70,7 +70,11 @@ function createMcpServer(user: UserContext): McpServer {
     version: "1.0.0",
   });
 
-  const userCtx = { userId: user.userId, propertyId: user.propertyId };
+  const userCtx = {
+    userId: user.userId,
+    propertyId: user.propertyId,
+    source: user.source,
+  };
 
   // Register all 13 tools
   registerSearchAnalyticsTool(server, userCtx);
@@ -97,24 +101,6 @@ function createMcpServer(user: UserContext): McpServer {
   registerListMyPropertiesTool(server, userCtx);
 
   return server;
-}
-
-// ----------------------------------------------------------------
-// Usage logging helper
-// ----------------------------------------------------------------
-async function logUsage(
-  userId: string,
-  toolName: string,
-  siteUrl: string
-): Promise<void> {
-  try {
-    await db.usageLog.create({
-      data: { userId, toolName, siteUrl, source: "mcp" },
-    });
-  } catch (err) {
-    // Non-critical - never let logging failures break tool calls
-    console.error("[mcp] Usage log write failed:", err);
-  }
 }
 
 // ----------------------------------------------------------------
@@ -172,12 +158,6 @@ app.post("/mcp", validateAuth, async (req: Request, res: Response) => {
       if (session.userId !== user.userId) {
         res.status(403).json({ error: "Session belongs to a different user" });
         return;
-      }
-
-      // Log tool calls (fire-and-forget)
-      if (req.body?.method === "tools/call") {
-        const toolName = (req.body?.params?.name as string) ?? "unknown";
-        logUsage(user.userId, toolName, user.siteUrl).catch(() => undefined);
       }
 
       await session.transport.handleRequest(req, res, req.body);

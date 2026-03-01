@@ -42,6 +42,17 @@ export default async function DashboardLayout({
             </span>
             API Keys
           </a>
+          <a
+            href="/dashboard/logs"
+            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+          >
+            <span className="text-zinc-500">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M2 1.5A1.5 1.5 0 0 1 3.5 0h9A1.5 1.5 0 0 1 14 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5V1.5zm2 .5v1h8V2H4zm0 3v1h8V5H4zm0 3v1h5V8H4z" />
+              </svg>
+            </span>
+            Usage Logs
+          </a>
         </nav>
 
         {/* User info + sign out */}

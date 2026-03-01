@@ -9,16 +9,17 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { runMobileFriendlyTest } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
+import { logToolCall } from "../../lib/usage-logger.js";
 
 interface UserContext {
   userId: string;
   propertyId: string;
+  source: string;
 }
 
 export function registerMobileFriendlyTool(
   server: McpServer,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _user: UserContext
+  user: UserContext
 ): void {
   server.tool(
     "run_mobile_friendly_test",
@@ -30,11 +31,14 @@ export function registerMobileFriendlyTool(
         .describe("The full URL to test for mobile-friendliness"),
     },
     async (params) => {
+      const startTime = Date.now();
       try {
         const result = await runMobileFriendlyTest(params.url);
 
         const isMobileFriendly =
           result.mobileFriendliness === "MOBILE_FRIENDLY";
+
+        logToolCall({ userId: user.userId, toolName: "run_mobile_friendly_test", siteUrl: params.url, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -60,6 +64,7 @@ export function registerMobileFriendlyTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "run_mobile_friendly_test", siteUrl: params.url, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message

@@ -9,10 +9,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js";
 import { listSites, addSite, deleteSite } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
+import { logToolCall } from "../../lib/usage-logger.js";
 
 interface UserContext {
   userId: string;
   propertyId: string;
+  source: string;
 }
 
 const propertyUrlParam = z
@@ -34,12 +36,17 @@ export function registerListSitesTool(
     "List all sites you have access to in Google Search Console",
     { property_url: propertyUrlParam },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.property_url || "unknown";
       try {
         const ctx = params.property_url
           ? await getGscContextBySiteUrl(user.userId, params.property_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         const result = await listSites(ctx.accessToken);
+
+        logToolCall({ userId: user.userId, toolName: "list_sites", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -60,6 +67,7 @@ export function registerListSitesTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "list_sites", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message
@@ -97,12 +105,17 @@ export function registerAddSiteTool(
       property_url: propertyUrlParam,
     },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.property_url || "unknown";
       try {
         const ctx = params.property_url
           ? await getGscContextBySiteUrl(user.userId, params.property_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         await addSite(ctx.accessToken, params.site_url);
+
+        logToolCall({ userId: user.userId, toolName: "add_site", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -124,6 +137,7 @@ export function registerAddSiteTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "add_site", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message
@@ -159,12 +173,17 @@ export function registerDeleteSiteTool(
       property_url: propertyUrlParam,
     },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.property_url || "unknown";
       try {
         const ctx = params.property_url
           ? await getGscContextBySiteUrl(user.userId, params.property_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         await deleteSite(ctx.accessToken, params.site_url);
+
+        logToolCall({ userId: user.userId, toolName: "delete_site", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -185,6 +204,7 @@ export function registerDeleteSiteTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "delete_site", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message

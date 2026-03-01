@@ -8,10 +8,12 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import db from "../../lib/db.js";
 import { AppError } from "../../types/index.js";
+import { logToolCall } from "../../lib/usage-logger.js";
 
 interface UserContext {
   userId: string;
   propertyId: string;
+  source: string;
 }
 
 export function registerListMyPropertiesTool(
@@ -23,6 +25,7 @@ export function registerListMyPropertiesTool(
     "List all your connected Google Search Console properties. Use the site_url values from this list to query specific properties with other tools.",
     {},
     async () => {
+      const startTime = Date.now();
       try {
         const properties = await db.gscProperty.findMany({
           where: { userId: user.userId, isActive: true },
@@ -34,6 +37,8 @@ export function registerListMyPropertiesTool(
             createdAt: true,
           },
         });
+
+        logToolCall({ userId: user.userId, toolName: "list_my_properties", siteUrl: "N/A", source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -61,6 +66,7 @@ export function registerListMyPropertiesTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "list_my_properties", siteUrl: "N/A", source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message

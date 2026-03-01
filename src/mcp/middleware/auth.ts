@@ -18,6 +18,7 @@ declare global {
         propertyId: string;
         siteUrl: string;
         scopes: string;
+        source: string; // e.g. "Claude.ai", "ChatGPT", or API key name
       };
     }
   }
@@ -66,11 +67,29 @@ export async function validateAuth(
     });
 
     if (oauthToken) {
+      // Resolve a human-readable source from the registered OAuth client name
+      let source = "OAuth Client";
+      try {
+        const client = await db.oAuthClient.findFirst({
+          where: { clientId: oauthToken.clientId },
+          select: { clientName: true },
+        });
+        if (client?.clientName && client.clientName !== "Unknown") {
+          source = client.clientName;
+        } else {
+          // Fallback: derive from clientId prefix
+          source = oauthToken.clientId.slice(0, 8);
+        }
+      } catch {
+        // Non-critical - keep default source
+      }
+
       req.user = {
         userId: oauthToken.userId,
         propertyId: oauthToken.propertyId,
         siteUrl: oauthToken.property.siteUrl,
         scopes: oauthToken.scopes,
+        source,
       };
       next();
       return;
@@ -115,6 +134,7 @@ export async function validateAuth(
         propertyId: property.id,
         siteUrl: property.siteUrl,
         scopes: "gsc:read",
+        source: apiKey.name || "API Key",
       };
       next();
       return;

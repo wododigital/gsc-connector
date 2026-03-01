@@ -83,6 +83,7 @@ export async function GET(req: NextRequest) {
     const upstream = await fetch(INTERNAL_MCP_URL, {
       method: "GET",
       headers: buildForwardHeaders(req),
+      keepalive: true,
     });
 
     return new NextResponse(upstream.body, {
@@ -105,6 +106,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: buildForwardHeaders(req),
       body,
+      keepalive: true,
     });
 
     // Stream the response body back (MCP uses streaming JSON)

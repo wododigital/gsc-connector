@@ -9,10 +9,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js";
 import { querySearchAnalytics } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
+import { logToolCall } from "../../lib/usage-logger.js";
 
 interface UserContext {
   userId: string;
   propertyId: string;
+  source: string;
 }
 
 export function registerSearchAnalyticsTool(
@@ -72,10 +74,13 @@ export function registerSearchAnalyticsTool(
         ),
     },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.site_url || "unknown";
       try {
         const ctx = params.site_url
           ? await getGscContextBySiteUrl(user.userId, params.site_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         const { days, dimensions, filters, row_limit, start_date, end_date } =
           params;
@@ -118,6 +123,8 @@ export function registerSearchAnalyticsTool(
           requestBody
         );
 
+        logToolCall({ userId: user.userId, toolName: "get_search_analytics", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
+
         return {
           content: [
             {
@@ -140,6 +147,7 @@ export function registerSearchAnalyticsTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "get_search_analytics", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message

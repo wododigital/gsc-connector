@@ -156,12 +156,14 @@ model OAuthAuthorizationCode {
 // Usage Tracking
 // ============================================================
 model UsageLog {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  toolName  String   @map("tool_name")
-  siteUrl   String   @map("site_url")
-  source    String   @default("mcp") // mcp, api, dashboard
-  createdAt DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  toolName       String   @map("tool_name")
+  siteUrl        String   @map("site_url")
+  source         String   @default("mcp") // e.g. "Claude.ai", "ChatGPT", API key name
+  status         String   @default("success") // "success" or "error"
+  responseTimeMs Int?     @map("response_time_ms")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@index([userId, createdAt])
   @@index([userId, toolName])

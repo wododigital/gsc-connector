@@ -9,10 +9,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getGscContext, getGscContextBySiteUrl } from "../helpers/gsc-client.js";
 import { inspectUrl } from "../../lib/google-api.js";
 import { AppError } from "../../types/index.js";
+import { logToolCall } from "../../lib/usage-logger.js";
 
 interface UserContext {
   userId: string;
   propertyId: string;
+  source: string;
 }
 
 export function registerUrlInspectionTool(
@@ -35,10 +37,13 @@ export function registerUrlInspectionTool(
         ),
     },
     async (params) => {
+      const startTime = Date.now();
+      let siteUrl = params.site_url || "unknown";
       try {
         const ctx = params.site_url
           ? await getGscContextBySiteUrl(user.userId, params.site_url)
           : await getGscContext(user.userId, user.propertyId);
+        siteUrl = ctx.siteUrl;
 
         const result = await inspectUrl(
           ctx.accessToken,
@@ -47,6 +52,8 @@ export function registerUrlInspectionTool(
         );
 
         const inspection = result;
+
+        logToolCall({ userId: user.userId, toolName: "inspect_url", siteUrl: ctx.siteUrl, source: user.source, status: "success", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
 
         return {
           content: [
@@ -72,6 +79,7 @@ export function registerUrlInspectionTool(
           ],
         };
       } catch (error) {
+        logToolCall({ userId: user.userId, toolName: "inspect_url", siteUrl, source: user.source, status: "error", responseTimeMs: Date.now() - startTime }).catch(() => undefined);
         const msg =
           error instanceof AppError
             ? error.message

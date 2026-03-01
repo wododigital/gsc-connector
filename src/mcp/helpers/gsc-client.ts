@@ -50,9 +50,11 @@ async function resolveAccessToken(credential: {
 /**
  * Returns a GscContext (accessToken + siteUrl) for the given user/property pair.
  * Refreshes the access token if it is within 5 minutes of expiry.
+ * Verifies the property is isActive=true before allowing access.
  *
  * @throws AppError("PROPERTY_NOT_FOUND") if the property does not exist
  * @throws AppError("FORBIDDEN") if the property does not belong to this user
+ * @throws AppError("PROPERTY_NOT_ACTIVE") if the property is not in the user's active selection
  * @throws AppError("CREDENTIAL_NOT_FOUND") on any token refresh failure
  */
 export async function getGscContext(
@@ -73,6 +75,24 @@ export async function getGscContext(
       throw new AppError("FORBIDDEN", "Access denied to this property", 403);
     }
 
+    if (!property.isActive) {
+      // The default property is inactive - guide the user to pick an active one
+      const activeProps = await db.gscProperty.findMany({
+        where: { userId, isActive: true },
+        select: { siteUrl: true },
+        orderBy: { createdAt: "asc" },
+      });
+      const propList =
+        activeProps.length > 0
+          ? activeProps.map((p) => p.siteUrl).join(", ")
+          : "none";
+      throw new AppError(
+        "PROPERTY_NOT_ACTIVE",
+        `This property is not in your active selection. Use list_my_properties to see your active properties. Active properties: ${propList}`,
+        403
+      );
+    }
+
     const accessToken = await resolveAccessToken(property.credential);
 
     return { accessToken, siteUrl: property.siteUrl, userId };
@@ -91,6 +111,7 @@ export async function getGscContext(
 /**
  * Returns a GscContext for a property identified by siteUrl (instead of propertyId).
  * Used when a tool call specifies site_url to override the default property.
+ * Only allows active properties (isActive=true).
  *
  * @throws AppError("PROPERTY_NOT_FOUND") if no active property matches siteUrl
  * @throws AppError("CREDENTIAL_NOT_FOUND") on token refresh failure
@@ -106,6 +127,18 @@ export async function getGscContextBySiteUrl(
     });
 
     if (!property) {
+      // Check if it exists but is inactive, to give a better error message
+      const inactiveProperty = await db.gscProperty.findFirst({
+        where: { userId, siteUrl, isActive: false },
+        select: { id: true },
+      });
+      if (inactiveProperty) {
+        throw new AppError(
+          "PROPERTY_NOT_ACTIVE",
+          `This property is not in your active selection. Use list_my_properties to see your active properties.`,
+          403
+        );
+      }
       throw new AppError(
         "PROPERTY_NOT_FOUND",
         `No active GSC property found for "${siteUrl}". Use list_my_properties to see available properties.`,

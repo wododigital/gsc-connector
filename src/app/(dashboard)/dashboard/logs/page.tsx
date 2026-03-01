@@ -33,7 +33,7 @@ async function getLogs(
       ...(site ? { siteUrl: { contains: site } } : {}),
     };
 
-    const [logs, total, toolCounts, siteCounts] = await Promise.all([
+    const [logs, total, toolCounts, siteCounts, avgAgg] = await Promise.all([
       db.usageLog.findMany({
         where,
         orderBy: { createdAt: "desc" },
@@ -53,11 +53,16 @@ async function getLogs(
         _count: { id: true },
         orderBy: { _count: { id: "desc" } },
       }),
+      db.usageLog.aggregate({ where, _avg: { responseTimeMs: true } }),
     ]);
 
-    return { logs, total, toolCounts, siteCounts, page, pageSize: PAGE_SIZE };
+    const avgResponseTimeMs = avgAgg._avg.responseTimeMs
+      ? Math.round(avgAgg._avg.responseTimeMs)
+      : null;
+
+    return { logs, total, toolCounts, siteCounts, avgResponseTimeMs, page, pageSize: PAGE_SIZE };
   } catch {
-    return { logs: [], total: 0, toolCounts: [], siteCounts: [], page: 1, pageSize: PAGE_SIZE };
+    return { logs: [], total: 0, toolCounts: [], siteCounts: [], avgResponseTimeMs: null, page: 1, pageSize: PAGE_SIZE };
   }
 }
 
@@ -85,7 +90,7 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
   const tool = params.tool || undefined;
   const site = params.site || undefined;
 
-  const [{ logs, total, toolCounts, siteCounts }, distinctTools] =
+  const [{ logs, total, toolCounts, siteCounts, avgResponseTimeMs }, distinctTools] =
     await Promise.all([
       getLogs(session.id, { tool, site, days, page }),
       getDistinctTools(session.id),
@@ -146,14 +151,9 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
             sub="queried"
           />
           <StatCard
-            label="Top tool"
-            value={toolCounts[0]?.toolName ?? "-"}
-            sub={
-              toolCounts[0]
-                ? `${toolCounts[0]._count.id} calls`
-                : "no data"
-            }
-            mono
+            label="Avg response"
+            value={avgResponseTimeMs != null ? `${avgResponseTimeMs}ms` : "-"}
+            sub="per tool call"
           />
         </div>
 
@@ -234,6 +234,12 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
                       <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                         Source
                       </th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                        Time (ms)
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/50">
@@ -262,6 +268,14 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
                           <span className="px-2 py-0.5 rounded text-xs bg-zinc-800 text-zinc-400">
                             {log.source}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded text-xs ${log.status === "error" ? "bg-red-900/40 text-red-400" : "bg-green-900/30 text-green-500"}`}>
+                            {log.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-zinc-400 tabular-nums text-xs">
+                          {log.responseTimeMs != null ? `${log.responseTimeMs}` : "-"}
                         </td>
                       </tr>
                     ))}
