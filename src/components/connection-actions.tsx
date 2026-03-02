@@ -33,14 +33,14 @@ export function ConnectionActions({
     <div className="flex items-center gap-3">
       <a
         href="/api/gsc/connect"
-        className="px-4 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-zinc-200 font-medium rounded-lg transition-colors"
+        className="btn-ghost btn-ghost-sm"
       >
         Reconnect
       </a>
       {(hasGsc || hasAnalyticsScope) && (
         <button
           onClick={handleDisconnect}
-          className="px-4 py-2 text-sm border border-red-800 hover:border-red-700 text-red-400 hover:text-red-300 font-medium rounded-lg transition-colors"
+          className="btn-ghost btn-ghost-sm"
         >
           Disconnect
         </button>

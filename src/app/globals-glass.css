@@ -192,7 +192,9 @@ body {
   -webkit-backdrop-filter: blur(20px) saturate(1.5);
   border-right: 1px solid var(--glass-border);
   overflow: hidden;
-  position: relative;
+  /* NOTE: no position: relative here - Tailwind's fixed class must win.
+     Unlayered CSS overrides @layer utilities, so any position value here
+     would override the Tailwind fixed/sticky utility on the element. */
 }
 
 .sidebar-section {
@@ -256,6 +258,30 @@ body {
 .sidebar-signout:hover { color: var(--text-secondary); }
 
 /* ----------------------------------------------------------------
+   List items (property / GA4 selectors)
+   ---------------------------------------------------------------- */
+.glass-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.glass-list-item:hover { border-color: var(--glass-border-hover); }
+
+.glass-list-item.active {
+  background: var(--glass-bg-active);
+  border-color: var(--glass-border-accent);
+}
+
+.glass-list-item.inactive { opacity: 0.55; }
+
+/* ----------------------------------------------------------------
    Buttons
    ---------------------------------------------------------------- */
 .btn-primary {
@@ -282,6 +308,7 @@ body {
 }
 
 .btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
 .btn-ghost {
   display: inline-flex;
@@ -305,6 +332,7 @@ body {
   background: var(--glass-bg-hover);
   border-color: var(--glass-border-hover);
 }
+.btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-icon {
   display: flex;

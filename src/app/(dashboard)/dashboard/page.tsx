@@ -74,12 +74,8 @@ export default async function DashboardPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
-            Dashboard
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            Manage your OMG AI setup and integrations.
-          </p>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">Manage your OMG AI setup and integrations.</p>
         </div>
         {hasCredential && (
           <ConnectionActions hasGsc={properties.length > 0} hasAnalyticsScope={hasAnalyticsScope} />

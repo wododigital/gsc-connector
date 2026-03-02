@@ -65,31 +65,24 @@ export function PropertyManager({ properties }: PropertyManagerProps) {
         {properties.map((property) => (
           <label
             key={property.id}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
-              active.has(property.id)
-                ? "border-green-700 bg-green-950/30"
-                : "border-zinc-700 bg-zinc-800/50 opacity-60"
-            }`}
+            className={`glass-list-item ${active.has(property.id) ? "active" : "inactive"}`}
           >
             <input
               type="checkbox"
               checked={active.has(property.id)}
               onChange={() => toggle(property.id)}
-              className="accent-green-500 shrink-0"
+              className="shrink-0"
+              style={{ accentColor: "var(--accent)" }}
             />
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-zinc-100 font-mono truncate">
+              <p className="text-sm font-mono truncate" style={{ color: "var(--text-primary)" }}>
                 {property.siteUrl}
               </p>
-              <p className="text-xs text-zinc-500 capitalize">
+              <p className="text-xs capitalize" style={{ color: "var(--text-muted)" }}>
                 {property.permissionLevel.replace("site", "").toLowerCase()} access
               </p>
             </div>
-            <span
-              className={`text-xs shrink-0 font-medium ${
-                active.has(property.id) ? "text-green-400" : "text-zinc-500"
-              }`}
-            >
+            <span className={`badge ${active.has(property.id) ? "badge-success" : "badge-muted"}`}>
               {active.has(property.id) ? "Active" : "Inactive"}
             </span>
           </label>
@@ -100,17 +93,13 @@ export function PropertyManager({ properties }: PropertyManagerProps) {
         <button
           onClick={save}
           disabled={isPending}
-          className="px-4 py-2 text-sm bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+          className="btn-primary btn-primary-sm"
         >
           {isPending ? "Saving..." : "Save selection"}
         </button>
-        {saved && (
-          <span className="text-sm text-green-400">Saved</span>
-        )}
-        {error && (
-          <span className="text-sm text-red-400">{error}</span>
-        )}
-        <span className="ml-auto text-xs text-zinc-500">
+        {saved && <span className="badge badge-success">Saved</span>}
+        {error && <span className="badge badge-error">{error}</span>}
+        <span className="ml-auto text-xs" style={{ color: "var(--text-muted)" }}>
           {active.size} of {properties.length} active
         </span>
       </div>
