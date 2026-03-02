@@ -75,13 +75,7 @@ export default async function DashboardLayout({
               {session.subscriptionTier} plan
             </p>
           )}
-          <a
-            href="/api/auth/logout"
-            className="text-xs transition-colors"
-            style={{ color: "var(--text-secondary)" }}
-            onMouseOver={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
-            onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
-          >
+          <a href="/api/auth/logout" className="sidebar-signout text-xs">
             Sign out
           </a>
         </div>

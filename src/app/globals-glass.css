@@ -249,6 +249,12 @@ body {
 
 .sidebar-item:hover .sidebar-icon { color: var(--text-secondary); }
 
+.sidebar-signout {
+  color: var(--text-muted);
+  transition: color var(--duration-fast) var(--ease-smooth);
+}
+.sidebar-signout:hover { color: var(--text-secondary); }
+
 /* ----------------------------------------------------------------
    Buttons
    ---------------------------------------------------------------- */
