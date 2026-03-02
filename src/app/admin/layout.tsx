@@ -19,33 +19,33 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex">
+    <div className="min-h-screen flex">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-40">
-        <div className="p-4 border-b border-zinc-800">
+      <aside className="glass-sidebar fixed left-0 top-0 h-full w-64 flex flex-col z-40">
+        <div className="p-4 border-b" style={{ borderColor: "var(--glass-border)" }}>
           <div className="flex items-center gap-2">
             <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG AI" className="h-8" />
-            <span className="text-xs text-zinc-500 border border-zinc-700 rounded px-1.5 py-0.5">Admin</span>
+            <span className="text-xs px-1.5 py-0.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--glass-border)" }}>
+              Admin
+            </span>
           </div>
         </div>
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
-            >
+            <Link key={item.href} href={item.href} className="sidebar-item">
               <NavIcon name={item.icon} />
               {item.label}
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t border-zinc-800 space-y-2">
-          <Link href="/dashboard" className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        <div className="p-4 border-t space-y-2" style={{ borderColor: "var(--glass-border)" }}>
+          <Link href="/dashboard" className="flex items-center gap-2 text-xs transition-colors" style={{ color: "var(--text-muted)" }}>
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
             Back to Dashboard
           </Link>
-          <p className="text-xs text-zinc-600">Signed in as admin</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Signed in as admin</p>
         </div>
       </aside>
       <main className="ml-64 flex-1 p-6 min-h-screen">{children}</main>
@@ -54,7 +54,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 }
 
 function NavIcon({ name }: { name: string }) {
-  const cls = "w-4 h-4 flex-shrink-0";
+  const cls = "sidebar-icon";
   const icons: Record<string, React.ReactNode> = {
     grid: <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
     users: <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,

@@ -4,8 +4,16 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-50">
+    <div className="min-h-screen">
+      <header
+        className="sticky top-0 z-50"
+        style={{
+          background: "rgba(10, 15, 24, 0.85)",
+          backdropFilter: "blur(20px) saturate(1.5)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+          borderBottom: "1px solid var(--glass-border)",
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <a href="/" className="flex items-center">
@@ -16,48 +24,32 @@ export default function MarketingLayout({
               />
             </a>
             <nav className="hidden md:flex items-center gap-6">
-              <a
-                href="#how-it-works"
-                className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
-              >
-                How it works
-              </a>
-              <a
-                href="/features"
-                className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
-              >
-                Features
-              </a>
-              <a
-                href="/pricing"
-                className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
-              >
-                Pricing
-              </a>
-              <a
-                href="/guides"
-                className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
-              >
-                Guides
-              </a>
-              <a
-                href="/faq"
-                className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
-              >
-                FAQ
-              </a>
+              {[
+                { href: "#how-it-works", label: "How it works" },
+                { href: "/features", label: "Features" },
+                { href: "/pricing", label: "Pricing" },
+                { href: "/guides", label: "Guides" },
+                { href: "/faq", label: "FAQ" },
+              ].map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {link.label}
+                </a>
+              ))}
             </nav>
             <div className="flex items-center gap-3">
               <a
                 href="/auth/login"
-                className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
+                className="text-sm transition-colors"
+                style={{ color: "var(--text-secondary)" }}
               >
                 Sign in
               </a>
-              <a
-                href="/api/auth/google"
-                className="px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-500 text-white rounded-md transition-colors"
-              >
+              <a href="/api/auth/google" className="btn-primary btn-primary-sm">
                 Get started free
               </a>
             </div>
