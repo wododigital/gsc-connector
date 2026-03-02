@@ -90,73 +90,75 @@ export default function BillingPage() {
   };
 
   if (loading) {
-    return <div className="p-8 text-zinc-400">Loading billing info...</div>;
+    return (
+      <div className="p-8 text-sm" style={{ color: "var(--text-secondary)" }}>
+        Loading billing info...
+      </div>
+    );
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Billing &amp; Plans</h1>
-        <p className="text-zinc-400 text-sm mt-1">Manage your subscription and usage</p>
+        <h1 className="page-title">Billing &amp; Plans</h1>
+        <p className="page-subtitle">Manage your subscription and usage</p>
       </div>
 
       {success && (
-        <div className="bg-green-900/30 border border-green-800 rounded-lg p-4 text-green-300 text-sm">
-          Payment successful! Your plan has been upgraded. Welcome aboard!
+        <div className="glass-card p-4" style={{ borderColor: "var(--success)", color: "var(--success)" }}>
+          <p className="text-sm">Payment successful! Your plan has been upgraded. Welcome aboard!</p>
         </div>
       )}
       {cancelled && (
-        <div className="bg-yellow-900/30 border border-yellow-800 rounded-lg p-4 text-yellow-300 text-sm">
-          Checkout was cancelled. No charges were made.
+        <div className="glass-card p-4" style={{ borderColor: "var(--warning)", color: "var(--warning)" }}>
+          <p className="text-sm">Checkout was cancelled. No charges were made.</p>
         </div>
       )}
 
       {usage && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+        <div className="glass-card p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">
+              <h2 className="text-lg font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
                 Current Plan: {usage.display_name}
               </h2>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                 {usage.price_cents > 0
                   ? `$${(usage.price_cents / 100).toFixed(0)}/month`
                   : "Free"}
                 {usage.status !== "active" && (
-                  <span className="ml-2 text-yellow-400">({usage.status})</span>
+                  <span className="ml-2" style={{ color: "var(--warning)" }}>({usage.status})</span>
                 )}
               </p>
             </div>
             {usage.price_cents > 0 && (
-              <button
-                onClick={handlePortal}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm transition-colors"
-              >
+              <button onClick={handlePortal} className="btn-ghost btn-ghost-sm">
                 Manage Subscription
               </button>
             )}
           </div>
 
           <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-zinc-400">Tool calls used this period</span>
-              <span className="text-white font-medium">
+            <div className="flex justify-between text-sm mb-2">
+              <span style={{ color: "var(--text-secondary)" }}>Tool calls used this period</span>
+              <span className="font-medium" style={{ color: "var(--text-primary)" }}>
                 {usage.calls_used.toLocaleString()} / {usage.calls_limit.toLocaleString()}
               </span>
             </div>
-            <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
               <div
-                className={`h-full rounded-full transition-all ${
-                  usage.percentage_used >= 90
-                    ? "bg-red-500"
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.min(100, usage.percentage_used)}%`,
+                  background: usage.percentage_used >= 90
+                    ? "var(--error)"
                     : usage.percentage_used >= 70
-                    ? "bg-yellow-500"
-                    : "bg-green-500"
-                }`}
-                style={{ width: `${Math.min(100, usage.percentage_used)}%` }}
+                    ? "var(--warning)"
+                    : "var(--accent)",
+                }}
               />
             </div>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>
               Resets on {new Date(usage.period_end).toLocaleDateString()} -{" "}
               {usage.calls_remaining.toLocaleString()} calls remaining
             </p>
@@ -165,7 +167,9 @@ export default function BillingPage() {
       )}
 
       <div>
-        <h2 className="text-lg font-semibold text-white mb-4">Available Plans</h2>
+        <h2 className="text-lg font-semibold mb-4" style={{ color: "var(--text-primary)" }}>
+          Available Plans
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {plans.map((plan) => {
             const isCurrentPlan = usage?.plan === plan.name;
@@ -175,45 +179,42 @@ export default function BillingPage() {
             return (
               <div
                 key={plan.id}
-                className={`bg-zinc-900 border rounded-lg p-5 ${
-                  isCurrentPlan ? "border-blue-500" : "border-zinc-800"
-                }`}
+                className="glass-card p-5"
+                style={isCurrentPlan ? { borderColor: "var(--glass-border-accent)" } : {}}
               >
-                <h3 className="text-lg font-bold text-white">{plan.displayName}</h3>
-                <p className="text-2xl font-bold text-white mt-2">
+                <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+                  {plan.displayName}
+                </h3>
+                <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>
                   {plan.priceCents > 0 ? `$${(plan.priceCents / 100).toFixed(0)}` : "Free"}
                   {plan.priceCents > 0 && (
-                    <span className="text-sm text-zinc-400 font-normal">/month</span>
+                    <span className="text-sm font-normal" style={{ color: "var(--text-muted)" }}>/month</span>
                   )}
                 </p>
-                <p className="text-sm text-zinc-400 mt-1">
+                <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
                   {plan.monthlyCalls.toLocaleString()} tool calls/month
                 </p>
                 <ul className="mt-4 space-y-2">
                   {(plan.features as string[]).map((feature, i) => (
-                    <li key={i} className="text-sm text-zinc-300 flex items-start gap-2">
-                      <span className="text-green-400 mt-0.5">&#10003;</span>
+                    <li key={i} className="text-sm flex items-start gap-2" style={{ color: "var(--text-secondary)" }}>
+                      <span style={{ color: "var(--accent)", marginTop: "2px" }}>&#10003;</span>
                       {feature}
                     </li>
                   ))}
                 </ul>
                 <div className="mt-5">
                   {isCurrentPlan ? (
-                    <span className="block text-center py-2 text-sm text-blue-400 font-medium">
+                    <span className="block text-center py-2 text-sm font-medium" style={{ color: "var(--accent-light)" }}>
                       Current Plan
                     </span>
                   ) : isFree ? (
-                    <span className="block text-center py-2 text-sm text-zinc-500">
+                    <span className="block text-center py-2 text-sm" style={{ color: "var(--text-muted)" }}>
                       Included
                     </span>
                   ) : (
                     <button
                       onClick={() => handleCheckout(plan.id)}
-                      className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
-                        isUpgrade
-                          ? "bg-blue-600 hover:bg-blue-500 text-white"
-                          : "bg-zinc-800 hover:bg-zinc-700 text-white"
-                      }`}
+                      className={`w-full ${isUpgrade ? "btn-primary btn-primary-sm" : "btn-ghost btn-ghost-sm"}`}
                     >
                       {isUpgrade ? "Upgrade" : "Switch Plan"}
                     </button>
@@ -225,40 +226,41 @@ export default function BillingPage() {
         </div>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-        <h3 className="text-sm font-semibold text-white mb-3">Have a coupon code?</h3>
+      <div className="glass-card p-5">
+        <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>
+          Have a coupon code?
+        </h3>
         <div className="flex gap-3">
           <input
             type="text"
             value={couponCode}
             onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
             placeholder="Enter code"
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white
-                       placeholder-zinc-500 text-sm w-64 focus:outline-none focus:border-blue-500"
+            className="glass-input text-sm"
+            style={{ maxWidth: "240px" }}
           />
-          <button
-            onClick={handleCoupon}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors"
-          >
+          <button onClick={handleCoupon} className="btn-primary btn-primary-sm">
             Apply
           </button>
         </div>
         {couponMessage && (
           <p
-            className={`text-sm mt-2 ${
-              couponMessage.toLowerCase().includes("applied") ||
-              couponMessage.toLowerCase().includes("upgraded")
-                ? "text-green-400"
-                : "text-red-400"
-            }`}
+            className="text-sm mt-2"
+            style={{
+              color:
+                couponMessage.toLowerCase().includes("applied") ||
+                couponMessage.toLowerCase().includes("upgraded")
+                  ? "var(--success)"
+                  : "var(--error)",
+            }}
           >
             {couponMessage}
           </p>
         )}
       </div>
 
-      <div className="text-center text-sm text-zinc-500">
-        <Link href="/dashboard" className="text-zinc-400 hover:text-white">
+      <div className="text-center text-sm">
+        <Link href="/dashboard" style={{ color: "var(--text-secondary)" }}>
           Back to Dashboard
         </Link>
       </div>

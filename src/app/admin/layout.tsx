@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { SidebarLink } from "@/components/sidebar-link";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -9,7 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   const navItems = [
-    { href: "/admin", label: "Dashboard", icon: "grid" },
+    { href: "/admin", label: "Dashboard", icon: "grid", exact: true },
     { href: "/admin/users", label: "Users", icon: "users" },
     { href: "/admin/tickets", label: "Tickets", icon: "ticket" },
     { href: "/admin/coupons", label: "Coupons", icon: "tag" },
@@ -20,6 +21,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen flex">
+      {/* Full-screen background image */}
+      <div className="app-background app-background-admin" />
+
       {/* Sidebar */}
       <aside className="glass-sidebar fixed left-0 top-0 h-full w-64 flex flex-col z-40">
         <div className="p-4 border-b" style={{ borderColor: "var(--glass-border)" }}>
@@ -32,10 +36,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className="sidebar-item">
+            <SidebarLink key={item.href} href={item.href} exact={item.exact}>
               <NavIcon name={item.icon} />
               {item.label}
-            </Link>
+            </SidebarLink>
           ))}
         </nav>
         <div className="p-4 border-t space-y-2" style={{ borderColor: "var(--glass-border)" }}>

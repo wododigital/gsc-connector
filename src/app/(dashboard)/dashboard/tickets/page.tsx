@@ -14,11 +14,11 @@ interface Ticket {
   _count: { messages: number };
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  open: "bg-green-900/40 text-green-400",
-  in_progress: "bg-blue-900/40 text-blue-400",
-  resolved: "bg-zinc-800 text-zinc-400",
-  closed: "bg-zinc-900 text-zinc-600",
+const STATUS_BADGE: Record<string, string> = {
+  open: "badge-success",
+  in_progress: "badge-info",
+  resolved: "badge-muted",
+  closed: "badge-muted",
 };
 
 const CATEGORIES = ["general", "billing", "technical", "feature_request", "other"];
@@ -64,60 +64,61 @@ export default function TicketsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Support Tickets</h1>
-          <p className="text-zinc-400 text-sm mt-1">Get help from our team</p>
+          <h1 className="page-title">Support Tickets</h1>
+          <p className="page-subtitle">Get help from our team</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
+          className="btn-primary btn-primary-sm"
         >
           + New Ticket
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <h2 className="text-sm font-semibold text-white mb-4">Create New Ticket</h2>
+        <div className="glass-card p-5">
+          <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>
+            Create New Ticket
+          </h2>
           <form onSubmit={submitTicket} className="space-y-4">
             <div>
-              <label className="text-xs text-zinc-500 block mb-1">Subject</label>
+              <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Subject</label>
               <input
                 value={form.subject}
                 onChange={(e) => setForm({ ...form, subject: e.target.value })}
                 placeholder="Brief description of your issue"
                 required
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                className="glass-input text-sm"
               />
             </div>
             <div>
-              <label className="text-xs text-zinc-500 block mb-1">Category</label>
+              <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Category</label>
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none w-48"
+                className="glass-select text-sm"
+                style={{ width: "192px" }}
               >
                 {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace("_", " ")}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-zinc-500 block mb-1">Description</label>
+              <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Description</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Describe your issue in detail..."
                 required
                 rows={4}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
+                className="glass-textarea text-sm"
               />
             </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p className="text-sm" style={{ color: "var(--error)" }}>{error}</p>}
             <div className="flex gap-2">
-              <button type="submit" disabled={submitting}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm disabled:opacity-50">
+              <button type="submit" disabled={submitting} className="btn-primary btn-primary-sm">
                 {submitting ? "Submitting..." : "Submit Ticket"}
               </button>
-              <button type="button" onClick={() => setShowForm(false)}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm">
+              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost btn-ghost-sm">
                 Cancel
               </button>
             </div>
@@ -126,24 +127,31 @@ export default function TicketsPage() {
       )}
 
       {loading ? (
-        <div className="text-zinc-500 text-sm">Loading...</div>
+        <div className="text-sm" style={{ color: "var(--text-muted)" }}>Loading...</div>
       ) : tickets.length === 0 ? (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
-          <p className="text-zinc-400 text-sm">No tickets yet.</p>
-          <p className="text-zinc-600 text-xs mt-1">Create a new ticket if you need help.</p>
+        <div className="glass-card p-8 text-center">
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>No tickets yet.</p>
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+            Create a new ticket if you need help.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
           {tickets.map((t) => (
-            <Link key={t.id} href={`/dashboard/tickets/${t.id}`}
-              className="block bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:bg-zinc-800/50 transition-colors">
+            <Link
+              key={t.id}
+              href={`/dashboard/tickets/${t.id}`}
+              className="block glass-card p-4"
+            >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-white font-medium text-sm">{t.subject}</h3>
-                <span className={`text-xs px-2 py-0.5 rounded font-medium ${STATUS_COLORS[t.status]}`}>
+                <h3 className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                  {t.subject}
+                </h3>
+                <span className={`badge ${STATUS_BADGE[t.status] ?? "badge-muted"}`}>
                   {t.status.replace("_", " ")}
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-zinc-500">
+              <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
                 <span className="capitalize">{t.category.replace("_", " ")}</span>
                 <span>-</span>
                 <span>{t._count.messages} message{t._count.messages !== 1 ? "s" : ""}</span>
@@ -151,7 +159,9 @@ export default function TicketsPage() {
                 <span>Updated {new Date(t.updatedAt).toLocaleDateString()}</span>
               </div>
               {t.messages[0] && (
-                <p className="text-xs text-zinc-600 mt-2 line-clamp-1">{t.messages[0].message}</p>
+                <p className="text-xs mt-2 line-clamp-1" style={{ color: "var(--text-muted)" }}>
+                  {t.messages[0].message}
+                </p>
               )}
             </Link>
           ))}

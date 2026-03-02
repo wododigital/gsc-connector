@@ -24,25 +24,38 @@ export default function AdminDashboard() {
       .then((d) => { setData(d); setLoading(false); });
   }, []);
 
-  if (loading) return <div className="text-zinc-400 p-4">Loading...</div>;
-  if (!data) return <div className="text-red-400 p-4">Failed to load dashboard</div>;
+  if (loading) return (
+    <div className="text-sm p-4" style={{ color: "var(--text-secondary)" }}>Loading...</div>
+  );
+  if (!data) return (
+    <div className="text-sm p-4" style={{ color: "var(--error)" }}>Failed to load dashboard</div>
+  );
 
   const showAlert = data.errorsToday > 10 || data.openTickets > 5;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-        <p className="text-zinc-400 text-sm mt-1">Platform overview</p>
+        <h1 className="page-title">Admin Dashboard</h1>
+        <p className="page-subtitle">Platform overview</p>
       </div>
 
       {showAlert && (
-        <div className="bg-red-900/30 border border-red-800 rounded-lg p-4 text-red-300 text-sm">
-          {data.errorsToday > 10 && <p>{data.errorsToday} errors today - check the Errors page.</p>}
-          {data.openTickets > 5 && <p>{data.openTickets} open tickets need attention.</p>}
+        <div className="glass-card p-4" style={{ borderColor: "var(--error)" }}>
+          {data.errorsToday > 10 && (
+            <p className="text-sm" style={{ color: "var(--error)" }}>
+              {data.errorsToday} errors today - check the Errors page.
+            </p>
+          )}
+          {data.openTickets > 5 && (
+            <p className="text-sm" style={{ color: "var(--warning)" }}>
+              {data.openTickets} open tickets need attention.
+            </p>
+          )}
         </div>
       )}
 
+      {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Users", value: data.totalUsers, sub: `+${data.newUsersToday} today` },
@@ -50,47 +63,77 @@ export default function AdminDashboard() {
           { label: "Errors Today", value: data.errorsToday, href: "/admin/errors", warn: data.errorsToday > 0 },
           { label: "Calls Today", value: data.callsToday },
         ].map((kpi) => (
-          <div key={kpi.label} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-            <p className="text-xs text-zinc-500 uppercase tracking-wide">{kpi.label}</p>
-            <p className={`text-3xl font-bold mt-1 ${kpi.warn ? "text-red-400" : "text-white"}`}>
+          <div key={kpi.label} className="glass-card p-4">
+            <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>
+              {kpi.label}
+            </p>
+            <p
+              className="text-3xl font-bold mt-1"
+              style={{ color: kpi.warn ? "var(--error)" : "var(--text-primary)" }}
+            >
               {kpi.value.toLocaleString()}
             </p>
-            {kpi.sub && <p className="text-xs text-zinc-500 mt-1">{kpi.sub}</p>}
+            {kpi.sub && (
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{kpi.sub}</p>
+            )}
           </div>
         ))}
       </div>
 
+      {/* Detail panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 uppercase tracking-wide mb-3">Tool Calls</p>
+        <div className="glass-card p-4">
+          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: "var(--text-muted)" }}>
+            Tool Calls
+          </p>
           {[
             { label: "Today", value: data.callsToday },
             { label: "This Week", value: data.callsThisWeek },
             { label: "This Month", value: data.callsThisMonth },
           ].map((row) => (
-            <div key={row.label} className="flex justify-between py-2 border-b border-zinc-800 last:border-0">
-              <span className="text-sm text-zinc-400">{row.label}</span>
-              <span className="text-sm font-medium text-white">{row.value.toLocaleString()}</span>
+            <div
+              key={row.label}
+              className="flex justify-between py-2 last:border-0"
+              style={{ borderBottom: "1px solid var(--glass-border)" }}
+            >
+              <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{row.label}</span>
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                {row.value.toLocaleString()}
+              </span>
             </div>
           ))}
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 uppercase tracking-wide mb-3">Plan Distribution</p>
+        <div className="glass-card p-4">
+          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: "var(--text-muted)" }}>
+            Plan Distribution
+          </p>
           {data.planDistribution.map((p) => (
-            <div key={p.planId} className="flex justify-between py-2 border-b border-zinc-800 last:border-0">
-              <span className="text-sm text-zinc-400">{p.planName}</span>
-              <span className="text-sm font-medium text-white">{p.count}</span>
+            <div
+              key={p.planId}
+              className="flex justify-between py-2 last:border-0"
+              style={{ borderBottom: "1px solid var(--glass-border)" }}
+            >
+              <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.planName}</span>
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{p.count}</span>
             </div>
           ))}
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 uppercase tracking-wide mb-3">Top Tools (7 days)</p>
+        <div className="glass-card p-4">
+          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: "var(--text-muted)" }}>
+            Top Tools (7 days)
+          </p>
           {data.topTools.slice(0, 7).map((t) => (
-            <div key={t.toolName} className="flex justify-between py-2 border-b border-zinc-800 last:border-0">
-              <span className="text-sm text-zinc-400 truncate mr-2">{t.toolName}</span>
-              <span className="text-sm font-medium text-white">{t.count}</span>
+            <div
+              key={t.toolName}
+              className="flex justify-between py-2 last:border-0"
+              style={{ borderBottom: "1px solid var(--glass-border)" }}
+            >
+              <span className="text-sm truncate mr-2" style={{ color: "var(--text-secondary)" }}>
+                {t.toolName}
+              </span>
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{t.count}</span>
             </div>
           ))}
         </div>

@@ -20,11 +20,11 @@ interface Ticket {
   messages: Message[];
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  open: "bg-green-900/40 text-green-400",
-  in_progress: "bg-blue-900/40 text-blue-400",
-  resolved: "bg-zinc-800 text-zinc-400",
-  closed: "bg-zinc-900 text-zinc-600",
+const STATUS_BADGE: Record<string, string> = {
+  open: "badge-success",
+  in_progress: "badge-info",
+  resolved: "badge-muted",
+  closed: "badge-muted",
 };
 
 export default function TicketPage() {
@@ -64,70 +64,91 @@ export default function TicketPage() {
     setSending(false);
   };
 
-  if (loading) return <div className="text-zinc-500 text-sm p-4">Loading...</div>;
-  if (!ticket) return <div className="text-red-400 text-sm p-4">Ticket not found.</div>;
+  if (loading) return (
+    <div className="text-sm p-4" style={{ color: "var(--text-muted)" }}>Loading...</div>
+  );
+  if (!ticket) return (
+    <div className="text-sm p-4" style={{ color: "var(--error)" }}>Ticket not found.</div>
+  );
 
   const canReply = ticket.status === "open" || ticket.status === "in_progress";
 
   return (
     <div className="max-w-2xl space-y-6">
+      {/* Breadcrumb */}
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/tickets" className="text-zinc-500 hover:text-white text-sm transition-colors">
+        <Link href="/dashboard/tickets" className="text-sm transition-colors" style={{ color: "var(--text-muted)" }}>
           Tickets
         </Link>
-        <span className="text-zinc-700">/</span>
-        <span className="text-zinc-300 text-sm truncate">{ticket.subject}</span>
+        <span style={{ color: "var(--text-muted)" }}>/</span>
+        <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
+          {ticket.subject}
+        </span>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+      {/* Ticket header */}
+      <div className="glass-card p-4">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-lg font-bold text-white">{ticket.subject}</h1>
-            <p className="text-xs text-zinc-500 mt-1 capitalize">
+            <h1 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+              {ticket.subject}
+            </h1>
+            <p className="text-xs mt-1 capitalize" style={{ color: "var(--text-muted)" }}>
               {ticket.category.replace("_", " ")} - opened {new Date(ticket.createdAt).toLocaleDateString()}
             </p>
           </div>
-          <span className={`text-xs px-2 py-1 rounded font-medium ${STATUS_COLORS[ticket.status]}`}>
+          <span className={`badge ${STATUS_BADGE[ticket.status] ?? "badge-muted"}`}>
             {ticket.status.replace("_", " ")}
           </span>
         </div>
       </div>
 
+      {/* Messages */}
       <div className="space-y-3">
         {ticket.messages.map((m) => (
           <div key={m.id} className={`flex ${m.senderType === "admin" ? "justify-start" : "justify-end"}`}>
-            <div className={`max-w-md rounded-lg px-4 py-3 ${
-              m.senderType === "admin"
-                ? "bg-zinc-800 text-zinc-200"
-                : "bg-blue-900/50 text-blue-100"
-            }`}>
-              <p className="text-xs text-zinc-500 mb-1">
+            <div
+              className="max-w-md rounded-lg px-4 py-3"
+              style={{
+                background: m.senderType === "admin"
+                  ? "rgba(14, 20, 32, 0.7)"
+                  : "rgba(0, 179, 179, 0.12)",
+                border: `1px solid ${m.senderType === "admin" ? "var(--glass-border)" : "var(--glass-border-accent)"}`,
+              }}
+            >
+              <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>
                 {m.senderType === "admin" ? "Support Team" : "You"} - {new Date(m.createdAt).toLocaleString()}
               </p>
-              <p className="text-sm whitespace-pre-wrap">{m.message}</p>
+              <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>
+                {m.message}
+              </p>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Reply form or closed notice */}
       {canReply ? (
-        <form onSubmit={sendReply} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
-          <label className="text-xs text-zinc-500 block">Reply</label>
+        <form onSubmit={sendReply} className="glass-card p-4 space-y-3">
+          <label className="text-xs block" style={{ color: "var(--text-muted)" }}>Reply</label>
           <textarea
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             placeholder="Type your reply..."
             rows={3}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
+            className="glass-textarea text-sm"
           />
-          {error && <p className="text-red-400 text-xs">{error}</p>}
-          <button type="submit" disabled={!reply.trim() || sending}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm disabled:opacity-50 transition-colors">
+          {error && <p className="text-xs" style={{ color: "var(--error)" }}>{error}</p>}
+          <button
+            type="submit"
+            disabled={!reply.trim() || sending}
+            className="btn-primary btn-primary-sm"
+          >
             {sending ? "Sending..." : "Send Reply"}
           </button>
         </form>
       ) : (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-center text-sm text-zinc-500">
+        <div className="glass-card p-4 text-center text-sm" style={{ color: "var(--text-muted)" }}>
           This ticket is {ticket.status}. Open a new ticket if you need further assistance.
         </div>
       )}

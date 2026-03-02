@@ -37,12 +37,13 @@ export default function AdminErrors() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Errors & Health</h1>
+        <h1 className="page-title">Errors &amp; Health</h1>
         <div className="flex gap-2">
           <select
             value={hours}
             onChange={(e) => { setHours(e.target.value); fetchErrors(e.target.value, service); }}
-            className="bg-zinc-800 border border-zinc-700 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none"
+            className="glass-select text-sm"
+            style={{ width: "auto", padding: "6px 12px" }}
           >
             <option value="6">Last 6h</option>
             <option value="24">Last 24h</option>
@@ -52,7 +53,8 @@ export default function AdminErrors() {
           <select
             value={service}
             onChange={(e) => { setService(e.target.value); fetchErrors(hours, e.target.value); }}
-            className="bg-zinc-800 border border-zinc-700 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none"
+            className="glass-select text-sm"
+            style={{ width: "auto", padding: "6px 12px" }}
           >
             <option value="all">All Services</option>
             <option value="gsc">GSC</option>
@@ -61,6 +63,7 @@ export default function AdminErrors() {
         </div>
       </div>
 
+      {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Errors", value: summary.total, warn: summary.total > 0 },
@@ -68,48 +71,68 @@ export default function AdminErrors() {
           { label: "GA4 Errors", value: summary.ga4 },
           { label: "Token Issues", value: summary.tokenIssues, warn: summary.tokenIssues > 0 },
         ].map((s) => (
-          <div key={s.label} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-            <p className="text-xs text-zinc-500 uppercase tracking-wide">{s.label}</p>
-            <p className={`text-3xl font-bold mt-1 ${s.warn ? "text-red-400" : "text-white"}`}>{s.value}</p>
+          <div key={s.label} className="glass-card p-4">
+            <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>
+              {s.label}
+            </p>
+            <p
+              className="text-3xl font-bold mt-1"
+              style={{ color: s.warn ? "var(--error)" : "var(--text-primary)" }}
+            >
+              {s.value}
+            </p>
           </div>
         ))}
       </div>
 
       {summary.tokenIssues > 0 && (
-        <div className="bg-yellow-900/20 border border-yellow-800 rounded-lg p-4 text-yellow-300 text-sm">
-          {summary.tokenIssues} token/auth errors detected. Users may need to reconnect their Google accounts.
+        <div className="glass-card p-4" style={{ borderColor: "var(--warning)" }}>
+          <p className="text-sm" style={{ color: "var(--warning)" }}>
+            {summary.tokenIssues} token/auth errors detected. Users may need to reconnect their Google accounts.
+          </p>
         </div>
       )}
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
+      {/* Error table */}
+      <div className="glass-panel overflow-hidden">
+        <table className="glass-table">
           <thead>
-            <tr className="border-b border-zinc-800">
+            <tr>
               {["Time", "User ID", "Service", "Tool", "Error"].map((h) => (
-                <th key={h} className="text-left text-xs text-zinc-500 uppercase px-4 py-3">{h}</th>
+                <th key={h}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="text-center text-zinc-500 py-8">Loading...</td></tr>
+              <tr>
+                <td colSpan={5} className="text-center py-8" style={{ color: "var(--text-muted)" }}>
+                  Loading...
+                </td>
+              </tr>
             ) : errors.length === 0 ? (
-              <tr><td colSpan={5} className="text-center text-green-400 py-8">No errors in this time range</td></tr>
+              <tr>
+                <td colSpan={5} className="text-center py-8" style={{ color: "var(--success)" }}>
+                  No errors in this time range
+                </td>
+              </tr>
             ) : errors.map((e) => (
-              <tr key={e.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
-                <td className="px-4 py-3 text-xs text-zinc-500 whitespace-nowrap">
+              <tr key={e.id}>
+                <td className="text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
                   {new Date(e.timestamp).toLocaleString()}
                 </td>
-                <td className="px-4 py-3 text-xs text-zinc-400 truncate max-w-[120px]">{e.userId}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
-                    e.service === "gsc" ? "bg-blue-900/40 text-blue-400" : "bg-orange-900/40 text-orange-400"
-                  }`}>
+                <td className="text-xs truncate max-w-[120px]" style={{ color: "var(--text-secondary)" }}>
+                  {e.userId}
+                </td>
+                <td>
+                  <span className={`badge ${e.service === "gsc" ? "badge-info" : "badge-warning"}`}>
                     {e.service.toUpperCase()}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-xs text-zinc-300 font-mono">{e.tool}</td>
-                <td className="px-4 py-3 text-xs text-red-400 truncate max-w-xs">
+                <td className="text-xs font-mono" style={{ color: "var(--text-secondary)" }}>
+                  {e.tool}
+                </td>
+                <td className="text-xs truncate max-w-xs" style={{ color: "var(--error)" }}>
                   {e.errorMessage ?? "Unknown error"}
                 </td>
               </tr>

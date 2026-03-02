@@ -61,78 +61,87 @@ export default function AdminUsers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Users</h1>
-          <p className="text-zinc-400 text-sm">{total.toLocaleString()} total users</p>
+          <h1 className="page-title">Users</h1>
+          <p className="page-subtitle">{total.toLocaleString()} total users</p>
         </div>
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by email..."
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 w-64"
+            className="glass-input text-sm"
+            style={{ width: "240px" }}
           />
-          <button type="submit" className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm">
-            Search
-          </button>
+          <button type="submit" className="btn-ghost btn-ghost-sm">Search</button>
         </form>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="glass-panel overflow-hidden">
+        <table className="glass-table">
           <thead>
-            <tr className="border-b border-zinc-800">
-              <th className="text-left text-xs text-zinc-500 uppercase px-4 py-3">Email</th>
-              <th className="text-left text-xs text-zinc-500 uppercase px-4 py-3">Plan</th>
-              <th className="text-left text-xs text-zinc-500 uppercase px-4 py-3">Usage</th>
-              <th className="text-left text-xs text-zinc-500 uppercase px-4 py-3">Props</th>
-              <th className="text-left text-xs text-zinc-500 uppercase px-4 py-3">Joined</th>
-              <th className="text-left text-xs text-zinc-500 uppercase px-4 py-3">Change Plan</th>
+            <tr>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>Usage</th>
+              <th>Props</th>
+              <th>Joined</th>
+              <th>Change Plan</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center text-zinc-500 py-8">Loading...</td></tr>
+              <tr>
+                <td colSpan={6} className="text-center py-8" style={{ color: "var(--text-muted)" }}>
+                  Loading...
+                </td>
+              </tr>
             ) : users.map((u) => {
               const pct = u.callsLimit > 0 ? Math.round((u.callsUsed / u.callsLimit) * 100) : 0;
+              const planBadge =
+                u.planId === "plan_premium" ? "badge badge-accent" :
+                u.planId === "plan_pro" ? "badge badge-info" :
+                "badge badge-muted";
               return (
-                <tr key={u.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
-                  <td className="px-4 py-3">
-                    <div className="text-white font-medium">{u.email}</div>
-                    {u.name && <div className="text-xs text-zinc-500">{u.name}</div>}
+                <tr key={u.id}>
+                  <td>
+                    <div className="font-medium" style={{ color: "var(--text-primary)" }}>{u.email}</div>
+                    {u.name && (
+                      <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{u.name}</div>
+                    )}
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                      u.planId === "plan_premium" ? "bg-purple-900/50 text-purple-300" :
-                      u.planId === "plan_pro" ? "bg-blue-900/50 text-blue-300" :
-                      "bg-zinc-800 text-zinc-400"
-                    }`}>
-                      {u.plan}
-                    </span>
+                  <td>
+                    <span className={planBadge}>{u.plan}</span>
                   </td>
-                  <td className="px-4 py-3 w-40">
+                  <td style={{ width: "160px" }}>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-zinc-400">{u.callsUsed}/{u.callsLimit}</span>
-                      <span className={pct >= 90 ? "text-red-400" : pct >= 70 ? "text-yellow-400" : "text-green-400"}>{pct}%</span>
+                      <span style={{ color: "var(--text-secondary)" }}>{u.callsUsed}/{u.callsLimit}</span>
+                      <span style={{ color: pct >= 90 ? "var(--error)" : pct >= 70 ? "var(--warning)" : "var(--success)" }}>
+                        {pct}%
+                      </span>
                     </div>
-                    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
                       <div
-                        className={`h-full rounded-full ${pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-yellow-500" : "bg-green-500"}`}
-                        style={{ width: `${Math.min(100, pct)}%` }}
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, pct)}%`,
+                          background: pct >= 90 ? "var(--error)" : pct >= 70 ? "var(--warning)" : "var(--success)",
+                        }}
                       />
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-zinc-400 text-xs">
+                  <td className="text-xs" style={{ color: "var(--text-secondary)" }}>
                     GSC: {u.gscPropertiesCount} / GA4: {u.ga4PropertiesCount}
                   </td>
-                  <td className="px-4 py-3 text-zinc-500 text-xs">
+                  <td className="text-xs" style={{ color: "var(--text-muted)" }}>
                     {new Date(u.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-3">
+                  <td>
                     <select
                       value={u.planId}
                       disabled={changingPlan === u.id}
                       onChange={(e) => changePlan(u.id, e.target.value)}
-                      className="bg-zinc-800 border border-zinc-700 text-white text-xs rounded px-2 py-1 focus:outline-none"
+                      className="glass-select text-xs"
+                      style={{ padding: "4px 8px", width: "auto" }}
                     >
                       {PLANS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
                     </select>
@@ -143,20 +152,25 @@ export default function AdminUsers() {
           </tbody>
         </table>
         {total > 50 && (
-          <div className="flex justify-between items-center px-4 py-3 border-t border-zinc-800">
-            <span className="text-xs text-zinc-500">Page {page} of {Math.ceil(total / 50)}</span>
+          <div
+            className="flex justify-between items-center px-4 py-3"
+            style={{ borderTop: "1px solid var(--glass-border)" }}
+          >
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Page {page} of {Math.ceil(total / 50)}
+            </span>
             <div className="flex gap-2">
               <button
                 disabled={page <= 1}
                 onClick={() => { const p = page - 1; setPage(p); fetchUsers(p); }}
-                className="px-3 py-1 bg-zinc-800 disabled:opacity-40 text-white rounded text-xs"
+                className="btn-ghost btn-ghost-sm"
               >
                 Prev
               </button>
               <button
                 disabled={page >= Math.ceil(total / 50)}
                 onClick={() => { const p = page + 1; setPage(p); fetchUsers(p); }}
-                className="px-3 py-1 bg-zinc-800 disabled:opacity-40 text-white rounded text-xs"
+                className="btn-ghost btn-ghost-sm"
               >
                 Next
               </button>

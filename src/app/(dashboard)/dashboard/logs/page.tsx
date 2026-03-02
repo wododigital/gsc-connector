@@ -109,251 +109,184 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Nav */}
-      <nav className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <img
-            src="/OMG Rectangle LOGO Dark BG.svg"
-            alt="OMG AI"
-            className="h-6 w-auto"
-          />
-          <span className="text-zinc-600">/</span>
-          <span className="text-zinc-300 text-sm">Usage Logs</span>
-        </div>
-        <a
-          href="/dashboard"
-          className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-        >
-          Back to dashboard
-        </a>
-      </nav>
+    <div className="space-y-6">
+      <div>
+        <h1 className="page-title">Usage Logs</h1>
+        <p className="page-subtitle">Tool calls made via MCP for your account</p>
+      </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-zinc-100">Usage Logs</h1>
-          <p className="text-zinc-500 text-sm mt-1">
-            Tool calls made via MCP for your account
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard label="Total calls" value={totalCalls.toLocaleString()} sub={`last ${days} days`} />
+        <StatCard label="Unique tools" value={toolCounts.length.toString()} sub="used" />
+        <StatCard label="Properties" value={siteCounts.length.toString()} sub="queried" />
+        <StatCard
+          label="Avg response"
+          value={avgResponseTimeMs != null ? `${avgResponseTimeMs}ms` : "-"}
+          sub="per tool call"
+        />
+      </div>
+
+      {/* Filters */}
+      <form method="GET" action="/dashboard/logs" className="flex flex-wrap gap-3">
+        <select name="days" defaultValue={String(days)} className="glass-select text-sm">
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+
+        <select name="tool" defaultValue={tool ?? ""} className="glass-select text-sm">
+          <option value="">All tools</option>
+          {distinctTools.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+
+        <input
+          type="text"
+          name="site"
+          defaultValue={site ?? ""}
+          placeholder="Filter by property URL"
+          className="glass-input text-sm"
+          style={{ minWidth: "220px", width: "auto" }}
+        />
+
+        <button type="submit" className="btn-ghost btn-ghost-sm">Apply</button>
+
+        {(tool || site || days !== 30) && (
+          <a href="/dashboard/logs" className="btn-ghost btn-ghost-sm">Clear</a>
+        )}
+      </form>
+
+      {/* Log table */}
+      {logs.length === 0 ? (
+        <div className="glass-card p-12 text-center">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            No tool calls recorded for this period.
+          </p>
+          <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
+            Tool calls appear here after you use MCP tools via Claude or another AI assistant.
           </p>
         </div>
-
-        {/* Summary stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <StatCard
-            label="Total calls"
-            value={totalCalls.toLocaleString()}
-            sub={`last ${days} days`}
-          />
-          <StatCard
-            label="Unique tools"
-            value={toolCounts.length.toString()}
-            sub="used"
-          />
-          <StatCard
-            label="Properties"
-            value={siteCounts.length.toString()}
-            sub="queried"
-          />
-          <StatCard
-            label="Avg response"
-            value={avgResponseTimeMs != null ? `${avgResponseTimeMs}ms` : "-"}
-            sub="per tool call"
-          />
-        </div>
-
-        {/* Filters */}
-        <form method="GET" action="/dashboard/logs" className="flex flex-wrap gap-3 mb-6">
-          <select
-            name="days"
-            defaultValue={String(days)}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-green-600"
-          >
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-          </select>
-
-          <select
-            name="tool"
-            defaultValue={tool ?? ""}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-green-600"
-          >
-            <option value="">All tools</option>
-            {distinctTools.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="text"
-            name="site"
-            defaultValue={site ?? ""}
-            placeholder="Filter by property URL"
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-green-600 min-w-[220px]"
-          />
-
-          <button
-            type="submit"
-            className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-sm rounded-lg transition-colors"
-          >
-            Apply
-          </button>
-
-          {(tool || site || days !== 30) && (
-            <a
-              href="/dashboard/logs"
-              className="px-4 py-2 bg-transparent border border-zinc-700 hover:border-zinc-600 text-zinc-400 text-sm rounded-lg transition-colors"
-            >
-              Clear
-            </a>
-          )}
-        </form>
-
-        {/* Log table */}
-        {logs.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-12 text-center">
-            <p className="text-zinc-500 text-sm">No tool calls recorded for this period.</p>
-            <p className="text-zinc-600 text-xs mt-2">
-              Tool calls appear here after you use MCP tools via Claude or another AI assistant.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden mb-4">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-zinc-800">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                        Time
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                        Tool
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                        Property
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                        Source
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                        Time (ms)
-                      </th>
+      ) : (
+        <>
+          <div className="glass-panel overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="glass-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Tool</th>
+                    <th>Property</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: "right" }}>Time (ms)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr key={log.id}>
+                      <td className="whitespace-nowrap tabular-nums" style={{ color: "var(--text-muted)" }}>
+                        {formatDate(log.createdAt)}
+                      </td>
+                      <td>
+                        <a
+                          href={buildUrl({ tool: log.toolName, page: "1" })}
+                          className="font-mono text-sm"
+                          style={{ color: "var(--accent)" }}
+                        >
+                          {log.toolName}
+                        </a>
+                      </td>
+                      <td className="font-mono text-xs truncate max-w-[260px]">
+                        <a
+                          href={buildUrl({ site: log.siteUrl, page: "1" })}
+                          style={{ color: "var(--text-secondary)" }}
+                        >
+                          {log.siteUrl}
+                        </a>
+                      </td>
+                      <td>
+                        <span className="badge badge-muted">{log.source}</span>
+                      </td>
+                      <td>
+                        <span className={`badge ${log.status === "error" ? "badge-error" : "badge-success"}`}>
+                          {log.status}
+                        </span>
+                      </td>
+                      <td className="tabular-nums text-xs" style={{ textAlign: "right", color: "var(--text-muted)" }}>
+                        {log.responseTimeMs != null ? `${log.responseTimeMs}` : "-"}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/50">
-                    {logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="px-4 py-3 text-zinc-400 whitespace-nowrap tabular-nums">
-                          {formatDate(log.createdAt)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <a
-                            href={buildUrl({ tool: log.toolName, page: "1" })}
-                            className="font-mono text-green-400 hover:text-green-300 transition-colors"
-                          >
-                            {log.toolName}
-                          </a>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-zinc-300 text-xs truncate max-w-[260px]">
-                          <a
-                            href={buildUrl({ site: log.siteUrl, page: "1" })}
-                            className="hover:text-zinc-100 transition-colors"
-                          >
-                            {log.siteUrl}
-                          </a>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded text-xs bg-zinc-800 text-zinc-400">
-                            {log.source}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded text-xs ${log.status === "error" ? "bg-red-900/40 text-red-400" : "bg-green-900/30 text-green-500"}`}>
-                            {log.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right text-zinc-400 tabular-nums text-xs">
-                          {log.responseTimeMs != null ? `${log.responseTimeMs}` : "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between text-sm text-zinc-500">
-                <span>
-                  Showing {(page - 1) * PAGE_SIZE + 1}-
-                  {Math.min(page * PAGE_SIZE, total)} of {total} results
-                </span>
-                <div className="flex gap-2">
-                  {page > 1 && (
-                    <a
-                      href={buildUrl({ page: String(page - 1) })}
-                      className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300 transition-colors"
-                    >
-                      Previous
-                    </a>
-                  )}
-                  {page < totalPages && (
-                    <a
-                      href={buildUrl({ page: String(page + 1) })}
-                      className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300 transition-colors"
-                    >
-                      Next
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Top tools breakdown */}
-        {toolCounts.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-              Calls by tool
-            </h2>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-              {toolCounts.map(({ toolName, _count }) => {
-                const pct = totalCalls > 0 ? (_count.id / totalCalls) * 100 : 0;
-                return (
-                  <div
-                    key={toolName}
-                    className="flex items-center gap-4 px-4 py-3 border-b border-zinc-800/50 last:border-0"
-                  >
-                    <a
-                      href={buildUrl({ tool: toolName, page: "1" })}
-                      className="font-mono text-sm text-green-400 hover:text-green-300 w-52 shrink-0 truncate transition-colors"
-                    >
-                      {toolName}
-                    </a>
-                    <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-green-600 rounded-full"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="text-zinc-400 text-sm tabular-nums w-16 text-right">
-                      {_count.id.toLocaleString()}
-                    </span>
-                  </div>
-                );
-              })}
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between text-sm" style={{ color: "var(--text-muted)" }}>
+              <span>
+                Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, total)} of {total} results
+              </span>
+              <div className="flex gap-2">
+                {page > 1 && (
+                  <a href={buildUrl({ page: String(page - 1) })} className="btn-ghost btn-ghost-sm">
+                    Previous
+                  </a>
+                )}
+                {page < totalPages && (
+                  <a href={buildUrl({ page: String(page + 1) })} className="btn-ghost btn-ghost-sm">
+                    Next
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Top tools breakdown */}
+      {toolCounts.length > 0 && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+            Calls by tool
+          </h2>
+          <div className="glass-panel overflow-hidden">
+            {toolCounts.map(({ toolName, _count }) => {
+              const pct = totalCalls > 0 ? (_count.id / totalCalls) * 100 : 0;
+              return (
+                <div
+                  key={toolName}
+                  className="flex items-center gap-4 px-4 py-3 last:border-0"
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}
+                >
+                  <a
+                    href={buildUrl({ tool: toolName, page: "1" })}
+                    className="font-mono text-sm w-52 shrink-0 truncate"
+                    style={{ color: "var(--accent)" }}
+                  >
+                    {toolName}
+                  </a>
+                  <div
+                    className="flex-1 h-1.5 rounded-full overflow-hidden"
+                    style={{ background: "rgba(255,255,255,0.06)" }}
+                  >
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${pct}%`, background: "var(--accent)" }}
+                    />
+                  </div>
+                  <span className="tabular-nums w-16 text-right text-sm" style={{ color: "var(--text-muted)" }}>
+                    {_count.id.toLocaleString()}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -370,14 +303,15 @@ function StatCard({
   mono?: boolean;
 }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-      <p className="text-xs text-zinc-500 mb-1">{label}</p>
+    <div className="glass-card p-4">
+      <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{label}</p>
       <p
-        className={`text-lg font-semibold text-zinc-100 truncate ${mono ? "font-mono text-sm" : ""}`}
+        className={`text-lg font-semibold truncate ${mono ? "font-mono text-sm" : ""}`}
+        style={{ color: "var(--text-primary)" }}
       >
         {value}
       </p>
-      <p className="text-xs text-zinc-600 mt-0.5">{sub}</p>
+      <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{sub}</p>
     </div>
   );
 }
