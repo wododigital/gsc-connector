@@ -28,6 +28,7 @@ const GSC_SCOPES = [
   "profile",
   "https://www.googleapis.com/auth/webmasters.readonly",
   "https://www.googleapis.com/auth/analytics.readonly",
+  "https://www.googleapis.com/auth/business.manage",
 ].join(" ");
 
 export async function GET(req: NextRequest) {

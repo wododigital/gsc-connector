@@ -3,7 +3,7 @@
  *
  * Runs on port 3001 (or MCP_PORT env var).
  * Validates Bearer tokens via the auth middleware, then creates a per-SESSION
- * McpServer instance with all 13 GSC tools registered.
+ * McpServer instance with all 30 tools registered (13 GSC + 10 GA4 + 7 GBP).
  *
  * Session lifecycle (required by MCP Streamable HTTP spec):
  *   1. POST with initialize (no MCP-Session-Id) -> create transport + server, return session ID
@@ -53,6 +53,17 @@ import {
   registerGaUserJourneyTool,
   registerGaEventsTool,
 } from "./tools/ga4/index.js";
+
+// GBP tool registration functions
+import {
+  registerGbpListLocationsTool,
+  registerGbpGetReviewsTool,
+  registerGbpGetPerformanceTool,
+  registerGbpSearchKeywordsTool,
+  registerGbpGetPostsTool,
+  registerGbpGetMediaTool,
+  registerGbpLocationOverviewTool,
+} from "./tools/gbp/index.js";
 
 // ----------------------------------------------------------------
 // User context type (populated by auth middleware)
@@ -105,7 +116,7 @@ function createMcpServer(user: UserContext): McpServer {
     source: user.source,
   };
 
-  // Register all 13 tools
+  // Register all 30 tools: 13 GSC + 10 GA4 + 7 GBP
   registerSearchAnalyticsTool(server, userCtx);
   registerTopKeywordsTool(server, userCtx);
   registerTopPagesTool(server, userCtx);
@@ -140,6 +151,15 @@ function createMcpServer(user: UserContext): McpServer {
   registerGaPagePerformanceTool(server, userCtx);
   registerGaUserJourneyTool(server, userCtx);
   registerGaEventsTool(server, userCtx);
+
+  // GBP tools (7 tools)
+  registerGbpListLocationsTool(server, userCtx);
+  registerGbpGetReviewsTool(server, userCtx);
+  registerGbpGetPerformanceTool(server, userCtx);
+  registerGbpSearchKeywordsTool(server, userCtx);
+  registerGbpGetPostsTool(server, userCtx);
+  registerGbpGetMediaTool(server, userCtx);
+  registerGbpLocationOverviewTool(server, userCtx);
 
   return server;
 }
