@@ -70,7 +70,7 @@ export default async function DashboardPage() {
   const { hasCredential, hasAnalyticsScope } = credentialInfo;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
@@ -427,23 +427,50 @@ function SetupInstructions() {
           </div>
         </details>
 
-        {/* ChatGPT - coming soon */}
-        <details>
+        {/* ChatGPT */}
+        <details className="group">
           <summary
-            className="flex items-center justify-between px-4 py-3 rounded-lg text-sm list-none opacity-50 cursor-not-allowed"
+            className="flex items-center justify-between cursor-pointer px-4 py-3 rounded-lg text-sm font-medium list-none"
             style={{
-              background: "rgba(6,10,16,0.3)",
+              background: "rgba(6,10,16,0.5)",
               border: "1px solid var(--glass-border)",
-              color: "var(--text-muted)",
+              color: "var(--text-secondary)",
             }}
           >
             <div className="flex items-center gap-2">
               <span>ChatGPT</span>
-              <span className="badge badge-muted" style={{ fontSize: "11px", padding: "2px 8px" }}>
-                Coming soon
+              <span className="badge badge-accent" style={{ fontSize: "11px", padding: "2px 8px" }}>
+                OAuth - no key needed
               </span>
             </div>
+            <span className="text-xs group-open:rotate-180 transition-transform" style={{ color: "var(--text-muted)" }}>
+              +
+            </span>
           </summary>
+          <div
+            className="px-4 py-3 text-sm space-y-2 rounded-b-lg"
+            style={{
+              background: "rgba(6,10,16,0.4)",
+              border: "1px solid var(--glass-border)",
+              borderTop: "none",
+              color: "var(--text-secondary)",
+            }}
+          >
+            <p>ChatGPT connects via OAuth - no API key required.</p>
+            <ol className="space-y-1 pl-4 list-decimal" style={{ color: "var(--text-primary)" }}>
+              <li>Go to chatgpt.com and sign in</li>
+              <li>Click your profile icon, then Settings</li>
+              <li>Go to the Connectors section</li>
+              <li>Click Add connector</li>
+              <li>
+                Paste the endpoint URL:{" "}
+                <code className="text-xs font-mono px-1 py-0.5 rounded" style={{ color: "var(--accent-light)", background: "rgba(6,10,16,0.6)" }}>
+                  {MCP_ENDPOINT}
+                </code>
+              </li>
+              <li>Follow the OAuth authorization flow to connect your account</li>
+            </ol>
+          </div>
         </details>
       </div>
     </div>

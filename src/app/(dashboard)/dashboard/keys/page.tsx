@@ -44,7 +44,7 @@ export default async function ApiKeysPage() {
   }));
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="space-y-8">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold text-zinc-100">API Keys</h1>

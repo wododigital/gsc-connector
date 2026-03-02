@@ -98,7 +98,7 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="space-y-8">
       <div>
         <h1 className="page-title">Billing &amp; Plans</h1>
         <p className="page-subtitle">Manage your subscription and usage</p>
