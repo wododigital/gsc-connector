@@ -1,7 +1,7 @@
 {
-  "name": "omg-ai-mcp",
+  "name": "omg-bridge",
   "version": "1.0.0",
-  "description": "OMG AI - Connect Google Search Console and Analytics to AI assistants via MCP",
+  "description": "OMG Bridge - Connect Google Search Console, Analytics, and Business Profile to AI assistants via MCP",
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",

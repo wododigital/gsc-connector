@@ -17,8 +17,7 @@ interface Coupon {
 
 const PLANS = [
   { id: "plan_free", label: "Free" },
-  { id: "plan_pro", label: "Pro" },
-  { id: "plan_premium", label: "Premium" },
+  { id: "plan_annual", label: "Annual" },
 ];
 
 export default function AdminCoupons() {
@@ -26,7 +25,7 @@ export default function AdminCoupons() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     code: "",
-    planId: "plan_pro",
+    planId: "plan_annual",
     durationMonths: "1",
     maxRedemptions: "100",
   });
@@ -55,7 +54,7 @@ export default function AdminCoupons() {
     if (!res.ok) {
       setError(data.error ?? "Failed to create coupon");
     } else {
-      setForm({ code: "", planId: "plan_pro", durationMonths: "1", maxRedemptions: "100" });
+      setForm({ code: "", planId: "plan_annual", durationMonths: "1", maxRedemptions: "100" });
       fetchCoupons();
     }
     setCreating(false);

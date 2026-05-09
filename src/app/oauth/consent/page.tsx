@@ -5,7 +5,7 @@ import { listGA4Properties } from "@/lib/ga4/api";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Authorize - OMG AI",
+  title: "Authorize - OMG Bridge",
 };
 
 interface ConsentPageProps {
@@ -210,7 +210,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
           <div className="text-center mb-8">
             <img
               src="/OMG Rectangle LOGO Dark BG.svg"
-              alt="OMG AI"
+              alt="OMG Bridge"
               className="h-8 w-auto mx-auto"
             />
           </div>
@@ -286,7 +286,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
         <div className="text-center mb-6">
           <img
             src="/OMG Rectangle LOGO Dark BG.svg"
-            alt="OMG AI"
+            alt="OMG Bridge"
             className="h-7 w-auto mx-auto"
           />
         </div>
@@ -300,7 +300,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
             </h1>
             <p className="text-zinc-400 text-sm">
               <span className="font-medium text-zinc-300">{oauthClient.clientName}</span>{" "}
-              wants to access your OMG AI account as{" "}
+              wants to access your OMG Bridge account as{" "}
               <span className="text-zinc-300">{session.email}</span>.
             </p>
           </div>
@@ -472,7 +472,7 @@ function ErrorPage({ message }: { message: string }) {
         <div className="mb-6">
           <img
             src="/OMG Rectangle LOGO Dark BG.svg"
-            alt="OMG AI"
+            alt="OMG Bridge"
             className="h-7 w-auto mx-auto"
           />
         </div>

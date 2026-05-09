@@ -2,64 +2,48 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Pricing - OMG AI",
-  description: "Simple, transparent pricing. Start free, upgrade when you need more.",
+  title: "Pricing - OMG Bridge",
+  description: "Simple, transparent pricing. Free to start, $199/year for unlimited.",
 };
 
 const plans = [
   {
     id: "free",
     name: "Free",
-    price: 0,
-    description: "Perfect for testing and personal projects.",
+    price: "$0",
+    period: "/forever",
+    description: "For individuals getting started.",
     features: [
       "1 Google account",
-      "100 tool calls/month",
-      "GSC + GA4 access",
-      "All 23 MCP tools",
+      "200 tool calls/month",
+      "All 30 MCP tools",
+      "GSC + GA4 + GBP access",
       "Claude.ai, Desktop, Cursor support",
       "Community support",
     ],
     cta: "Get started free",
-    href: "/dashboard",
+    href: "/api/auth/google",
     highlight: false,
   },
   {
-    id: "pro",
-    name: "Pro",
-    price: 19,
-    description: "For professionals and growing sites.",
+    id: "annual",
+    name: "Annual",
+    price: "$199",
+    period: "/year",
+    description: "For SEOs and agencies who want unlimited access.",
     features: [
-      "3 Google accounts",
-      "1,000 tool calls/month",
-      "GSC + GA4 access",
-      "All 23 MCP tools",
+      "Unlimited Google accounts",
+      "Unlimited tool calls",
+      "All 30 MCP tools",
+      "GSC + GA4 + GBP access",
       "All AI tool integrations",
       "Priority support",
       "Usage analytics",
     ],
-    cta: "Start Pro",
+    cta: "Get Annual",
     href: "/dashboard/billing",
     highlight: true,
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: 49,
-    description: "For agencies and power users.",
-    features: [
-      "10 Google accounts",
-      "5,000 tool calls/month",
-      "GSC + GA4 access",
-      "All 23 MCP tools",
-      "All AI tool integrations",
-      "Priority support",
-      "Usage analytics",
-      "Early access to new features",
-    ],
-    cta: "Start Premium",
-    href: "/dashboard/billing",
-    highlight: false,
+    badge: "Best value",
   },
 ];
 
@@ -67,62 +51,139 @@ export default function PricingPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-20">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-white mb-3">Simple, transparent pricing</h1>
-        <p className="text-zinc-400 text-lg">Start free. Upgrade when you need more.</p>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            color: "var(--accent-light)",
+            marginBottom: 12,
+          }}
+        >
+          Pricing
+        </div>
+        <h1
+          className="text-4xl font-bold mb-3"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Simple, transparent pricing
+        </h1>
+        <p style={{ color: "var(--text-secondary)", fontSize: 16 }}>
+          Start free. One flat annual fee when you need unlimited.
+        </p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6 mb-12">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 20,
+          maxWidth: 720,
+          margin: "0 auto 48px",
+        }}
+      >
         {plans.map((plan) => (
           <div
             key={plan.id}
-            className={`rounded-xl p-6 border flex flex-col ${
-              plan.highlight
-                ? "bg-blue-950/40 border-blue-600 relative"
-                : "bg-zinc-900 border-zinc-800"
-            }`}
+            className={`pricing-card${plan.highlight ? " pricing-card-featured" : ""}`}
+            style={{ position: "relative", display: "flex", flexDirection: "column" }}
           >
-            {plan.highlight && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Most popular</span>
+            {plan.badge && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: -12,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  padding: "4px 14px",
+                  borderRadius: "var(--radius-full)",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  background: "linear-gradient(135deg, var(--accent), var(--accent-dim))",
+                  color: "#fff",
+                  whiteSpace: "nowrap",
+                  letterSpacing: "0.03em",
+                }}
+              >
+                {plan.badge}
               </div>
             )}
-            <div>
-              <h2 className="text-lg font-bold text-white">{plan.name}</h2>
-              <p className="text-zinc-500 text-sm mt-1 mb-4">{plan.description}</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-white">
-                  {plan.price === 0 ? "Free" : `$${plan.price}`}
-                </span>
-                {plan.price > 0 && <span className="text-zinc-400 text-sm">/month</span>}
-              </div>
-              <ul className="space-y-2 mb-8">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-zinc-300">
-                    <span className="text-green-400 mt-0.5 flex-shrink-0">&#10003;</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="mt-auto">
-              <Link
-                href={plan.href}
-                className={`block text-center py-2.5 rounded-lg font-medium text-sm transition-colors ${
-                  plan.highlight
-                    ? "bg-blue-600 hover:bg-blue-500 text-white"
-                    : "bg-zinc-800 hover:bg-zinc-700 text-white"
-                }`}
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: "var(--text-muted)",
+                marginBottom: 12,
+              }}
+            >
+              {plan.name}
+            </p>
+            <div style={{ marginBottom: 4 }}>
+              <span
+                style={{
+                  fontSize: 40,
+                  fontWeight: 700,
+                  letterSpacing: "-0.03em",
+                  color: "var(--text-primary)",
+                  lineHeight: 1,
+                }}
               >
-                {plan.cta}
-              </Link>
+                {plan.price}
+              </span>
+              <span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 4 }}>
+                {plan.period}
+              </span>
             </div>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 24, lineHeight: 1.5 }}>
+              {plan.description}
+            </p>
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: "0 0 28px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                flex: 1,
+              }}
+            >
+              {plan.features.map((f) => (
+                <li
+                  key={f}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14 }}
+                >
+                  <span
+                    style={{
+                      color: "var(--accent-light)",
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      marginTop: 1,
+                    }}
+                  >
+                    ✓
+                  </span>
+                  <span style={{ color: "var(--text-secondary)" }}>{f}</span>
+                </li>
+              ))}
+            </ul>
+            <Link
+              href={plan.href}
+              className={plan.highlight ? "btn-primary" : "btn-ghost"}
+              style={{ width: "100%", justifyContent: "center", fontSize: 14 }}
+            >
+              {plan.cta}
+            </Link>
           </div>
         ))}
       </div>
 
-      <div className="text-center text-sm text-zinc-500">
-        <p>All plans include GSC + GA4 integration, 23 MCP tools, and the same core features.</p>
-        <p className="mt-1">Upgrade or cancel anytime. No contracts.</p>
+      <div className="text-center text-sm" style={{ color: "var(--text-muted)" }}>
+        <p>All plans include GSC + GA4 + GBP integration and all 30 MCP tools.</p>
+        <p className="mt-1">Cancel or downgrade anytime. No contracts.</p>
       </div>
     </div>
   );

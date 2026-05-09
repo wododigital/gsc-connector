@@ -1,5 +1,5 @@
 /**
- * GSC Connect - Shared TypeScript Interfaces
+ * OMG Bridge - Shared TypeScript Interfaces
  * Owned by: Architect agent
  */
 
@@ -19,7 +19,7 @@ export interface User {
   updatedAt: Date;
 }
 
-export type SubscriptionTier = "free" | "pro" | "agency";
+export type SubscriptionTier = "free" | "annual";
 
 export interface GoogleCredential {
   id: string;

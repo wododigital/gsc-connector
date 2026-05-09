@@ -21,7 +21,7 @@ export default async function DashboardLayout({
         <div className="p-4 border-b" style={{ borderColor: "var(--glass-border)" }}>
           <img
             src="/OMG Rectangle LOGO Dark BG.svg"
-            alt="OMG AI"
+            alt="OMG Bridge"
             className="h-7 w-auto"
           />
         </div>

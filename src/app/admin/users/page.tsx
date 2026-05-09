@@ -17,8 +17,7 @@ interface User {
 
 const PLANS = [
   { id: "plan_free", label: "Free" },
-  { id: "plan_pro", label: "Pro" },
-  { id: "plan_premium", label: "Premium" },
+  { id: "plan_annual", label: "Annual" },
 ];
 
 export default function AdminUsers() {
@@ -98,8 +97,7 @@ export default function AdminUsers() {
             ) : users.map((u) => {
               const pct = u.callsLimit > 0 ? Math.round((u.callsUsed / u.callsLimit) * 100) : 0;
               const planBadge =
-                u.planId === "plan_premium" ? "badge badge-accent" :
-                u.planId === "plan_pro" ? "badge badge-info" :
+                u.planId === "plan_annual" ? "badge badge-accent" :
                 "badge badge-muted";
               return (
                 <tr key={u.id}>

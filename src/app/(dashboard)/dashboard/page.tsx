@@ -8,7 +8,7 @@ import { ConnectionActions } from "@/components/connection-actions";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Dashboard - OMG AI",
+  title: "Dashboard - OMG Bridge",
 };
 
 async function getProperties(userId: string) {
@@ -51,7 +51,7 @@ async function getApiKeyCount(userId: string) {
 const MCP_ENDPOINT = `${process.env.APP_URL || "http://localhost:3000"}/api/mcp`;
 
 const CLAUDE_DESKTOP_CONFIG = JSON.stringify(
-  { mcpServers: { "omg-ai": { url: MCP_ENDPOINT, headers: { Authorization: "Bearer YOUR_API_KEY" } } } },
+  { mcpServers: { "omg-connector": { url: MCP_ENDPOINT, headers: { Authorization: "Bearer YOUR_API_KEY" } } } },
   null, 2
 );
 
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Manage your OMG AI setup and integrations.</p>
+          <p className="page-subtitle">Manage your OMG Bridge setup and integrations.</p>
         </div>
         {hasCredential && (
           <ConnectionActions hasGsc={properties.length > 0} hasAnalyticsScope={hasAnalyticsScope} />
@@ -195,7 +195,7 @@ export default async function DashboardPage() {
               MCP Endpoint
             </h2>
             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-              Use this URL to connect OMG AI to Claude, Cursor, or ChatGPT.
+              Use this URL to connect OMG Bridge to Claude, Cursor, or ChatGPT.
             </p>
           </div>
         </div>

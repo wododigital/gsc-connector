@@ -1,53 +1,167 @@
 import Link from "next/link";
 
+const navLinks = [
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/guides", label: "Guides" },
+  { href: "/faq", label: "FAQ" },
+];
+
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      <header className="border-b border-zinc-800/50 sticky top-0 bg-zinc-950/80 backdrop-blur-md z-50">
-        <nav className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG AI" className="h-7" />
-          </Link>
-          <div className="flex items-center gap-6 text-sm">
-            <Link href="/features" className="text-zinc-400 hover:text-white transition-colors">Features</Link>
-            <Link href="/pricing" className="text-zinc-400 hover:text-white transition-colors">Pricing</Link>
-            <Link href="/guides" className="text-zinc-400 hover:text-white transition-colors">Guides</Link>
-            <Link href="/faq" className="text-zinc-400 hover:text-white transition-colors">FAQ</Link>
-            <Link href="/dashboard" className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg transition-colors">
-              Dashboard
+    <div className="min-h-screen">
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          background: "rgba(6, 10, 16, 0.82)",
+          backdropFilter: "blur(24px) saturate(1.6)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.6)",
+          borderBottom: "1px solid var(--glass-border)",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              height: 60,
+            }}
+          >
+            <Link href="/" style={{ display: "flex", alignItems: "center" }}>
+              <img
+                src="/OMG Rectangle LOGO Dark BG.svg"
+                alt="OMG Bridge"
+                style={{ height: 30, width: "auto" }}
+              />
             </Link>
-          </div>
-        </nav>
-      </header>
-      <main>{children}</main>
-      <footer className="border-t border-zinc-800/50 mt-24">
-        <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between gap-8">
-          <div>
-            <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG AI" className="h-7 mb-3" />
-            <p className="text-sm text-zinc-500 max-w-xs">
-              Connect Google Search Console and GA4 to your AI assistants via MCP.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-8 text-sm">
-            <div>
-              <p className="text-zinc-300 font-semibold mb-3">Product</p>
-              <ul className="space-y-2">
-                <li><Link href="/features" className="text-zinc-500 hover:text-zinc-300">Features</Link></li>
-                <li><Link href="/pricing" className="text-zinc-500 hover:text-zinc-300">Pricing</Link></li>
-                <li><Link href="/guides" className="text-zinc-500 hover:text-zinc-300">Setup Guides</Link></li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-zinc-300 font-semibold mb-3">Support</p>
-              <ul className="space-y-2">
-                <li><Link href="/faq" className="text-zinc-500 hover:text-zinc-300">FAQ</Link></li>
-                <li><Link href="/dashboard/tickets" className="text-zinc-500 hover:text-zinc-300">Support Tickets</Link></li>
-              </ul>
+            <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: "var(--text-secondary)",
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-sm)",
+                    textDecoration: "none",
+                  }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Link
+                href="/auth/login"
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: "var(--text-secondary)",
+                  padding: "6px 12px",
+                  textDecoration: "none",
+                }}
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/api/auth/google"
+                className="btn-primary"
+                style={{ fontSize: 13, padding: "7px 16px" }}
+              >
+                Get started free
+              </Link>
             </div>
           </div>
         </div>
-        <div className="border-t border-zinc-800 py-4">
-          <p className="text-center text-xs text-zinc-600">2026 OMG AI. All rights reserved.</p>
+      </header>
+
+      <main>{children}</main>
+
+      <footer
+        style={{
+          borderTop: "1px solid var(--glass-border)",
+          marginTop: 80,
+        }}
+      >
+        <div
+          className="max-w-6xl mx-auto px-6"
+          style={{
+            paddingTop: 48,
+            paddingBottom: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 32,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+              gap: 32,
+            }}
+          >
+            <div>
+              <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG Bridge" className="h-7 mb-3" />
+              <p className="text-sm max-w-xs" style={{ color: "var(--text-muted)" }}>
+                Connect Google Search Console, Analytics, and Business Profile to your AI assistants via MCP.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-8 text-sm">
+              <div>
+                <p
+                  className="font-semibold mb-3"
+                  style={{
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Product
+                </p>
+                <ul className="space-y-2">
+                  <li><Link href="/features" style={{ color: "var(--text-secondary)" }}>Features</Link></li>
+                  <li><Link href="/pricing" style={{ color: "var(--text-secondary)" }}>Pricing</Link></li>
+                  <li><Link href="/guides" style={{ color: "var(--text-secondary)" }}>Setup Guides</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p
+                  className="font-semibold mb-3"
+                  style={{
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Support
+                </p>
+                <ul className="space-y-2">
+                  <li><Link href="/faq" style={{ color: "var(--text-secondary)" }}>FAQ</Link></li>
+                  <li><Link href="/dashboard/tickets" style={{ color: "var(--text-secondary)" }}>Support Tickets</Link></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
+              borderTop: "1px solid var(--glass-border)",
+              paddingTop: 16,
+              textAlign: "center",
+            }}
+          >
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              &copy; {new Date().getFullYear()} OMG Bridge. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

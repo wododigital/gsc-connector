@@ -2,7 +2,7 @@
  * OAuth2 Authorization Server
  * 
  * This module implements the OAuth2 endpoints that allow Claude.ai
- * and ChatGPT to authenticate users of the GSC Connect platform.
+ * and ChatGPT to authenticate users of the OMG Bridge platform.
  * 
  * Supports:
  * - Dynamic Client Registration (RFC 7591)
@@ -143,7 +143,7 @@ router.get("/oauth/authorize", async (req: Request, res: Response) => {
   // TODO: Render the consent page (Next.js page or server-rendered HTML)
   // The consent page should:
   // 1. Show "Authorize [client_name]" header
-  // 2. Show "wants to access your GSC Connect account"
+  // 2. Show "wants to access your OMG Bridge account"
   // 3. Show login form if not authenticated
   // 4. Show property selector (list user's GSC properties)
   // 5. Show "Authorize" and "Deny" buttons

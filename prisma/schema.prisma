@@ -1,4 +1,4 @@
-// GSC Connect - Database Schema
+// OMG Bridge - Database Schema
 // Run: npx prisma migrate dev --name init
 // Run: npx prisma generate
 
@@ -20,7 +20,7 @@ model User {
   name             String?
   googleId         String?  @unique @map("google_id")
   passwordHash     String?  @map("password_hash")
-  subscriptionTier String   @default("free") @map("subscription_tier") // free, pro, agency
+  subscriptionTier String   @default("free") @map("subscription_tier") // free, annual
   stripeCustomerId String?  @map("stripe_customer_id")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -42,8 +42,8 @@ model User {
 // Pricing Plans
 // ============================================================
 model Plan {
-  id                       String   @id // e.g. "plan_free", "plan_pro", "plan_premium"
-  name                     String   @unique // "free", "pro", "premium"
+  id                       String   @id // e.g. "plan_free", "plan_annual"
+  name                     String   @unique // "free", "annual"
   displayName              String   @map("display_name")
   monthlyCalls             Int      @map("monthly_calls")
   priceCents               Int      @default(0) @map("price_cents")

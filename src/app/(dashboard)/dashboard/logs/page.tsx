@@ -4,7 +4,7 @@ import db from "@/lib/db";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Usage Logs - OMG AI",
+  title: "Usage Logs - OMG Bridge",
 };
 
 interface LogsPageProps {

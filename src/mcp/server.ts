@@ -1,5 +1,5 @@
 /**
- * GSC Connect - MCP Server (Streamable HTTP transport)
+ * OMG Bridge - MCP Server (Streamable HTTP transport)
  *
  * Runs on port 3001 (or MCP_PORT env var).
  * Validates Bearer tokens via the auth middleware, then creates a per-SESSION
@@ -95,7 +95,7 @@ setInterval(() => {
 // ----------------------------------------------------------------
 function createMcpServer(user: UserContext): McpServer {
   const server = new McpServer({
-    name: "omg-ai",
+    name: "omg-connector",
     version: "1.0.0",
   });
 
@@ -172,7 +172,7 @@ app.use((_req: Request, res: Response, next) => {
 app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
-    service: "omg-ai-mcp",
+    service: "omg-bridge-mcp",
     timestamp: new Date().toISOString(),
     sessions: sessions.size,
   });
@@ -317,7 +317,7 @@ app.delete("/mcp", validateAuth, async (req: Request, res: Response) => {
 const PORT = parseInt(process.env.MCP_PORT || "3001", 10);
 
 app.listen(PORT, () => {
-  console.log(`[MCP] GSC Connect MCP server running on port ${PORT}`);
+  console.log(`[MCP] OMG Bridge MCP server running on port ${PORT}`);
   console.log(`[MCP] Health: http://localhost:${PORT}/health`);
   console.log(`[MCP] Endpoint: http://localhost:${PORT}/mcp`);
 });

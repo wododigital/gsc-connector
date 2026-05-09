@@ -11,8 +11,7 @@ export const stripe = process.env.STRIPE_SECRET_KEY
   : null;
 
 export const PLAN_PRICE_MAP: Record<string, string> = {
-  plan_pro: process.env.STRIPE_PRO_PRICE_ID ?? "",
-  plan_premium: process.env.STRIPE_PREMIUM_PRICE_ID ?? "",
+  plan_annual: process.env.STRIPE_ANNUAL_PRICE_ID ?? "",
 };
 
 export const PRICE_PLAN_MAP: Record<string, string> = Object.fromEntries(

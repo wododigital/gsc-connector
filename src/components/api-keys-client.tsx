@@ -206,7 +206,7 @@ export function ApiKeysClient({ initialKeys }: ApiKeysClientProps) {
       {/* Keys list */}
       {keys.length === 0 ? (
         <div className="text-center py-12 text-sm" style={{ color: "var(--text-muted)" }}>
-          No API keys yet. Create one to use OMG AI with Claude Desktop or Cursor.
+          No API keys yet. Create one to use OMG Bridge with Claude Desktop or Cursor.
         </div>
       ) : (
         <div className="space-y-3">

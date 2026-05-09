@@ -1,6 +1,6 @@
 /**
- * GSC Connect - MCP Server
- * 
+ * OMG Bridge - MCP Server
+ *
  * This is the core MCP server that exposes Google Search Console
  * data as tools for AI assistants (Claude, ChatGPT, Cursor).
  * 

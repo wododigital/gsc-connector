@@ -124,7 +124,9 @@ export default function BillingPage() {
               </h2>
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                 {usage.price_cents > 0
-                  ? `$${(usage.price_cents / 100).toFixed(0)}/month`
+                  ? usage.plan === "annual"
+                    ? `$${(usage.price_cents / 100).toFixed(0)}/year`
+                    : `$${(usage.price_cents / 100).toFixed(0)}/month`
                   : "Free"}
                 {usage.status !== "active" && (
                   <span className="ml-2" style={{ color: "var(--warning)" }}>({usage.status})</span>
@@ -142,26 +144,36 @@ export default function BillingPage() {
             <div className="flex justify-between text-sm mb-2">
               <span style={{ color: "var(--text-secondary)" }}>Tool calls used this period</span>
               <span className="font-medium" style={{ color: "var(--text-primary)" }}>
-                {usage.calls_used.toLocaleString()} / {usage.calls_limit.toLocaleString()}
+                {usage.calls_limit >= 999999
+                  ? `${usage.calls_used.toLocaleString()} / Unlimited`
+                  : `${usage.calls_used.toLocaleString()} / ${usage.calls_limit.toLocaleString()}`}
               </span>
             </div>
-            <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${Math.min(100, usage.percentage_used)}%`,
-                  background: usage.percentage_used >= 90
-                    ? "var(--error)"
-                    : usage.percentage_used >= 70
-                    ? "var(--warning)"
-                    : "var(--accent)",
-                }}
-              />
-            </div>
-            <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>
-              Resets on {new Date(usage.period_end).toLocaleDateString()} -{" "}
-              {usage.calls_remaining.toLocaleString()} calls remaining
-            </p>
+            {usage.calls_limit >= 999999 ? (
+              <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>
+                Unlimited tool calls included with Annual.
+              </p>
+            ) : (
+              <>
+                <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(100, usage.percentage_used)}%`,
+                      background: usage.percentage_used >= 90
+                        ? "var(--error)"
+                        : usage.percentage_used >= 70
+                        ? "var(--warning)"
+                        : "var(--accent)",
+                    }}
+                  />
+                </div>
+                <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>
+                  Resets on {new Date(usage.period_end).toLocaleDateString()} -{" "}
+                  {usage.calls_remaining.toLocaleString()} calls remaining
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -170,11 +182,13 @@ export default function BillingPage() {
         <h2 className="text-lg font-semibold mb-4" style={{ color: "var(--text-primary)" }}>
           Available Plans
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl">
           {plans.map((plan) => {
             const isCurrentPlan = usage?.plan === plan.name;
             const isUpgrade = (plan.priceCents ?? 0) > (usage?.price_cents ?? 0);
             const isFree = plan.priceCents === 0;
+            const isAnnual = plan.name === "annual";
+            const isUnlimited = plan.monthlyCalls >= 999999;
 
             return (
               <div
@@ -188,11 +202,15 @@ export default function BillingPage() {
                 <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>
                   {plan.priceCents > 0 ? `$${(plan.priceCents / 100).toFixed(0)}` : "Free"}
                   {plan.priceCents > 0 && (
-                    <span className="text-sm font-normal" style={{ color: "var(--text-muted)" }}>/month</span>
+                    <span className="text-sm font-normal" style={{ color: "var(--text-muted)" }}>
+                      {isAnnual ? "/year" : "/month"}
+                    </span>
                   )}
                 </p>
                 <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-                  {plan.monthlyCalls.toLocaleString()} tool calls/month
+                  {isUnlimited
+                    ? "Unlimited tool calls"
+                    : `${plan.monthlyCalls.toLocaleString()} tool calls/month`}
                 </p>
                 <ul className="mt-4 space-y-2">
                   {(plan.features as string[]).map((feature, i) => (

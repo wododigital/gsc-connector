@@ -153,7 +153,7 @@ function ChatPreviewCard() {
               flexShrink: 0,
             }}
           >
-            <img src="/OMG Icon SVG.svg" alt="OMG AI" style={{ width: 16, height: 16 }} />
+            <img src="/OMG Icon SVG.svg" alt="OMG Bridge" style={{ width: 16, height: 16 }} />
           </div>
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.5 }}>
@@ -703,17 +703,27 @@ function ToolsSection() {
    Pricing
    ---------------------------------------------------------------- */
 function PricingSection() {
-  const plans = [
+  const plans: Array<{
+    name: string;
+    price: string;
+    period: string;
+    desc: string;
+    features: string[];
+    cta: string;
+    ctaHref: string;
+    featured: boolean;
+    badge?: string;
+  }> = [
     {
       name: "Free",
       price: "$0",
-      period: "/month",
+      period: "/forever",
       desc: "For individuals getting started.",
       features: [
-        "1 GSC property",
-        "100 queries / day",
+        "1 Google account",
+        "200 tool calls/month",
         "All 30 MCP tools",
-        "Claude.ai + Claude Desktop",
+        "GSC + GA4 + GBP access",
         "Community support",
       ],
       cta: "Get started free",
@@ -721,37 +731,22 @@ function PricingSection() {
       featured: false,
     },
     {
-      name: "Pro",
-      price: "$X", // TODO: STRIPE - set real price
-      period: "/month",
-      desc: "For SEO professionals and growing sites.",
+      name: "Annual",
+      price: "$199",
+      period: "/year",
+      desc: "For SEOs and agencies who want unlimited.",
       features: [
-        "Up to 10 GSC properties",
-        "10,000 queries / day",
+        "Unlimited Google accounts",
+        "Unlimited tool calls",
         "All 30 MCP tools",
-        "GA4 + GBP integrations",
+        "GSC + GA4 + GBP access",
         "Priority support",
+        "Usage analytics",
       ],
-      cta: "Start with Pro",
-      ctaHref: "/api/auth/google",
+      cta: "Get Annual",
+      ctaHref: "/dashboard/billing",
       featured: true,
-      badge: "Most popular",
-    },
-    {
-      name: "Agency",
-      price: "$X", // TODO: STRIPE - set real price
-      period: "/month",
-      desc: "For agencies managing multiple clients.",
-      features: [
-        "Up to 100 properties",
-        "100,000 queries / day",
-        "All 30 MCP tools",
-        "Client property management",
-        "Dedicated support",
-      ],
-      cta: "Start with Agency",
-      ctaHref: "/api/auth/google",
-      featured: false,
+      badge: "Best value",
     },
   ];
 
@@ -795,7 +790,7 @@ function PricingSection() {
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: 20,
-            maxWidth: 960,
+            maxWidth: 720,
             margin: "0 auto",
           }}
         >
@@ -982,7 +977,7 @@ function CtaSection() {
                 className="btn-primary"
                 style={{ fontSize: 15, padding: "12px 28px" }}
               >
-                Connect Google - Free
+                Get started free
                 <ArrowRight size={16} />
               </a>
               <a
@@ -1031,7 +1026,7 @@ function Footer() {
           >
             {/* Brand */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG AI" style={{ height: 28, width: "auto" }} />
+              <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG Bridge" style={{ height: 28, width: "auto" }} />
               <p style={{ fontSize: 13, color: "var(--text-muted)", maxWidth: 260, lineHeight: 1.5 }}>
                 Google Search Console, Analytics, and Business Profile - as MCP tools for any AI assistant.
               </p>
@@ -1129,7 +1124,7 @@ function Footer() {
             }}
           >
             <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
-              &copy; {new Date().getFullYear()} OMG AI. All rights reserved.
+              &copy; {new Date().getFullYear()} OMG Bridge. All rights reserved.
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Built on</span>
@@ -1193,7 +1188,7 @@ export default function LandingPage() {
                 style={{ animationDelay: "0ms" }}
               >
                 <span className="status-dot status-dot-success" />
-                Now in beta - free during launch
+                Free plan available - 200 tool calls/month
               </div>
 
               {/* H1 */}
@@ -1237,7 +1232,7 @@ export default function LandingPage() {
                   maxWidth: 480,
                 }}
               >
-                OMG AI connects Google Search Console, Analytics 4, and Business Profile
+                OMG Bridge connects Google Search Console, Analytics 4, and Business Profile
                 to Claude, ChatGPT, and Cursor via the Model Context Protocol. No SQL,
                 no dashboards - just ask.
               </p>
@@ -1258,7 +1253,7 @@ export default function LandingPage() {
                   className="btn-primary"
                   style={{ fontSize: 15, padding: "12px 24px" }}
                 >
-                  Connect Google - Free
+                  Get started free
                   <ArrowRight size={16} />
                 </a>
                 <a

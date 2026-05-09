@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sign in - OMG AI",
+  title: "Sign in - OMG Bridge",
 };
 
 interface LoginPageProps {
@@ -55,12 +55,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <a href="/" className="inline-block">
             <img
               src="/OMG Rectangle LOGO Dark BG.svg"
-              alt="OMG AI"
+              alt="OMG Bridge"
               className="h-9 w-auto mx-auto"
             />
           </a>
           <p className="mt-2 text-zinc-400 text-sm">
-            Connect Google Search Console to your AI tools
+            Connect Google Search Console, Analytics &amp; Business Profile to your AI tools
           </p>
         </div>
 
@@ -90,7 +90,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </a>
 
           <p className="mt-6 text-center text-xs text-zinc-500 leading-relaxed">
-            By signing in, you agree to grant OMG AI read access to your
+            By signing in, you agree to grant OMG Bridge read access to your
             Google Search Console data. Your tokens are encrypted and stored
             securely.
           </p>

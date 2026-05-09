@@ -1,5 +1,5 @@
 /**
- * GSC Connect - Configuration Module
+ * OMG Bridge - Configuration Module
  * Reads and validates environment variables at startup.
  * Owned by: Architect agent
  */
@@ -73,18 +73,16 @@ export const config = {
     authRequestsPerMinute: requireEnvNumber("RATE_LIMIT_AUTH", 10),
   },
 
+  // Hardcoded tier limits are kept as a fallback only. Live limits are driven
+  // by the Plan / UserSubscription tables via `/api/plans` + `/api/usage`.
   tiers: {
     free: {
       maxProperties: 1,
-      dailyQueryLimit: 100,
+      monthlyCallLimit: 200,
     },
-    pro: {
-      maxProperties: 10,
-      dailyQueryLimit: 10000,
-    },
-    agency: {
-      maxProperties: 100,
-      dailyQueryLimit: 100000,
+    annual: {
+      maxProperties: 999,
+      monthlyCallLimit: 999999,
     },
   },
 } as const;

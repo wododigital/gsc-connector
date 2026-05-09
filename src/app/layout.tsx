@@ -3,9 +3,9 @@ import "./globals.css";
 import "./globals-glass.css";
 
 export const metadata: Metadata = {
-  title: "OMG AI - Google Search Console and Analytics for AI",
+  title: "OMG Bridge - Google Search Console and Analytics for AI",
   description:
-    "Connect Google Search Console and Google Analytics to Claude, ChatGPT, and Cursor via MCP",
+    "Connect Google Search Console, Analytics, and Business Profile to Claude, ChatGPT, and Cursor via MCP",
 };
 
 export default function RootLayout({
