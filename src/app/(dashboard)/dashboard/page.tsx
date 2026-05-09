@@ -5,6 +5,7 @@ import { CopyButton } from "@/components/copy-button";
 import { PropertyManager } from "@/components/property-manager";
 import { GA4PropertyManager } from "@/components/ga4-property-manager";
 import { ConnectionActions } from "@/components/connection-actions";
+import { BrandStatusCard } from "@/components/brand-status-card";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -48,6 +49,23 @@ async function getApiKeyCount(userId: string) {
   catch { return 0; }
 }
 
+async function getBrandProfile(userId: string) {
+  try {
+    return await db.brandProfile.findUnique({
+      where: { userId },
+      select: {
+        companyName: true,
+        logoUrl: true,
+        primaryColor: true,
+        secondaryColor: true,
+        accentColor: true,
+        fontFamily: true,
+        isApproved: true,
+      },
+    });
+  } catch { return null; }
+}
+
 const MCP_ENDPOINT = `${process.env.APP_URL || "http://localhost:3000"}/api/mcp`;
 
 const CLAUDE_DESKTOP_CONFIG = JSON.stringify(
@@ -59,11 +77,12 @@ export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  const [properties, ga4Properties, credentialInfo, apiKeyCount] = await Promise.all([
+  const [properties, ga4Properties, credentialInfo, apiKeyCount, brandProfile] = await Promise.all([
     getProperties(session.id),
     getGA4Properties(session.id),
     getCredentialInfo(session.id),
     getApiKeyCount(session.id),
+    getBrandProfile(session.id),
   ]);
 
   const hasGscConnected = properties.some((p) => p.isActive);
@@ -213,9 +232,26 @@ export default async function DashboardPage() {
         <SetupInstructions />
       </section>
 
-      {/* Quick links: API Keys | Usage Logs | Billing */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Brand profile status */}
+      <BrandStatusCard profile={brandProfile} />
+
+      {/* Quick links: Prompts | Branding | API Keys | Usage Logs | Billing */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[
+          {
+            href: "/dashboard/prompts",
+            title: "Prompt Library",
+            desc: "Reusable AI prompts for branded reports.",
+            meta: "Browse templates →",
+            metaColor: "var(--accent-light)",
+          },
+          {
+            href: "/dashboard/branding",
+            title: "Branding",
+            desc: "Logo, colors and font for white-label reports.",
+            meta: "Set up brand →",
+            metaColor: "var(--accent-light)",
+          },
           {
             href: "/dashboard/keys",
             title: "API Keys",

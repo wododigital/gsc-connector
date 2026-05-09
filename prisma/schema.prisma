@@ -15,15 +15,16 @@ datasource db {
 // User Accounts
 // ============================================================
 model User {
-  id               String   @id @default(uuid())
-  email            String   @unique
-  name             String?
-  googleId         String?  @unique @map("google_id")
-  passwordHash     String?  @map("password_hash")
-  subscriptionTier String   @default("free") @map("subscription_tier") // free, annual
-  stripeCustomerId String?  @map("stripe_customer_id")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                  String   @id @default(uuid())
+  email               String   @unique
+  name                String?
+  googleId            String?  @unique @map("google_id")
+  passwordHash        String?  @map("password_hash")
+  subscriptionTier    String   @default("free") @map("subscription_tier") // free, annual
+  stripeCustomerId    String?  @map("stripe_customer_id")
+  onboardingCompleted Boolean  @default(false) @map("onboarding_completed")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   googleCredentials GoogleCredential[]
   gscProperties     GscProperty[]
@@ -34,6 +35,8 @@ model User {
   subscription      UserSubscription?
   couponRedemptions CouponRedemption[]
   tickets           SupportTicket[]
+  userPrompts       UserPrompt[]
+  brandProfile      BrandProfile?
 
   @@map("users")
 }
@@ -191,9 +194,9 @@ model GoogleCredential {
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  properties     GscProperty[]
-  ga4Properties  Ga4Property[]
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  properties    GscProperty[]
+  ga4Properties Ga4Property[]
 
   @@map("google_credentials")
 }
@@ -210,8 +213,8 @@ model GscProperty {
   isActive        Boolean  @default(true) @map("is_active")
   createdAt       DateTime @default(now()) @map("created_at")
 
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credential GoogleCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credential  GoogleCredential         @relation(fields: [credentialId], references: [id], onDelete: Cascade)
   oauthTokens OAuthToken[]
   authCodes   OAuthAuthorizationCode[]
 
@@ -223,14 +226,14 @@ model GscProperty {
 // API Keys (for Claude Desktop / Cursor authentication)
 // ============================================================
 model ApiKey {
-  id        String    @id @default(uuid())
-  userId    String    @map("user_id")
-  keyHash   String    @unique @map("key_hash") // SHA-256 hash
-  keyPrefix String    @map("key_prefix") // First 8 chars for display
-  name      String    @default("Default")
-  isActive  Boolean   @default(true) @map("is_active")
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  keyHash    String    @unique @map("key_hash") // SHA-256 hash
+  keyPrefix  String    @map("key_prefix") // First 8 chars for display
+  name       String    @default("Default")
+  isActive   Boolean   @default(true) @map("is_active")
   lastUsedAt DateTime? @map("last_used_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -300,14 +303,14 @@ model OAuthAuthorizationCode {
 // GA4 Properties (Google Analytics 4 properties per user)
 // ============================================================
 model Ga4Property {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  credentialId String  @map("credential_id")
-  propertyId  String   @map("property_id") // e.g. "properties/987654321"
-  displayName String   @map("display_name") // e.g. "nandhini.com"
-  accountName String?  @map("account_name") // e.g. "My Company"
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  credentialId String   @map("credential_id")
+  propertyId   String   @map("property_id") // e.g. "properties/987654321"
+  displayName  String   @map("display_name") // e.g. "nandhini.com"
+  accountName  String?  @map("account_name") // e.g. "My Company"
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   credential GoogleCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
@@ -357,4 +360,70 @@ model McpDebugLog {
   @@index([status, timestamp])
   @@index([tool, timestamp])
   @@map("mcp_debug_logs")
+}
+
+// ============================================================
+// Prompt Templates (system-wide, created by admin)
+// ============================================================
+model PromptTemplate {
+  id                  String   @id @default(uuid())
+  title               String
+  description         String
+  body                String   @db.Text
+  category            String
+  requiredConnections Json     @default("[]") @map("required_connections")
+  questions           Json     @default("[]")
+  semanticTags        Json     @default("[]") @map("semantic_tags")
+  sortOrder           Int      @default(0) @map("sort_order")
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("prompt_templates")
+}
+
+// ============================================================
+// User Prompts (custom prompts created by individual users)
+// ============================================================
+model UserPrompt {
+  id                  String   @id @default(uuid())
+  userId              String   @map("user_id")
+  title               String
+  description         String
+  body                String   @db.Text
+  category            String   @default("custom")
+  requiredConnections Json     @default("[]") @map("required_connections")
+  questions           Json     @default("[]")
+  semanticTags        Json     @default("[]") @map("semantic_tags")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("user_prompts")
+}
+
+// ============================================================
+// Brand Profiles (one per user, for white-label reports)
+// ============================================================
+model BrandProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  companyName    String?  @map("company_name")
+  website        String?
+  description    String?  @db.Text
+  logoUrl        String?  @map("logo_url")
+  primaryColor   String?  @map("primary_color")
+  secondaryColor String?  @map("secondary_color")
+  accentColor    String?  @map("accent_color")
+  fontFamily     String?  @default("Inter") @map("font_family")
+  isApproved     Boolean  @default(false) @map("is_approved")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("brand_profiles")
 }

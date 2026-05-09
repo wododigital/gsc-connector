@@ -221,10 +221,12 @@ export async function GET(req: NextRequest) {
 
   console.log(`[gsc/callback] GSC connected successfully for user ${session.id}`);
 
-  // Clear the CSRF state cookie and redirect to dashboard
-  const response = NextResponse.redirect(
-    new URL("/dashboard?connected=true", config.app.url)
-  );
+  // Honour the gsc_return_to cookie set by /api/gsc/connect so the onboarding
+  // wizard can pull users back to itself instead of bouncing through /dashboard.
+  const returnTo = req.cookies.get("gsc_return_to")?.value;
+  const safeReturn = returnTo === "/onboarding" ? "/onboarding?connected=true" : "/dashboard?connected=true";
+  const response = NextResponse.redirect(new URL(safeReturn, config.app.url));
   response.cookies.set("gsc_oauth_state", "", { maxAge: 0, path: "/" });
+  response.cookies.set("gsc_return_to", "", { maxAge: 0, path: "/" });
   return response;
 }

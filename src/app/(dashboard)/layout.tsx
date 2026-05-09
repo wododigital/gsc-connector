@@ -1,6 +1,8 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { SidebarLink } from "@/components/sidebar-link";
+import { UsageBanner } from "@/components/usage-banner";
+import db from "@/lib/db";
 
 export default async function DashboardLayout({
   children,
@@ -9,6 +11,29 @@ export default async function DashboardLayout({
 }) {
   const session = await getSession();
   if (!session) redirect("/auth/login");
+
+  // Onboarding redirect: only push the user there if they haven't finished it.
+  const user = await db.user.findUnique({
+    where: { id: session.id },
+    select: { onboardingCompleted: true },
+  });
+  if (user && !user.onboardingCompleted) redirect("/onboarding");
+
+  // Subscription stats for the usage banner + brand stub for the sidebar.
+  const [subscription, brandProfile] = await Promise.all([
+    db.userSubscription.findUnique({
+      where: { userId: session.id },
+      include: { plan: true },
+    }),
+    db.brandProfile.findUnique({
+      where: { userId: session.id },
+      select: { companyName: true, logoUrl: true, isApproved: true },
+    }),
+  ]);
+  const isFreeUser = subscription?.plan.name === "free";
+  const callsUsed = subscription?.callsUsed ?? 0;
+  const callsLimit = subscription?.plan.monthlyCalls ?? 200;
+  const periodEnd = (subscription?.periodEnd ?? new Date(Date.now() + 30 * 86400000)).toISOString();
 
   return (
     <div className="min-h-screen">
@@ -33,6 +58,18 @@ export default async function DashboardLayout({
               <path d="M2 2h5v5H2V2zm0 7h5v5H2V9zm7-7h5v5H9V2zm0 7h5v5H9V9z" />
             </svg>
             <span>Dashboard</span>
+          </SidebarLink>
+          <SidebarLink href="/dashboard/prompts">
+            <svg className="sidebar-icon" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M2 1.5A1.5 1.5 0 0 1 3.5 0h9A1.5 1.5 0 0 1 14 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5V1.5zM4 4h8v1H4V4zm0 3h8v1H4V7zm0 3h5v1H4v-1z" />
+            </svg>
+            <span>Prompts</span>
+          </SidebarLink>
+          <SidebarLink href="/dashboard/branding">
+            <svg className="sidebar-icon" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM4 5.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm5 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-3.5 4a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0z" />
+            </svg>
+            <span>Branding</span>
           </SidebarLink>
           <SidebarLink href="/dashboard/keys">
             <svg className="sidebar-icon" viewBox="0 0 16 16" fill="currentColor">
@@ -69,6 +106,51 @@ export default async function DashboardLayout({
           )}
         </nav>
 
+        {/* Brand stub - clickable, links to Branding page */}
+        <a
+          href="/dashboard/branding"
+          className="block p-3 mx-3 mb-2 rounded-lg transition-colors no-underline"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)" }}
+        >
+          {brandProfile && (brandProfile.logoUrl || brandProfile.companyName) ? (
+            <div className="flex items-center gap-2">
+              <div
+                className="rounded shrink-0 flex items-center justify-center"
+                style={{ width: 28, height: 28, background: "#FFFFFF", border: "1px solid var(--glass-border)" }}
+              >
+                {brandProfile.logoUrl ? (
+                  <img src={brandProfile.logoUrl} alt="Brand" style={{ maxWidth: 24, maxHeight: 24, objectFit: "contain" }} />
+                ) : (
+                  <span className="text-[10px] font-bold" style={{ color: "#0E1420" }}>
+                    {(brandProfile.companyName ?? "?").slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs truncate" style={{ color: "var(--text-primary)" }}>
+                  {brandProfile.companyName ?? "Your brand"}
+                </p>
+                <p className="text-[10px]" style={{ color: brandProfile.isApproved ? "var(--success)" : "var(--warning)" }}>
+                  {brandProfile.isApproved ? "Brand active" : "Draft - approve to activate"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div
+                className="rounded shrink-0 flex items-center justify-center"
+                style={{ width: 28, height: 28, background: "rgba(255,255,255,0.05)", border: "1px dashed var(--glass-border)", color: "var(--text-muted)" }}
+              >
+                +
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs" style={{ color: "var(--text-primary)" }}>Add your brand</p>
+                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>White-label your reports</p>
+              </div>
+            </div>
+          )}
+        </a>
+
         {/* User info + sign out */}
         <div className="p-4 border-t" style={{ borderColor: "var(--glass-border)" }}>
           <p className="text-xs truncate mb-1" style={{ color: "var(--text-muted)" }} title={session.email}>
@@ -93,7 +175,15 @@ export default async function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      <main className="ml-64 p-8">{children}</main>
+      <main className="ml-64 p-8">
+        <UsageBanner
+          callsUsed={callsUsed}
+          callsLimit={callsLimit}
+          isFreeUser={Boolean(isFreeUser)}
+          periodEnd={periodEnd}
+        />
+        {children}
+      </main>
     </div>
   );
 }

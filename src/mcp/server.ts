@@ -39,6 +39,8 @@ import {
 } from "./tools/sites.js";
 import { registerMobileFriendlyTool } from "./tools/mobile-friendly.js";
 import { registerListMyPropertiesTool } from "./tools/list-properties.js";
+import { registerListReportTemplatesTool } from "./tools/list-report-templates.js";
+import { registerGetReportTemplateTool } from "./tools/get-report-template.js";
 
 // GA4 tool registration functions
 import {
@@ -128,6 +130,10 @@ function createMcpServer(user: UserContext): McpServer {
 
   // Property discovery
   registerListMyPropertiesTool(server, userCtx);
+
+  // Report template discovery + retrieval
+  registerListReportTemplatesTool(server, userCtx);
+  registerGetReportTemplateTool(server, userCtx);
 
   // GA4 tools (10 tools)
   registerGaListPropertiesTool(server, userCtx);

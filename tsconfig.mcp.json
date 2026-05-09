@@ -14,5 +14,5 @@
     "sourceMap": true
   },
   "include": ["src/mcp/**/*", "src/lib/**/*", "src/types/**/*", "src/config/**/*"],
-  "exclude": ["node_modules", "src/app/**/*", "src/components/**/*"]
+  "exclude": ["node_modules", "src/app/**/*", "src/components/**/*", "src/lib/color-extractor.ts"]
 }

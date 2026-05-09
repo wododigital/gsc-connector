@@ -8,3 +8,7 @@ dist/
 .claude/
 .claude-flow/
 .swarm/
+
+# User-uploaded brand logos - per-user, not source-controlled
+public/uploads/logos/*
+!public/uploads/logos/.gitkeep

@@ -5,6 +5,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { DEFAULT_PROMPTS } from "./seed-prompts";
 
 const db = new PrismaClient();
 
@@ -136,6 +137,28 @@ async function main() {
       data: { planId: "plan_annual" },
     });
   }
+
+  console.log("Seeding prompt templates...");
+  for (const p of DEFAULT_PROMPTS) {
+    const existing = await db.promptTemplate.findFirst({ where: { title: p.title } });
+    const data = {
+      title: p.title,
+      description: p.description,
+      body: p.body,
+      category: p.category,
+      requiredConnections: p.requiredConnections,
+      questions: p.questions,
+      semanticTags: p.semanticTags,
+      sortOrder: p.sortOrder,
+      isActive: true,
+    };
+    if (existing) {
+      await db.promptTemplate.update({ where: { id: existing.id }, data });
+    } else {
+      await db.promptTemplate.create({ data });
+    }
+  }
+  console.log(`  -> ${DEFAULT_PROMPTS.length} prompt templates upserted`);
 
   console.log("Seed complete.");
 }

@@ -27,6 +27,11 @@ export async function GET(req: NextRequest) {
     const state = randomBytes(16).toString("hex");
     const gscCallbackUri = `${config.app.url}/api/gsc/callback`;
 
+    // Optional ?return=onboarding so the wizard can send users back to itself
+    // after the round-trip instead of routing through /dashboard.
+    const url = new URL(req.url);
+    const returnTarget = url.searchParams.get("return") === "onboarding" ? "/onboarding" : "/dashboard";
+
     const googleAuthUrl = buildGoogleAuthUrl({
       scopes: [
         "openid",
@@ -48,6 +53,13 @@ export async function GET(req: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 300, // 5 minutes
+      path: "/",
+    });
+    response.cookies.set("gsc_return_to", returnTarget, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 300,
       path: "/",
     });
 
