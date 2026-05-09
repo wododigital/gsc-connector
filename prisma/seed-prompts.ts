@@ -18,7 +18,9 @@ export interface PromptSeed {
 const REPORT_FORMAT_BLOCK =
   "### Report Format:\n" +
   "- Generate the report as a single self-contained HTML file (no external CSS/JS imports).\n" +
-  "- Use the brand profile below for all styling (colors via CSS variables, logo in the header, font family).\n" +
+  "- Use the brand profile below for all styling. Map the colors into CSS variables on `:root` and reference them throughout.\n" +
+  "- Honor the report theme: if 'dark', the page uses a dark background with light text; if 'light', white background with dark text. The brand profile already gives you the right bg, text, card and border colors for the chosen theme - use them as-is.\n" +
+  "- Use {{brand.logoUrl}} for the header logo (it has been pre-selected for the chosen theme).\n" +
   "- Include: branded header with logo + report title + date range, executive summary paragraph, " +
   "data cards for headline metrics, tabbed or sectioned breakdowns, data tables for row-level detail, " +
   "and short commentary explaining what the data means and what to do next.\n" +
@@ -28,9 +30,15 @@ const REPORT_FORMAT_BLOCK =
   "### Brand Profile:\n" +
   "- Company: {{brand.companyName}}\n" +
   "- Logo URL: {{brand.logoUrl}}\n" +
-  "- Primary Color: {{brand.primaryColor}}\n" +
-  "- Secondary Color: {{brand.secondaryColor}}\n" +
-  "- Accent Color: {{brand.accentColor}}\n" +
+  "- Report Theme: {{brand.reportTheme}}  (use this to choose the overall color scheme)\n" +
+  "- Primary Color: {{brand.primaryColor}}  (headers, key callouts, primary buttons)\n" +
+  "- Secondary Color: {{brand.secondaryColor}}  (deep accents, dark-bg sections)\n" +
+  "- Accent Color: {{brand.accentColor}}  (secondary highlights, links, badges)\n" +
+  "- Background: {{brand.bgColor}}\n" +
+  "- Text: {{brand.textColor}}\n" +
+  "- Muted Text: {{brand.textMutedColor}}\n" +
+  "- Card Background: {{brand.cardBgColor}}\n" +
+  "- Border: {{brand.borderColor}}\n" +
   "- Font: {{brand.fontFamily}}\n";
 
 function wrap(title: string, questions: string[], instructions: string): string {

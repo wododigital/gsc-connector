@@ -3,10 +3,12 @@ import Link from "next/link";
 interface BrandProfileLite {
   companyName: string | null;
   logoUrl: string | null;
+  logoUrlDark: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   accentColor: string | null;
   fontFamily: string | null;
+  reportTheme: string | null;
   isApproved: boolean;
 }
 
@@ -70,6 +72,13 @@ export function BrandStatusCard({ profile }: Props) {
   const secondary = profile.secondaryColor || FALLBACK_SECONDARY;
   const accent = profile.accentColor || FALLBACK_ACCENT;
   const company = profile.companyName?.trim();
+  const theme: "light" | "dark" = profile.reportTheme === "dark" ? "dark" : "light";
+  const previewLogoForTheme =
+    theme === "dark"
+      ? (profile.logoUrlDark || profile.logoUrl)
+      : profile.logoUrl;
+  const previewBg = theme === "dark" ? "#0F172A" : "#FFFFFF";
+  const previewText = theme === "dark" ? "#F8FAFC" : "#1A1A2E";
 
   return (
     <section className="glass-card p-5">
@@ -91,16 +100,16 @@ export function BrandStatusCard({ profile }: Props) {
         )}
       </div>
 
-      {/* Live preview row: logo on light bg + color swatches */}
+      {/* Live preview row: logo on theme bg + color swatches */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div
           className="rounded-lg p-3 flex items-center justify-center md:col-span-1"
-          style={{ background: "#FFFFFF", border: "1px solid var(--glass-border)", minHeight: 92 }}
+          style={{ background: previewBg, color: previewText, border: "1px solid var(--glass-border)", minHeight: 92 }}
         >
-          {profile.logoUrl ? (
-            <img src={profile.logoUrl} alt={company ?? "Brand logo"} style={{ maxHeight: 56, maxWidth: "100%", objectFit: "contain" }} />
+          {previewLogoForTheme ? (
+            <img src={previewLogoForTheme} alt={company ?? "Brand logo"} style={{ maxHeight: 56, maxWidth: "100%", objectFit: "contain" }} />
           ) : (
-            <span className="text-xs" style={{ color: "#6B7280" }}>No logo uploaded</span>
+            <span className="text-xs" style={{ opacity: 0.55 }}>No logo uploaded</span>
           )}
         </div>
 
@@ -125,9 +134,19 @@ export function BrandStatusCard({ profile }: Props) {
       </div>
 
       <div className="flex items-center justify-between mt-4 pt-3 gap-3 flex-wrap" style={{ borderTop: "1px solid var(--glass-border)" }}>
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Font: <span style={{ color: "var(--text-secondary)" }}>{profile.fontFamily ?? "Inter"}</span>
-        </p>
+        <div className="flex flex-wrap gap-3 text-xs items-center" style={{ color: "var(--text-muted)" }}>
+          <span className="badge" style={{ fontSize: "10px", background: theme === "dark" ? "rgba(15,23,42,0.6)" : "rgba(248,250,252,0.6)", color: theme === "dark" ? "#F8FAFC" : "#1A1A2E", border: "1px solid var(--glass-border)" }}>
+            {theme === "dark" ? "Dark theme" : "Light theme"}
+          </span>
+          <span>
+            Logos: <span style={{ color: profile.logoUrl ? "var(--success)" : "var(--text-muted)" }}>light {profile.logoUrl ? "✓" : "—"}</span>
+            {" · "}
+            <span style={{ color: profile.logoUrlDark ? "var(--success)" : "var(--text-muted)" }}>dark {profile.logoUrlDark ? "✓" : "—"}</span>
+          </span>
+          <span>
+            Font: <span style={{ color: "var(--text-secondary)" }}>{profile.fontFamily ?? "Inter"}</span>
+          </span>
+        </div>
         <div className="flex gap-2">
           {!profile.isApproved && (
             <Link href="/dashboard/branding" className="btn-primary btn-primary-sm">

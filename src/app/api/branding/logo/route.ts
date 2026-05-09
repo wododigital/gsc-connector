@@ -20,6 +20,8 @@ export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
     const file = form.get("logo");
+    const variantRaw = form.get("variant");
+    const variant = variantRaw === "dark" ? "dark" : "light";
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Missing logo file" }, { status: 400 });
     }
@@ -36,18 +38,19 @@ export async function POST(req: NextRequest) {
     await mkdir(dir, { recursive: true });
 
     // Use timestamp to bust caches when re-uploading.
-    const filename = `${session.id}-${Date.now()}.${ext}`;
+    const filename = `${session.id}-${variant}-${Date.now()}.${ext}`;
     await writeFile(path.join(dir, filename), buf);
     const url = `/uploads/logos/${filename}`;
 
-    // Persist on the brand profile so reports can pick it up.
+    // Persist on the appropriate slot of the brand profile.
+    const update = variant === "dark" ? { logoUrlDark: url } : { logoUrl: url };
     await db.brandProfile.upsert({
       where: { userId: session.id },
-      create: { userId: session.id, logoUrl: url },
-      update: { logoUrl: url },
+      create: { userId: session.id, ...update },
+      update,
     });
 
-    return NextResponse.json({ url });
+    return NextResponse.json({ url, variant });
   } catch (err) {
     console.error("[api/branding/logo] POST error:", err);
     return NextResponse.json({ error: "Logo upload failed" }, { status: 500 });

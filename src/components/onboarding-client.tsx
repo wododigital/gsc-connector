@@ -27,10 +27,12 @@ interface BrandProfile {
   website: string | null;
   description: string | null;
   logoUrl: string | null;
+  logoUrlDark: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   accentColor: string | null;
   fontFamily: string | null;
+  reportTheme: string | null;
   isApproved: boolean;
 }
 

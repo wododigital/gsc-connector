@@ -414,11 +414,13 @@ model BrandProfile {
   companyName    String?  @map("company_name")
   website        String?
   description    String?  @db.Text
-  logoUrl        String?  @map("logo_url")
+  logoUrl        String?  @map("logo_url") // Light-bg variant (used on light reports)
+  logoUrlDark    String?  @map("logo_url_dark") // Optional dark-bg variant (used on dark reports)
   primaryColor   String?  @map("primary_color")
   secondaryColor String?  @map("secondary_color")
   accentColor    String?  @map("accent_color")
   fontFamily     String?  @default("Inter") @map("font_family")
+  reportTheme    String   @default("light") @map("report_theme") // "light" | "dark" - drives generated report color scheme
   isApproved     Boolean  @default(false) @map("is_approved")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")

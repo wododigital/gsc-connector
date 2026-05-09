@@ -56,10 +56,12 @@ async function getBrandProfile(userId: string) {
       select: {
         companyName: true,
         logoUrl: true,
+        logoUrlDark: true,
         primaryColor: true,
         secondaryColor: true,
         accentColor: true,
         fontFamily: true,
+        reportTheme: true,
         isApproved: true,
       },
     });

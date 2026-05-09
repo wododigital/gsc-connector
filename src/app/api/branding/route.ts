@@ -31,15 +31,18 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    const reportTheme = body.reportTheme === "dark" ? "dark" : "light";
     const data = {
       companyName: clean(body.companyName, 200) ?? null,
       website: clean(body.website, 300) ?? null,
       description: clean(body.description, 2000) ?? null,
       logoUrl: clean(body.logoUrl, 500) ?? null,
+      logoUrlDark: clean(body.logoUrlDark, 500) ?? null,
       primaryColor: cleanHex(body.primaryColor) ?? null,
       secondaryColor: cleanHex(body.secondaryColor) ?? null,
       accentColor: cleanHex(body.accentColor) ?? null,
       fontFamily: clean(body.fontFamily, 80) ?? "Inter",
+      reportTheme,
       isApproved: body.isApproved === true,
     };
 

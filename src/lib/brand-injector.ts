@@ -18,31 +18,60 @@
 import fs from "fs";
 import path from "path";
 
+export type ReportTheme = "light" | "dark";
+
 export interface BrandValues {
   companyName: string;
-  logoUrl: string;
+  logoUrl: string;            // Logo for the active theme (data URI when local)
+  logoUrlLight: string;       // Always the light-bg variant
+  logoUrlDark: string;        // Always the dark-bg variant
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
   fontFamily: string;
   website: string;
   description: string;
+  reportTheme: ReportTheme;
+  bgColor: string;
+  textColor: string;
+  textMutedColor: string;
+  cardBgColor: string;
+  borderColor: string;
 }
 
 export interface BrandProfileLike {
   companyName?: string | null;
   logoUrl?: string | null;
+  logoUrlDark?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
   accentColor?: string | null;
   fontFamily?: string | null;
   website?: string | null;
   description?: string | null;
+  reportTheme?: string | null;
   isApproved?: boolean | null;
 }
 
 const APP_URL = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
-const DEFAULT_LOGO_PATH = "/OMG Rectangle LOGO Light BG.svg";
+const DEFAULT_LOGO_LIGHT = "/OMG Rectangle LOGO Light BG.svg";
+const DEFAULT_LOGO_DARK = "/OMG Rectangle LOGO Dark BG.svg";
+
+const LIGHT_THEME_COLORS = {
+  bgColor: "#FFFFFF",
+  textColor: "#1A1A2E",
+  textMutedColor: "#6B7280",
+  cardBgColor: "#F9FAFB",
+  borderColor: "#E5E7EB",
+};
+
+const DARK_THEME_COLORS = {
+  bgColor: "#0F172A",
+  textColor: "#F8FAFC",
+  textMutedColor: "#94A3B8",
+  cardBgColor: "#1E293B",
+  borderColor: "rgba(148, 163, 184, 0.18)",
+};
 
 const MIME_BY_EXT: Record<string, string> = {
   ".png": "image/png",
@@ -95,20 +124,43 @@ function absolutize(rel: string): string {
  *   - if the file isn't readable, falls back to a properly-encoded
  *     APP_URL-prefixed absolute URL (still better than a bare relative path)
  */
-function resolveLogoUrl(input: string | null | undefined): string {
-  const raw = input?.trim();
+function resolveLogoSrc(rawInput: string | null | undefined, fallback: string): string {
+  const raw = rawInput?.trim();
   if (raw) {
     if (raw.startsWith("data:") || /^https?:\/\//i.test(raw)) return raw;
     if (raw.startsWith("/")) {
       return readPublicAsDataUri(raw) ?? absolutize(raw);
     }
   }
-  return readPublicAsDataUri(DEFAULT_LOGO_PATH) ?? absolutize(DEFAULT_LOGO_PATH);
+  return readPublicAsDataUri(fallback) ?? absolutize(fallback);
 }
 
-export const OMG_DEFAULTS: BrandValues = {
+function pickThemeAwareLogo(
+  profile: BrandProfileLike | null | undefined,
+  useUserBrand: boolean,
+  theme: ReportTheme
+): string {
+  if (useUserBrand && profile) {
+    if (theme === "dark") {
+      // Prefer the dark variant; if absent, the light logo is better than nothing.
+      const dark = profile.logoUrlDark?.trim();
+      if (dark) return resolveLogoSrc(dark, DEFAULT_LOGO_DARK);
+      const light = profile.logoUrl?.trim();
+      if (light) return resolveLogoSrc(light, DEFAULT_LOGO_DARK);
+    } else {
+      const light = profile.logoUrl?.trim();
+      if (light) return resolveLogoSrc(light, DEFAULT_LOGO_LIGHT);
+    }
+  }
+  return resolveLogoSrc(null, theme === "dark" ? DEFAULT_LOGO_DARK : DEFAULT_LOGO_LIGHT);
+}
+
+function normalizeTheme(value: string | null | undefined): ReportTheme {
+  return value === "dark" ? "dark" : "light";
+}
+
+const OMG_BASE = {
   companyName: "OMG Bridge",
-  logoUrl: "", // resolved lazily by resolveBrandValues so process.cwd() is correct
   primaryColor: "#00B3B3",
   secondaryColor: "#0E1420",
   accentColor: "#6366F1",
@@ -117,17 +169,38 @@ export const OMG_DEFAULTS: BrandValues = {
   description: "OMG Bridge connects Google Search Console, Analytics 4 and Business Profile to AI assistants via MCP.",
 };
 
+export const OMG_DEFAULTS: BrandValues = {
+  ...OMG_BASE,
+  logoUrl: "",       // resolved lazily so process.cwd() is correct at call time
+  logoUrlLight: "",
+  logoUrlDark: "",
+  reportTheme: "light",
+  ...LIGHT_THEME_COLORS,
+};
+
 export function resolveBrandValues(brand: BrandProfileLike | null | undefined): BrandValues {
   const useUserBrand = Boolean(brand?.isApproved);
+  const theme = normalizeTheme(useUserBrand ? brand?.reportTheme : "light");
+  const themeColors = theme === "dark" ? DARK_THEME_COLORS : LIGHT_THEME_COLORS;
+
+  const lightLogoInput = useUserBrand ? brand?.logoUrl : null;
+  const darkLogoInput = useUserBrand ? brand?.logoUrlDark : null;
+
   return {
-    companyName: useUserBrand ? (brand!.companyName?.trim() || OMG_DEFAULTS.companyName) : OMG_DEFAULTS.companyName,
-    logoUrl: resolveLogoUrl(useUserBrand ? brand!.logoUrl : null),
-    primaryColor: useUserBrand ? (brand!.primaryColor?.trim() || OMG_DEFAULTS.primaryColor) : OMG_DEFAULTS.primaryColor,
-    secondaryColor: useUserBrand ? (brand!.secondaryColor?.trim() || OMG_DEFAULTS.secondaryColor) : OMG_DEFAULTS.secondaryColor,
-    accentColor: useUserBrand ? (brand!.accentColor?.trim() || OMG_DEFAULTS.accentColor) : OMG_DEFAULTS.accentColor,
-    fontFamily: useUserBrand ? (brand!.fontFamily?.trim() || OMG_DEFAULTS.fontFamily) : OMG_DEFAULTS.fontFamily,
-    website: useUserBrand ? (brand!.website?.trim() || OMG_DEFAULTS.website) : OMG_DEFAULTS.website,
-    description: useUserBrand ? (brand!.description?.trim() || OMG_DEFAULTS.description) : OMG_DEFAULTS.description,
+    companyName: useUserBrand ? (brand!.companyName?.trim() || OMG_BASE.companyName) : OMG_BASE.companyName,
+    logoUrl: pickThemeAwareLogo(brand, useUserBrand, theme),
+    logoUrlLight: resolveLogoSrc(lightLogoInput, DEFAULT_LOGO_LIGHT),
+    logoUrlDark: darkLogoInput
+      ? resolveLogoSrc(darkLogoInput, DEFAULT_LOGO_DARK)
+      : resolveLogoSrc(null, DEFAULT_LOGO_DARK),
+    primaryColor: useUserBrand ? (brand!.primaryColor?.trim() || OMG_BASE.primaryColor) : OMG_BASE.primaryColor,
+    secondaryColor: useUserBrand ? (brand!.secondaryColor?.trim() || OMG_BASE.secondaryColor) : OMG_BASE.secondaryColor,
+    accentColor: useUserBrand ? (brand!.accentColor?.trim() || OMG_BASE.accentColor) : OMG_BASE.accentColor,
+    fontFamily: useUserBrand ? (brand!.fontFamily?.trim() || OMG_BASE.fontFamily) : OMG_BASE.fontFamily,
+    website: useUserBrand ? (brand!.website?.trim() || OMG_BASE.website) : OMG_BASE.website,
+    description: useUserBrand ? (brand!.description?.trim() || OMG_BASE.description) : OMG_BASE.description,
+    reportTheme: theme,
+    ...themeColors,
   };
 }
 
@@ -142,12 +215,20 @@ export function injectBrandProfile(body: string, brand: BrandProfileLike | null 
   const map: Record<string, string> = {
     "brand.companyName": v.companyName,
     "brand.logoUrl": v.logoUrl,
+    "brand.logoUrlLight": v.logoUrlLight,
+    "brand.logoUrlDark": v.logoUrlDark,
     "brand.primaryColor": v.primaryColor,
     "brand.secondaryColor": v.secondaryColor,
     "brand.accentColor": v.accentColor,
     "brand.fontFamily": v.fontFamily,
     "brand.website": v.website,
     "brand.description": v.description,
+    "brand.reportTheme": v.reportTheme,
+    "brand.bgColor": v.bgColor,
+    "brand.textColor": v.textColor,
+    "brand.textMutedColor": v.textMutedColor,
+    "brand.cardBgColor": v.cardBgColor,
+    "brand.borderColor": v.borderColor,
   };
 
   // {{brand.x}} or {{brand.x || "default"}} or {{brand.x || 'default'}}
