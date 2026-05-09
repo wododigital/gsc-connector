@@ -238,7 +238,116 @@ src/app/admin/layout.tsx
 
 ---
 
-## 7. Out of Scope
+## 7. Policy Pages (New)
+
+The site currently has **zero legal/policy pages**. These are required for Google OAuth app verification, Stripe compliance, and general trust.
+
+### 7.1 Pages to Create
+
+| Page | Route | Purpose |
+|------|-------|---------|
+| Privacy Policy | `/privacy` | Required by Google OAuth, Stripe, and GDPR. Covers data collection, Google API data usage, token storage, third-party sharing. |
+| Terms of Service | `/terms` | Required by Stripe. Covers acceptable use, account termination, liability, refund policy (7-day window per FAQ). |
+| Cookie Policy | `/cookies` | Covers session cookies (`gsc_session`, `oauth_state`, `oauth_next`). No analytics or ad cookies. Can be a short page or section within Privacy Policy. |
+
+### 7.2 File Locations
+
+Create under the `(public)` route group (or `(marketing)` if public pages are merged into marketing layout per section 4.3):
+
+```
+src/app/(public)/privacy/page.tsx
+src/app/(public)/terms/page.tsx
+```
+
+Cookie policy can be a separate page or a section within the privacy policy — keep it simple.
+
+### 7.3 Content Requirements
+
+**Privacy Policy must cover:**
+- What data is collected (Google email, name, profile photo via OAuth)
+- Google API Scopes requested: `openid`, `email`, `profile`, `webmasters.readonly`, `analytics.readonly`
+- How tokens are stored (AES-256-GCM encrypted at rest)
+- Data is never sold or shared with third parties
+- Data is only used to respond to MCP tool calls from authorized AI sessions
+- User can disconnect and delete data at any time from the dashboard
+- How to revoke access via Google account security settings
+- Contact email for data requests (projects.wodo@gmail.com or a dedicated privacy@ address)
+- WODO as the operating entity behind OMG Bridge
+
+**Terms of Service must cover:**
+- Service description (MCP bridge for Google data)
+- Account requirements (Google account with GSC/GA4 access)
+- Acceptable use (no automated scraping, no reselling data)
+- Plan limits and usage (tool call quotas per plan)
+- Payment terms for Annual plan ($199/year, billed annually)
+- 7-day refund policy (consistent with FAQ)
+- Right to suspend/terminate accounts
+- Limitation of liability
+- Service provided "as is" — no uptime guarantees during beta/launch
+
+**Both pages should:**
+- Include a "Last updated" date
+- Use the same glass design system as the rest of the site
+- Be linked from the footer on all pages (marketing, public, dashboard)
+
+### 7.4 Footer Updates
+
+Add policy links to ALL footers:
+- Marketing homepage footer (`src/app/(marketing)/page.tsx` — `Footer` component): add "Privacy Policy" and "Terms of Service" links
+- Public layout footer (`src/app/(public)/layout.tsx`): add same links
+- Dashboard layout (`src/app/(dashboard)/layout.tsx`): add links in sidebar or bottom area
+- Login page (`src/app/auth/login/page.tsx`): update the consent copy to link to privacy policy and terms — e.g., "By signing in, you agree to our [Terms of Service](/terms) and [Privacy Policy](/privacy)."
+- OAuth consent page (`src/app/oauth/consent/page.tsx`): add policy links
+
+### 7.5 Google OAuth Consent Screen
+
+The privacy policy URL (`https://bridge.theomg.ai/privacy`) and terms URL (`https://bridge.theomg.ai/terms`) should also be added to the Google Cloud Console OAuth consent screen configuration. This is a manual step in the Google Cloud Console under APIs & Services → OAuth consent screen.
+
+---
+
+## 8. Updated Files Changed (Complete List)
+
+```
+package.json
+prisma/seed.ts
+src/mcp/server.ts
+src/config/index.ts
+src/types/index.ts
+src/app/layout.tsx
+src/app/(marketing)/layout.tsx
+src/app/(marketing)/page.tsx
+src/app/(public)/privacy/page.tsx          ← NEW
+src/app/(public)/terms/page.tsx            ← NEW
+src/app/(public)/pricing/page.tsx
+src/app/(public)/features/page.tsx
+src/app/(public)/faq/page.tsx
+src/app/(public)/guides/page.tsx
+src/app/(public)/layout.tsx
+src/app/auth/login/page.tsx
+src/app/oauth/consent/page.tsx
+src/app/(dashboard)/dashboard/page.tsx
+src/app/(dashboard)/dashboard/billing/page.tsx
+src/app/(dashboard)/layout.tsx
+src/app/admin/layout.tsx
+```
+
+---
+
+## 9. Updated Implementation Order
+
+1. **Rebrand pass** — Find-and-replace all string references. Safe, no functional impact.
+2. **Policy pages** — Create privacy policy and terms of service pages. Add footer links across all layouts.
+3. **Database/seed updates** — Update `prisma/seed.ts` with new 2-plan structure. Run seed against dev DB.
+4. **Pricing UI** — Update marketing homepage, standalone pricing page, FAQ, and billing page.
+5. **Design consistency** — Migrate public pages to glass design system or merge into marketing layout.
+6. **Copy fixes** — Tool counts, stale badges, missing GBP references.
+7. **Stripe config** — Create annual price in Stripe, add env var, test checkout flow.
+8. **Google Cloud Console** — Add privacy policy and terms URLs to OAuth consent screen.
+9. **Test** — Verify all pages render, pricing flows work, MCP server shows as "omg-connector", policy pages are accessible and linked.
+
+---
+
+## 10. Out of Scope
 
 - Logo/visual brand redesign (keeping existing OMG logo assets)
 - GBP API integration code (pending API access approval from Google)

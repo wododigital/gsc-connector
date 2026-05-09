@@ -82,6 +82,13 @@ export default async function DashboardLayout({
           <a href="/api/auth/logout" className="sidebar-signout text-xs">
             Sign out
           </a>
+          <div
+            className="flex gap-3 mt-3 pt-3 text-xs"
+            style={{ borderTop: "1px solid var(--glass-border)", color: "var(--text-muted)" }}
+          >
+            <a href="/privacy" style={{ color: "var(--text-muted)" }}>Privacy</a>
+            <a href="/terms" style={{ color: "var(--text-muted)" }}>Terms</a>
+          </div>
         </div>
       </aside>
 

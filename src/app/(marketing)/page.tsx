@@ -1108,6 +1108,39 @@ function Footer() {
                   </a>
                 ))}
               </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: "var(--text-muted)",
+                    marginBottom: 4,
+                  }}
+                >
+                  Legal
+                </span>
+                {[
+                  { href: "/privacy", label: "Privacy Policy" },
+                  { href: "/terms", label: "Terms of Service" },
+                ].map((l) => (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    style={{
+                      fontSize: 13,
+                      color: "var(--text-secondary)",
+                      textDecoration: "none",
+                      transition: "color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "var(--text-primary)")}
+                    onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "var(--text-secondary)")}
+                  >
+                    {l.label}
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
 

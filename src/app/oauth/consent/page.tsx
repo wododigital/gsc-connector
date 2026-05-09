@@ -460,6 +460,17 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
             Not you?
           </a>
         </p>
+        <p className="text-center text-xs text-zinc-600 mt-2">
+          By authorizing, you agree to our{" "}
+          <a href="/terms" className="text-zinc-500 hover:text-zinc-400 underline">
+            Terms
+          </a>{" "}
+          and{" "}
+          <a href="/privacy" className="text-zinc-500 hover:text-zinc-400 underline">
+            Privacy Policy
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

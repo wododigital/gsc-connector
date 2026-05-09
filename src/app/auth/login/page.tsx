@@ -90,9 +90,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </a>
 
           <p className="mt-6 text-center text-xs text-zinc-500 leading-relaxed">
-            By signing in, you agree to grant OMG Bridge read access to your
-            Google Search Console data. Your tokens are encrypted and stored
-            securely.
+            By signing in, you agree to our{" "}
+            <a href="/terms" className="text-zinc-300 hover:text-white underline">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="/privacy" className="text-zinc-300 hover:text-white underline">
+              Privacy Policy
+            </a>
+            , and you grant OMG Bridge read access to your Google Search
+            Console, Analytics, and Business Profile data. Your tokens are
+            encrypted and stored securely.
           </p>
         </div>
 

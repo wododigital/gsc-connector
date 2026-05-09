@@ -113,7 +113,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 Connect Google Search Console, Analytics, and Business Profile to your AI assistants via MCP.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-8 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-sm">
               <div>
                 <p
                   className="font-semibold mb-3"
@@ -147,6 +147,23 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <ul className="space-y-2">
                   <li><Link href="/faq" style={{ color: "var(--text-secondary)" }}>FAQ</Link></li>
                   <li><Link href="/dashboard/tickets" style={{ color: "var(--text-secondary)" }}>Support Tickets</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p
+                  className="font-semibold mb-3"
+                  style={{
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Legal
+                </p>
+                <ul className="space-y-2">
+                  <li><Link href="/privacy" style={{ color: "var(--text-secondary)" }}>Privacy Policy</Link></li>
+                  <li><Link href="/terms" style={{ color: "var(--text-secondary)" }}>Terms of Service</Link></li>
                 </ul>
               </div>
             </div>
