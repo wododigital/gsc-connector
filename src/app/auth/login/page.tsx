@@ -54,7 +54,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="text-center mb-8">
           <a href="/" className="inline-block">
             <img
-              src="/OMG Rectangle LOGO Dark BG.svg"
+              src="/omg-bridge-logo-dark.svg"
               alt="OMG Bridge"
               className="h-9 w-auto mx-auto"
             />

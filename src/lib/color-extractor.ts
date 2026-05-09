@@ -51,14 +51,34 @@ export async function extractColors(file: File): Promise<ExtractedColors> {
     };
   }
 
-  const clusters = kmeans(samples, K, MAX_ITERATIONS);
-  const ranked = clusters.sort((a, b) => vibrancy(b) - vibrancy(a));
+  // Run k-means with k=5 - we'll diversify down to 3 distinct colors. More
+  // initial clusters means we recover from collapses caused by a near-monochrome
+  // logo without producing duplicates.
+  const clusters = kmeans(samples, 5, MAX_ITERATIONS);
+  const distinct = diversify(clusters, 28);
+
+  // Sort by saturation desc so the most vibrant colour ends up as the accent.
+  // Primary/secondary are positions 0-1 (the dominant cluster colours), accent
+  // is the standout - call it out separately so users see a true "highlight".
+  const sortedBySaturation = [...distinct].sort((a, b) => saturation(b) - saturation(a));
+  const accent = sortedBySaturation[0];
+  const remaining = distinct.filter((c) => c !== accent);
+  const sortedByDarkness = remaining.sort((a, b) => brightness(a) - brightness(b));
 
   return {
-    primary: rgbToHex(ranked[0]),
-    secondary: rgbToHex(ranked[1] ?? ranked[0]),
-    accent: rgbToHex(ranked[2] ?? ranked[1] ?? ranked[0]),
+    primary: rgbToHex(sortedByDarkness[0] ?? distinct[0]),
+    secondary: rgbToHex(sortedByDarkness[1] ?? distinct[1] ?? distinct[0]),
+    accent: rgbToHex(accent),
   };
+}
+
+function saturation({ r, g, b }: RGB): number {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  return max === 0 ? 0 : (max - min) / max;
+}
+function brightness({ r, g, b }: RGB): number {
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b; // luminance
 }
 
 function readAsDataUrl(file: File): Promise<string> {
@@ -92,10 +112,58 @@ function isNearGray(r: number, g: number, b: number): boolean {
   return max - min < 16; // very low saturation
 }
 
+function distSq(a: RGB, b: RGB): number {
+  const dr = a.r - b.r, dg = a.g - b.g, db = a.b - b.b;
+  return dr * dr + dg * dg + db * db;
+}
+
+/**
+ * k-means++ initialization: pick first centroid randomly, each subsequent
+ * centroid weighted by its squared distance to the nearest existing centroid.
+ * Guarantees diverse starting points so the algorithm doesn't collapse to
+ * three near-identical colors when the input is dominated by one hue.
+ */
+function kmeansPlusPlusInit(samples: RGB[], k: number): RGB[] {
+  const centroids: RGB[] = [samples[Math.floor(Math.random() * samples.length)]];
+  while (centroids.length < k) {
+    let total = 0;
+    const distances = samples.map((s) => {
+      let min = Infinity;
+      for (const c of centroids) {
+        const d = distSq(s, c);
+        if (d < min) min = d;
+      }
+      total += min;
+      return min;
+    });
+    if (total === 0) {
+      // All remaining samples coincide with existing centroids - bail with a
+      // perturbed copy of the last centroid so we still return k entries.
+      const last = centroids[centroids.length - 1];
+      centroids.push({
+        r: clamp(last.r + 32),
+        g: clamp(last.g - 16),
+        b: clamp(last.b + 24),
+      });
+      continue;
+    }
+    let target = Math.random() * total;
+    let chosen = samples[samples.length - 1];
+    for (let i = 0; i < samples.length; i++) {
+      target -= distances[i];
+      if (target <= 0) { chosen = samples[i]; break; }
+    }
+    centroids.push(chosen);
+  }
+  return centroids;
+}
+
+function clamp(n: number): number {
+  return Math.max(0, Math.min(255, Math.round(n)));
+}
+
 function kmeans(samples: RGB[], k: number, maxIter: number): RGB[] {
-  // Initialize centroids by picking k spaced samples.
-  const stride = Math.floor(samples.length / k) || 1;
-  let centroids: RGB[] = Array.from({ length: k }, (_, i) => samples[i * stride] ?? samples[0]);
+  let centroids = kmeansPlusPlusInit(samples, k);
 
   for (let iter = 0; iter < maxIter; iter++) {
     const buckets: RGB[][] = Array.from({ length: k }, () => []);
@@ -103,11 +171,7 @@ function kmeans(samples: RGB[], k: number, maxIter: number): RGB[] {
       let best = 0;
       let bestDist = Infinity;
       for (let i = 0; i < k; i++) {
-        const c = centroids[i];
-        const dr = s.r - c.r;
-        const dg = s.g - c.g;
-        const db = s.b - c.b;
-        const d = dr * dr + dg * dg + db * db;
+        const d = distSq(s, centroids[i]);
         if (d < bestDist) { bestDist = d; best = i; }
       }
       buckets[best].push(s);
@@ -127,17 +191,36 @@ function kmeans(samples: RGB[], k: number, maxIter: number): RGB[] {
       };
     });
 
-    const moved = next.some((c, i) => {
-      const dr = c.r - centroids[i].r;
-      const dg = c.g - centroids[i].g;
-      const db = c.b - centroids[i].b;
-      return dr * dr + dg * dg + db * db > 4;
-    });
+    const moved = next.some((c, i) => distSq(c, centroids[i]) > 4);
     centroids = next;
     if (!moved) break;
   }
 
   return centroids;
+}
+
+/**
+ * Reject duplicates from the centroid set. Centroids closer than `minDist`
+ * (Euclidean RGB) are considered the same; missing slots are filled with
+ * theme-shifted variants of the dominant color so callers always receive
+ * three distinct results.
+ */
+function diversify(centroids: RGB[], minDist: number): RGB[] {
+  const unique: RGB[] = [];
+  for (const c of centroids) {
+    const conflict = unique.some((u) => distSq(c, u) < minDist * minDist);
+    if (!conflict) unique.push(c);
+  }
+  while (unique.length < 3) {
+    const base = unique[0] ?? { r: 100, g: 100, b: 200 };
+    const shift = unique.length;
+    unique.push({
+      r: clamp(base.r + (shift === 1 ? -64 : 48)),
+      g: clamp(base.g + (shift === 1 ? 32 : -48)),
+      b: clamp(base.b + (shift === 1 ? -48 : 64)),
+    });
+  }
+  return unique.slice(0, 3);
 }
 
 function vibrancy({ r, g, b }: RGB): number {

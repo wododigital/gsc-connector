@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <aside className="glass-sidebar fixed left-0 top-0 h-full w-64 flex flex-col z-40">
         <div className="p-4 border-b" style={{ borderColor: "var(--glass-border)" }}>
           <div className="flex items-center gap-2">
-            <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG Bridge" className="h-8" />
+            <img src="/omg-bridge-logo-dark.svg" alt="OMG Bridge" className="h-8" />
             <span className="text-xs px-1.5 py-0.5 rounded" style={{ color: "var(--text-muted)", border: "1px solid var(--glass-border)" }}>
               Admin
             </span>

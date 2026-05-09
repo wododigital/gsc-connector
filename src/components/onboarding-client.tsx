@@ -31,8 +31,11 @@ interface BrandProfile {
   primaryColor: string | null;
   secondaryColor: string | null;
   accentColor: string | null;
+  accentColorDark: string | null;
   fontFamily: string | null;
   reportTheme: string | null;
+  reportDos: string | null;
+  reportDonts: string | null;
   isApproved: boolean;
 }
 
@@ -80,7 +83,7 @@ export function OnboardingClient(props: Props) {
       <div className="app-background app-background-user" />
 
       <header className="px-6 md:px-12 py-6 flex items-center justify-between relative z-10">
-        <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG Bridge" className="h-7" />
+        <img src="/omg-bridge-logo-dark.svg" alt="OMG Bridge" className="h-7" />
         <a href="/api/auth/logout" className="text-xs" style={{ color: "var(--text-muted)" }}>Sign out</a>
       </header>
 

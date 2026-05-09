@@ -25,8 +25,11 @@ export interface BrandValues {
   logoUrl: string;            // Logo for the active theme (data URI when local)
   logoUrlLight: string;       // Always the light-bg variant
   logoUrlDark: string;        // Always the dark-bg variant
+  /** Main text/heading color. Theme-adaptive default (dark on light, light on dark). */
   primaryColor: string;
+  /** Secondary text/surface color. Theme-adaptive default. */
   secondaryColor: string;
+  /** The brand's vibrant highlight - used for accents, links, key callouts. */
   accentColor: string;
   fontFamily: string;
   website: string;
@@ -37,6 +40,10 @@ export interface BrandValues {
   textMutedColor: string;
   cardBgColor: string;
   borderColor: string;
+  reportDos: string;          // Raw text - one rule per line, blank when none
+  reportDonts: string;        // Raw text - one rule per line, blank when none
+  /** Composed block: full "### Report Rules:" section, or empty string. */
+  guidelines: string;
 }
 
 export interface BrandProfileLike {
@@ -46,16 +53,19 @@ export interface BrandProfileLike {
   primaryColor?: string | null;
   secondaryColor?: string | null;
   accentColor?: string | null;
+  accentColorDark?: string | null;
   fontFamily?: string | null;
   website?: string | null;
   description?: string | null;
   reportTheme?: string | null;
+  reportDos?: string | null;
+  reportDonts?: string | null;
   isApproved?: boolean | null;
 }
 
 const APP_URL = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
-const DEFAULT_LOGO_LIGHT = "/OMG Rectangle LOGO Light BG.svg";
-const DEFAULT_LOGO_DARK = "/OMG Rectangle LOGO Dark BG.svg";
+const DEFAULT_LOGO_LIGHT = "/omg-bridge-logo-light.svg";
+const DEFAULT_LOGO_DARK = "/omg-bridge-logo-dark.svg";
 
 const LIGHT_THEME_COLORS = {
   bgColor: "#FFFFFF",
@@ -159,11 +169,19 @@ function normalizeTheme(value: string | null | undefined): ReportTheme {
   return value === "dark" ? "dark" : "light";
 }
 
+/**
+ * Theme-adaptive defaults for the user-editable color slots.
+ * - primary  = main heading/text color (dark on light, light on dark)
+ * - secondary = softer text / surface accent
+ * - accent    = the brand's vibrant highlight (defaults to OMG teal regardless of theme)
+ */
+export const THEME_COLOR_DEFAULTS: Record<ReportTheme, { primary: string; secondary: string; accent: string }> = {
+  light: { primary: "#0E1420", secondary: "#374151", accent: "#00B3B3" },
+  dark:  { primary: "#F8FAFC", secondary: "#CBD5E1", accent: "#00B3B3" },
+};
+
 const OMG_BASE = {
   companyName: "OMG Bridge",
-  primaryColor: "#00B3B3",
-  secondaryColor: "#0E1420",
-  accentColor: "#6366F1",
   fontFamily: "Inter",
   website: "bridge.theomg.ai",
   description: "OMG Bridge connects Google Search Console, Analytics 4 and Business Profile to AI assistants via MCP.",
@@ -174,17 +192,59 @@ export const OMG_DEFAULTS: BrandValues = {
   logoUrl: "",       // resolved lazily so process.cwd() is correct at call time
   logoUrlLight: "",
   logoUrlDark: "",
+  primaryColor: THEME_COLOR_DEFAULTS.light.primary,
+  secondaryColor: THEME_COLOR_DEFAULTS.light.secondary,
+  accentColor: THEME_COLOR_DEFAULTS.light.accent,
   reportTheme: "light",
   ...LIGHT_THEME_COLORS,
+  reportDos: "",
+  reportDonts: "",
+  guidelines: "",
 };
+
+function splitRules(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^[\s\-*•]+/, "").trim())
+    .filter((line) => line.length > 0)
+    .slice(0, 30);
+}
+
+function composeGuidelines(dos: string[], donts: string[]): string {
+  if (dos.length === 0 && donts.length === 0) return "";
+  const lines: string[] = ["### Report Rules (apply to every report you generate):"];
+  if (dos.length > 0) {
+    lines.push("", "Do:", ...dos.map((r) => `- ${r}`));
+  }
+  if (donts.length > 0) {
+    lines.push("", "Don't:", ...donts.map((r) => `- ${r}`));
+  }
+  return lines.join("\n");
+}
 
 export function resolveBrandValues(brand: BrandProfileLike | null | undefined): BrandValues {
   const useUserBrand = Boolean(brand?.isApproved);
   const theme = normalizeTheme(useUserBrand ? brand?.reportTheme : "light");
   const themeColors = theme === "dark" ? DARK_THEME_COLORS : LIGHT_THEME_COLORS;
+  const slotDefaults = THEME_COLOR_DEFAULTS[theme];
 
   const lightLogoInput = useUserBrand ? brand?.logoUrl : null;
   const darkLogoInput = useUserBrand ? brand?.logoUrlDark : null;
+
+  const dos = useUserBrand ? splitRules(brand?.reportDos) : [];
+  const donts = useUserBrand ? splitRules(brand?.reportDonts) : [];
+
+  // Pick the accent that matches the active theme. If the user has only
+  // uploaded one logo, the missing accent falls back to the other variant
+  // (better than reverting to the OMG default teal mid-flow).
+  const accentLight = brand?.accentColor?.trim();
+  const accentDark = brand?.accentColorDark?.trim();
+  const themeAccent = useUserBrand
+    ? (theme === "dark"
+        ? (accentDark || accentLight || slotDefaults.accent)
+        : (accentLight || accentDark || slotDefaults.accent))
+    : slotDefaults.accent;
 
   return {
     companyName: useUserBrand ? (brand!.companyName?.trim() || OMG_BASE.companyName) : OMG_BASE.companyName,
@@ -193,14 +253,17 @@ export function resolveBrandValues(brand: BrandProfileLike | null | undefined): 
     logoUrlDark: darkLogoInput
       ? resolveLogoSrc(darkLogoInput, DEFAULT_LOGO_DARK)
       : resolveLogoSrc(null, DEFAULT_LOGO_DARK),
-    primaryColor: useUserBrand ? (brand!.primaryColor?.trim() || OMG_BASE.primaryColor) : OMG_BASE.primaryColor,
-    secondaryColor: useUserBrand ? (brand!.secondaryColor?.trim() || OMG_BASE.secondaryColor) : OMG_BASE.secondaryColor,
-    accentColor: useUserBrand ? (brand!.accentColor?.trim() || OMG_BASE.accentColor) : OMG_BASE.accentColor,
+    primaryColor: useUserBrand ? (brand!.primaryColor?.trim() || slotDefaults.primary) : slotDefaults.primary,
+    secondaryColor: useUserBrand ? (brand!.secondaryColor?.trim() || slotDefaults.secondary) : slotDefaults.secondary,
+    accentColor: themeAccent,
     fontFamily: useUserBrand ? (brand!.fontFamily?.trim() || OMG_BASE.fontFamily) : OMG_BASE.fontFamily,
     website: useUserBrand ? (brand!.website?.trim() || OMG_BASE.website) : OMG_BASE.website,
     description: useUserBrand ? (brand!.description?.trim() || OMG_BASE.description) : OMG_BASE.description,
     reportTheme: theme,
     ...themeColors,
+    reportDos: dos.join("\n"),
+    reportDonts: donts.join("\n"),
+    guidelines: composeGuidelines(dos, donts),
   };
 }
 
@@ -229,6 +292,9 @@ export function injectBrandProfile(body: string, brand: BrandProfileLike | null 
     "brand.textMutedColor": v.textMutedColor,
     "brand.cardBgColor": v.cardBgColor,
     "brand.borderColor": v.borderColor,
+    "brand.reportDos": v.reportDos,
+    "brand.reportDonts": v.reportDonts,
+    "brand.guidelines": v.guidelines,
   };
 
   // {{brand.x}} or {{brand.x || "default"}} or {{brand.x || 'default'}}

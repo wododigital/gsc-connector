@@ -54,6 +54,11 @@ function wrap(title: string, questions: string[], instructions: string): string 
     instructions.trim(),
     "",
     REPORT_FORMAT_BLOCK,
+    "",
+    // Composed at injection time. Empty string when the user hasn't set rules,
+    // so the section disappears entirely; otherwise renders a "### Report Rules"
+    // block with Do / Don't sub-sections.
+    "{{brand.guidelines}}",
   ].join("\n");
 }
 

@@ -41,8 +41,11 @@ export async function POST(req: NextRequest) {
       primaryColor: cleanHex(body.primaryColor) ?? null,
       secondaryColor: cleanHex(body.secondaryColor) ?? null,
       accentColor: cleanHex(body.accentColor) ?? null,
+      accentColorDark: cleanHex(body.accentColorDark) ?? null,
       fontFamily: clean(body.fontFamily, 80) ?? "Inter",
       reportTheme,
+      reportDos: clean(body.reportDos, 4000) ?? null,
+      reportDonts: clean(body.reportDonts, 4000) ?? null,
       isApproved: body.isApproved === true,
     };
 

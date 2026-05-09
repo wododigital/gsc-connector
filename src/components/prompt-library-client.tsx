@@ -19,6 +19,7 @@ interface ApiResponse {
   system: Prompt[];
   user: Prompt[];
   hasBrandProfile: boolean;
+  hasReportRules: boolean;
 }
 
 const CATEGORIES: { id: string; label: string }[] = [
@@ -131,6 +132,20 @@ export function PromptLibraryClient() {
             </p>
           </div>
           <a href="/dashboard/branding" className="btn-ghost btn-ghost-sm">Set up branding</a>
+        </div>
+      )}
+
+      {data && !data.hasReportRules && (
+        <div className="glass-card p-4 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+              Add Report Rules to enforce your style in every report
+            </p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+              Optional do&apos;s and don&apos;ts (e.g. &quot;no emojis&quot;, &quot;sentence case headings&quot;) get injected into every prompt so the AI follows your conventions.
+            </p>
+          </div>
+          <a href="/dashboard/branding#report-rules" className="btn-ghost btn-ghost-sm">Update Report Rules</a>
         </div>
       )}
 

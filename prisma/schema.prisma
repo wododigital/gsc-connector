@@ -418,9 +418,12 @@ model BrandProfile {
   logoUrlDark    String?  @map("logo_url_dark") // Optional dark-bg variant (used on dark reports)
   primaryColor   String?  @map("primary_color")
   secondaryColor String?  @map("secondary_color")
-  accentColor    String?  @map("accent_color")
+  accentColor    String?  @map("accent_color") // Light-theme accent (extracted from light logo)
+  accentColorDark String? @map("accent_color_dark") // Dark-theme accent (extracted from dark logo)
   fontFamily     String?  @default("Inter") @map("font_family")
   reportTheme    String   @default("light") @map("report_theme") // "light" | "dark" - drives generated report color scheme
+  reportDos      String?  @db.Text @map("report_dos") // Optional rules: things the AI must do in every generated report
+  reportDonts    String?  @db.Text @map("report_donts") // Optional rules: things the AI must avoid
   isApproved     Boolean  @default(false) @map("is_approved")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")

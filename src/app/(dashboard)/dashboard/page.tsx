@@ -60,8 +60,11 @@ async function getBrandProfile(userId: string) {
         primaryColor: true,
         secondaryColor: true,
         accentColor: true,
+        accentColorDark: true,
         fontFamily: true,
         reportTheme: true,
+        reportDos: true,
+        reportDonts: true,
         isApproved: true,
       },
     });

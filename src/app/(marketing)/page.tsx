@@ -153,7 +153,7 @@ function ChatPreviewCard() {
               flexShrink: 0,
             }}
           >
-            <img src="/OMG Icon SVG.svg" alt="OMG Bridge" style={{ width: 16, height: 16 }} />
+            <img src="/omg-bridge-icon.svg" alt="OMG Bridge" style={{ width: 16, height: 16 }} />
           </div>
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.5 }}>
@@ -1026,7 +1026,7 @@ function Footer() {
           >
             {/* Brand */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG Bridge" style={{ height: 28, width: "auto" }} />
+              <img src="/omg-bridge-logo-dark.svg" alt="OMG Bridge" style={{ height: 28, width: "auto" }} />
               <p style={{ fontSize: 13, color: "var(--text-muted)", maxWidth: 260, lineHeight: 1.5 }}>
                 Google Search Console, Analytics, and Business Profile - as MCP tools for any AI assistant.
               </p>

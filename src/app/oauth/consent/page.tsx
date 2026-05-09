@@ -209,7 +209,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <img
-              src="/OMG Rectangle LOGO Dark BG.svg"
+              src="/omg-bridge-logo-dark.svg"
               alt="OMG Bridge"
               className="h-8 w-auto mx-auto"
             />
@@ -285,7 +285,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
         {/* Header */}
         <div className="text-center mb-6">
           <img
-            src="/OMG Rectangle LOGO Dark BG.svg"
+            src="/omg-bridge-logo-dark.svg"
             alt="OMG Bridge"
             className="h-7 w-auto mx-auto"
           />
@@ -482,7 +482,7 @@ function ErrorPage({ message }: { message: string }) {
       <div className="w-full max-w-md text-center">
         <div className="mb-6">
           <img
-            src="/OMG Rectangle LOGO Dark BG.svg"
+            src="/omg-bridge-logo-dark.svg"
             alt="OMG Bridge"
             className="h-7 w-auto mx-auto"
           />

@@ -33,7 +33,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           >
             <Link href="/" style={{ display: "flex", alignItems: "center" }}>
               <img
-                src="/OMG Rectangle LOGO Dark BG.svg"
+                src="/omg-bridge-logo-dark.svg"
                 alt="OMG Bridge"
                 style={{ height: 30, width: "auto" }}
               />
@@ -108,7 +108,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             }}
           >
             <div>
-              <img src="/OMG Rectangle LOGO Dark BG.svg" alt="OMG Bridge" className="h-7 mb-3" />
+              <img src="/omg-bridge-logo-dark.svg" alt="OMG Bridge" className="h-7 mb-3" />
               <p className="text-sm max-w-xs" style={{ color: "var(--text-muted)" }}>
                 Connect Google Search Console, Analytics, and Business Profile to your AI assistants via MCP.
               </p>

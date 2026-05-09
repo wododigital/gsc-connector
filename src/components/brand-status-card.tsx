@@ -7,9 +7,17 @@ interface BrandProfileLite {
   primaryColor: string | null;
   secondaryColor: string | null;
   accentColor: string | null;
+  accentColorDark: string | null;
   fontFamily: string | null;
   reportTheme: string | null;
+  reportDos: string | null;
+  reportDonts: string | null;
   isApproved: boolean;
+}
+
+function countRules(s: string | null): number {
+  if (!s) return 0;
+  return s.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0).length;
 }
 
 interface Props {
@@ -70,9 +78,14 @@ export function BrandStatusCard({ profile }: Props) {
 
   const primary = profile.primaryColor || FALLBACK_PRIMARY;
   const secondary = profile.secondaryColor || FALLBACK_SECONDARY;
-  const accent = profile.accentColor || FALLBACK_ACCENT;
   const company = profile.companyName?.trim();
   const theme: "light" | "dark" = profile.reportTheme === "dark" ? "dark" : "light";
+  // Pick the accent that matches the active theme; fall back across variants
+  // so we always have something brand-correct to display.
+  const accent =
+    theme === "dark"
+      ? (profile.accentColorDark || profile.accentColor || FALLBACK_ACCENT)
+      : (profile.accentColor || profile.accentColorDark || FALLBACK_ACCENT);
   const previewLogoForTheme =
     theme === "dark"
       ? (profile.logoUrlDark || profile.logoUrl)
@@ -142,6 +155,16 @@ export function BrandStatusCard({ profile }: Props) {
             Logos: <span style={{ color: profile.logoUrl ? "var(--success)" : "var(--text-muted)" }}>light {profile.logoUrl ? "✓" : "—"}</span>
             {" · "}
             <span style={{ color: profile.logoUrlDark ? "var(--success)" : "var(--text-muted)" }}>dark {profile.logoUrlDark ? "✓" : "—"}</span>
+          </span>
+          <span>
+            Rules:{" "}
+            <span style={{ color: countRules(profile.reportDos) > 0 ? "var(--success)" : "var(--text-muted)" }}>
+              {countRules(profile.reportDos)} do
+            </span>
+            {" · "}
+            <span style={{ color: countRules(profile.reportDonts) > 0 ? "var(--success)" : "var(--text-muted)" }}>
+              {countRules(profile.reportDonts)} don&apos;t
+            </span>
           </span>
           <span>
             Font: <span style={{ color: "var(--text-secondary)" }}>{profile.fontFamily ?? "Inter"}</span>

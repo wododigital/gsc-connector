@@ -77,6 +77,7 @@ export async function GET(_req: NextRequest) {
         isUserOwned: true,
       })),
       hasBrandProfile: Boolean(brand?.isApproved),
+      hasReportRules: Boolean(brand?.reportDos?.trim() || brand?.reportDonts?.trim()),
     });
   } catch (err) {
     console.error("[api/prompts] GET error:", err);

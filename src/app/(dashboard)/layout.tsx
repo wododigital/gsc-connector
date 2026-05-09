@@ -45,7 +45,7 @@ export default async function DashboardLayout({
         {/* Logo */}
         <div className="p-4 border-b" style={{ borderColor: "var(--glass-border)" }}>
           <img
-            src="/OMG Rectangle LOGO Dark BG.svg"
+            src="/omg-bridge-logo-dark.svg"
             alt="OMG Bridge"
             className="h-7 w-auto"
           />

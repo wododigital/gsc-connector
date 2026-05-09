@@ -43,7 +43,7 @@ export default function MarketingLayout({
             {/* Logo */}
             <a href="/" style={{ display: "flex", alignItems: "center" }}>
               <img
-                src="/OMG Rectangle LOGO Dark BG.svg"
+                src="/omg-bridge-logo-dark.svg"
                 alt="OMG Bridge"
                 style={{ height: 30, width: "auto" }}
               />

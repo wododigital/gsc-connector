@@ -13,8 +13,11 @@ interface BrandProfile {
   primaryColor: string | null;
   secondaryColor: string | null;
   accentColor: string | null;
+  accentColorDark: string | null;
   fontFamily: string | null;
   reportTheme: string | null;
+  reportDos: string | null;
+  reportDonts: string | null;
   isApproved: boolean;
 }
 
@@ -26,14 +29,22 @@ interface Props {
   onSaved?: (profile: BrandProfile) => void;
 }
 
-const DEFAULT_PRIMARY = "#00B3B3";
-const DEFAULT_SECONDARY = "#0E1420";
-const DEFAULT_ACCENT = "#6366F1";
-const DEFAULT_LOGO_LIGHT_FALLBACK = "/OMG Rectangle LOGO Light BG.svg";
-const DEFAULT_LOGO_DARK_FALLBACK = "/OMG Rectangle LOGO Dark BG.svg";
+const DEFAULT_LOGO_LIGHT_FALLBACK = "/omg-bridge-logo-light.svg";
+const DEFAULT_LOGO_DARK_FALLBACK = "/omg-bridge-logo-dark.svg";
+const DEFAULT_ACCENT = "#00B3B3"; // OMG teal - the brand highlight
+
+const THEME_DEFAULTS: Record<"light" | "dark", { primary: string; secondary: string }> = {
+  light: { primary: "#0E1420", secondary: "#374151" },
+  dark:  { primary: "#F8FAFC", secondary: "#CBD5E1" },
+};
 
 type Variant = "light" | "dark";
 type Theme = "light" | "dark";
+
+function isThemeDefaultColor(color: string): boolean {
+  const c = color.toUpperCase();
+  return Object.values(THEME_DEFAULTS).some((d) => d.primary.toUpperCase() === c || d.secondary.toUpperCase() === c);
+}
 
 export function BrandingClient({ initial, embedded, onSaved }: Props) {
   const [companyName, setCompanyName] = useState(initial?.companyName ?? "");
@@ -41,11 +52,26 @@ export function BrandingClient({ initial, embedded, onSaved }: Props) {
   const [description, setDescription] = useState(initial?.description ?? "");
   const [logoLight, setLogoLight] = useState<string | null>(initial?.logoUrl ?? null);
   const [logoDark, setLogoDark] = useState<string | null>(initial?.logoUrlDark ?? null);
-  const [primary, setPrimary] = useState(initial?.primaryColor ?? DEFAULT_PRIMARY);
-  const [secondary, setSecondary] = useState(initial?.secondaryColor ?? DEFAULT_SECONDARY);
+  const initialTheme: Theme = initial?.reportTheme === "dark" ? "dark" : "light";
+  const themeDefault = THEME_DEFAULTS[initialTheme];
+  const [primary, setPrimary] = useState(initial?.primaryColor ?? themeDefault.primary);
+  const [secondary, setSecondary] = useState(initial?.secondaryColor ?? themeDefault.secondary);
   const [accent, setAccent] = useState(initial?.accentColor ?? DEFAULT_ACCENT);
+  const [accentDark, setAccentDark] = useState(initial?.accentColorDark ?? initial?.accentColor ?? DEFAULT_ACCENT);
   const [font, setFont] = useState(initial?.fontFamily ?? "Inter");
-  const [theme, setTheme] = useState<Theme>((initial?.reportTheme === "dark" ? "dark" : "light"));
+  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [reportDos, setReportDos] = useState(initial?.reportDos ?? "");
+  const [reportDonts, setReportDonts] = useState(initial?.reportDonts ?? "");
+
+  // When theme flips, update primary/secondary defaults *only if* they still
+  // hold a previous theme default (i.e. the user hasn't customised them).
+  // Accent is the brand highlight - never auto-changed.
+  const switchTheme = (next: Theme) => {
+    if (next === theme) return;
+    setTheme(next);
+    if (isThemeDefaultColor(primary)) setPrimary(THEME_DEFAULTS[next].primary);
+    if (isThemeDefaultColor(secondary)) setSecondary(THEME_DEFAULTS[next].secondary);
+  };
   const [extracting, setExtracting] = useState(false);
   const [uploading, setUploading] = useState<Variant | null>(null);
   const [saving, setSaving] = useState(false);
@@ -61,20 +87,26 @@ export function BrandingClient({ initial, embedded, onSaved }: Props) {
 
   const onFileChosen = async (file: File, variant: Variant) => {
     setMessage(null);
-    // Only auto-extract colors from the *light* logo (dark logos are usually
-    // already adjusted for dark backgrounds and aren't a great colour source).
-    if (variant === "light") {
-      setExtracting(true);
-      try {
-        const colors = await extractColors(file);
+    // Light upload extracts primary/secondary text defaults + the light-theme accent.
+    // Dark upload only extracts the dark-theme accent - primary/secondary still
+    // come from the theme defaults, since text colours don't belong to a logo.
+    setExtracting(true);
+    try {
+      const colors = await extractColors(file);
+      if (variant === "light") {
         setPrimary(colors.primary);
         setSecondary(colors.secondary);
         setAccent(colors.accent);
-      } catch (err) {
-        console.warn("color extract failed", err);
-      } finally {
-        setExtracting(false);
+        // If user hasn't uploaded a dark logo yet, mirror the light accent so
+        // dark theme has something brand-correct to fall back to.
+        if (!logoDark) setAccentDark(colors.accent);
+      } else {
+        setAccentDark(colors.accent);
       }
+    } catch (err) {
+      console.warn("color extract failed", err);
+    } finally {
+      setExtracting(false);
     }
 
     setUploading(variant);
@@ -117,8 +149,11 @@ export function BrandingClient({ initial, embedded, onSaved }: Props) {
         primaryColor: primary,
         secondaryColor: secondary,
         accentColor: accent,
+        accentColorDark: accentDark,
         fontFamily: font,
         reportTheme: theme,
+        reportDos,
+        reportDonts,
         isApproved: markApproved,
       }),
     });
@@ -146,6 +181,8 @@ export function BrandingClient({ initial, embedded, onSaved }: Props) {
   const previewText = theme === "dark" ? "#F8FAFC" : "#1A1A2E";
   const previewMuted = theme === "dark" ? "#94A3B8" : "#6B7280";
   const previewCard = theme === "dark" ? "#1E293B" : "#F9FAFB";
+  /** The accent that matches the currently-displayed theme. */
+  const activeAccent = theme === "dark" ? accentDark : accent;
 
   return (
     <div className="space-y-6">
@@ -170,14 +207,14 @@ export function BrandingClient({ initial, embedded, onSaved }: Props) {
           <ThemeOption
             value="light"
             active={theme === "light"}
-            onClick={() => setTheme("light")}
+            onClick={() => switchTheme("light")}
             label="Light"
             description="White background, dark text. Best for printable reports."
           />
           <ThemeOption
             value="dark"
             active={theme === "dark"}
-            onClick={() => setTheme("dark")}
+            onClick={() => switchTheme("dark")}
             label="Dark"
             description="Dark background, light text. Modern, low-glare."
           />
@@ -265,12 +302,77 @@ export function BrandingClient({ initial, embedded, onSaved }: Props) {
       <div className="glass-card p-5 space-y-4">
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Brand Colors</h2>
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Auto-extracted from your light logo. Click a swatch to override.
+          Defaults follow your theme. Auto-extracted when you upload a light logo. Click a swatch to override.
         </p>
         <div className="grid grid-cols-3 gap-3">
-          <ColorSwatch label="Primary" value={primary} onChange={setPrimary} />
-          <ColorSwatch label="Secondary" value={secondary} onChange={setSecondary} />
-          <ColorSwatch label="Accent" value={accent} onChange={setAccent} />
+          <ColorSwatch
+            label="Primary"
+            hint="Headings & main text"
+            value={primary}
+            onChange={setPrimary}
+          />
+          <ColorSwatch
+            label="Secondary"
+            hint="Body & supporting text"
+            value={secondary}
+            onChange={setSecondary}
+          />
+          <ColorSwatch
+            label={theme === "dark" ? "Accent (dark theme)" : "Accent (light theme)"}
+            hint={
+              theme === "dark"
+                ? (logoDark ? "From your dark logo" : "Add a dark logo to extract this")
+                : "From your light logo"
+            }
+            value={theme === "dark" ? accentDark : accent}
+            onChange={(v) => (theme === "dark" ? setAccentDark(v) : setAccent(v))}
+          />
+        </div>
+        {/* Show the inactive-theme accent so users see both at a glance */}
+        <div className="text-[11px] flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+          <span>Other theme accent:</span>
+          <span className="inline-block rounded" style={{ background: theme === "dark" ? accent : accentDark, width: 12, height: 12, border: "1px solid var(--glass-border)" }} />
+          <span className="font-mono">{(theme === "dark" ? accent : accentDark).toUpperCase()}</span>
+          <span>· auto-extracted from your {theme === "dark" ? "light" : "dark"} logo</span>
+        </div>
+      </div>
+
+      {/* Report Rules (do's and don'ts) */}
+      <div id="report-rules" className="glass-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Report Rules (optional)</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+              UX guidelines the AI should respect in every report you generate. One rule per line.
+            </p>
+          </div>
+          <span className="badge badge-muted" style={{ fontSize: "10px" }}>
+            {countLines(reportDos)} do · {countLines(reportDonts)} don&apos;t
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs block mb-1" style={{ color: "var(--success)" }}>Do</label>
+            <textarea
+              value={reportDos}
+              onChange={(e) => setReportDos(e.target.value)}
+              rows={6}
+              className="glass-input text-xs w-full"
+              placeholder={"Use sentence case for all headings\nFormat percentages with 1 decimal\nInclude a 1-paragraph executive summary\nLink each insight to the metric that backs it"}
+              maxLength={4000}
+            />
+          </div>
+          <div>
+            <label className="text-xs block mb-1" style={{ color: "var(--error)" }}>Don&apos;t</label>
+            <textarea
+              value={reportDonts}
+              onChange={(e) => setReportDonts(e.target.value)}
+              rows={6}
+              className="glass-input text-xs w-full"
+              placeholder={"No emojis anywhere\nDon't use red for status colours - use orange instead\nAvoid filler phrases like \"as we can see\"\nDon't compare to last year unless asked"}
+              maxLength={4000}
+            />
+          </div>
         </div>
       </div>
 
@@ -284,27 +386,27 @@ export function BrandingClient({ initial, embedded, onSaved }: Props) {
           className="rounded-lg p-5 transition-colors"
           style={{ background: previewBg, color: previewText, border: `1px solid ${previewCard}` }}
         >
-          <div className="flex items-center justify-between mb-4 pb-3" style={{ borderBottom: `2px solid ${primary}` }}>
+          <div className="flex items-center justify-between mb-4 pb-3" style={{ borderBottom: `2px solid ${activeAccent}` }}>
             <img src={previewLogo} alt="logo preview" style={{ height: 30, maxWidth: 200, objectFit: "contain" }} />
             <div className="text-right" style={{ color: previewMuted, fontSize: 12 }}>
-              <div style={{ color: previewText, fontWeight: 600, fontSize: 13 }}>Monthly SEO Performance</div>
+              <div style={{ color: primary, fontWeight: 600, fontSize: 13 }}>Monthly SEO Performance</div>
               <div>April 1 - April 30, 2026</div>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded p-3" style={{ background: previewCard }}>
               <div style={{ fontSize: 10, color: previewMuted, textTransform: "uppercase", letterSpacing: ".05em" }}>Clicks</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: previewText, marginTop: 2 }}>42,113</div>
-              <div style={{ fontSize: 12, color: primary }}>+18.4%</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: primary, marginTop: 2 }}>42,113</div>
+              <div style={{ fontSize: 12, color: activeAccent }}>+18.4%</div>
             </div>
             <div className="rounded p-3" style={{ background: previewCard }}>
               <div style={{ fontSize: 10, color: previewMuted, textTransform: "uppercase", letterSpacing: ".05em" }}>Impressions</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: previewText, marginTop: 2 }}>1.24M</div>
-              <div style={{ fontSize: 12, color: accent }}>+9.8%</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: primary, marginTop: 2 }}>1.24M</div>
+              <div style={{ fontSize: 12, color: activeAccent }}>+9.8%</div>
             </div>
             <div className="rounded p-3" style={{ background: previewCard }}>
               <div style={{ fontSize: 10, color: previewMuted, textTransform: "uppercase", letterSpacing: ".05em" }}>CTR</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: previewText, marginTop: 2 }}>3.4%</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: primary, marginTop: 2 }}>3.4%</div>
               <div style={{ fontSize: 12, color: previewMuted }}>+0.3 pts</div>
             </div>
           </div>
@@ -332,12 +434,17 @@ export function BrandingClient({ initial, embedded, onSaved }: Props) {
 
 const FONT_CHOICES = ["Inter", "Roboto", "Open Sans", "Lato", "Poppins", "Montserrat", "Source Sans Pro", "Nunito", "Merriweather", "Playfair Display"];
 
-function ColorSwatch({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function countLines(s: string): number {
+  return s.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0).length;
+}
+
+function ColorSwatch({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) {
   return (
     <label className="rounded-lg p-3 cursor-pointer block" style={{ background: "rgba(6,10,16,0.4)", border: "1px solid var(--glass-border)" }}>
       <div className="rounded mb-2" style={{ background: value, height: 56 }} />
-      <div className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{label}</div>
-      <div className="flex items-center gap-2">
+      <div className="text-xs" style={{ color: "var(--text-muted)" }}>{label}</div>
+      {hint && <div className="text-[10px] mb-1" style={{ color: "var(--text-muted)", opacity: 0.75 }}>{hint}</div>}
+      <div className="flex items-center gap-2 mt-1">
         <input type="color" value={value} onChange={(e) => onChange(e.target.value.toUpperCase())} style={{ width: 26, height: 26, border: "none", background: "transparent" }} />
         <input value={value} onChange={(e) => onChange(e.target.value.toUpperCase())} className="glass-input text-xs font-mono" style={{ width: 90 }} maxLength={7} />
       </div>
