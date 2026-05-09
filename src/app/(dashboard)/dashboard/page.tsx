@@ -128,11 +128,6 @@ export default async function DashboardPage() {
                 Toggle properties to control AI access.
               </p>
               <PropertyManager properties={properties} />
-              <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--glass-border)" }}>
-                <a href="/api/gsc/connect" className="text-xs transition-colors" style={{ color: "var(--accent-light)" }}>
-                  + Connect another account
-                </a>
-              </div>
             </>
           ) : (
             <div className="text-center py-8">
