@@ -42,7 +42,7 @@ export default function PublicLayout({
         <div className="brand">
           <Link href="/" style={{ display: "flex", alignItems: "center" }}>
             <Image
-              src="/omg-logo-dark.webp"
+              src="/omg-logo-light.webp"
               alt="OMG / BRIDGE"
               width={140}
               height={28}
@@ -97,7 +97,7 @@ export default function PublicLayout({
           <div className="footer-grid">
             <div className="col brand-col">
               <Image
-                src="/omg-logo-dark.webp"
+                src="/omg-logo-light.webp"
                 alt="OMG / BRIDGE"
                 width={160}
                 height={32}

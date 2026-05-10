@@ -686,7 +686,7 @@ export default function MarketingHomePage() {
           <div className="footer-grid">
             <div className="col brand-col">
               <Image
-                src="/omg-logo-dark.webp"
+                src="/omg-logo-light.webp"
                 alt="OMG / BRIDGE"
                 width={160}
                 height={32}

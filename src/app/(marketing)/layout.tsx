@@ -18,7 +18,7 @@ export default function MarketingLayout({
       <header className="topbar">
         <div className="brand">
           <Image
-            src="/omg-logo-dark.webp"
+            src="/omg-logo-light.webp"
             alt="OMG / BRIDGE"
             width={140}
             height={28}

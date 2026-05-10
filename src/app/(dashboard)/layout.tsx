@@ -149,7 +149,7 @@ export default async function DashboardLayout({
       {/* ── Topbar ─────────────────────────────────────────── */}
       <header className="topbar">
         <a href="/dashboard" className="brand">
-          <img src="/omg-logo-dark.webp" alt="OMG / BRIDGE" className="logo-img" />
+          <img src="/omg-logo-light.webp" alt="OMG / BRIDGE" className="logo-img" />
           <img src="/omg-bridge-icon.svg" alt="OMG" className="logo-icon" />
         </a>
         <div className="breadcrumb">
