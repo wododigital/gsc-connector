@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -30,16 +31,17 @@ export function SidebarLink({
     : pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <a
+    <Link
       href={href}
       title={title ?? label}
       data-nav-link
       className={`nav-link${isActive ? " active" : ""}`}
+      prefetch={false}
     >
-      <span className="icon">{icon}</span>
+      <span className="icon" aria-hidden="true">{icon}</span>
       <span className="label-text">{label}</span>
-      <span className="badge">{badge ?? ""}</span>
-    </a>
+      <span className="badge" aria-hidden={!badge}>{badge ?? ""}</span>
+    </Link>
   );
 }
 

@@ -395,7 +395,11 @@ body.sidebar-collapsed .topbar .brand .logo-icon { display: block; }
   gap: 12px;
   border-left: 2px solid transparent;
   transition: color .15s ease, background .15s ease, border-color .15s ease;
+  cursor: pointer;
 }
+/* Children are display-only - all clicks land on the <a> itself.
+   Prevents the hollow SVG icon from "swallowing" clicks in collapsed mode. */
+.sidebar .nav-link > * { pointer-events: none; }
 .sidebar .nav-link:hover { color: var(--ink); background: var(--surface-2); }
 .sidebar .nav-link.active {
   color: var(--teal-bright);
