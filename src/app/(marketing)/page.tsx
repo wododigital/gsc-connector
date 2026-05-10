@@ -716,23 +716,9 @@ export default function MarketingHomePage() {
         </div>
       </section>
 
-      {/* ── FOOTER (CTA + 4-COL + BOTTOM) ────────────────── */}
+      {/* ── FOOTER (4-COL + BOTTOM) ──────────────────────── */}
       <footer className="site-footer">
         <div className="footer-body">
-          <div className="footer-cta">
-            <div>
-              <h5>
-                Stop digging. <span className="accent">Start asking.</span>
-              </h5>
-              <p>
-                Free to start. No credit card. Connect Google in 90 seconds.
-              </p>
-              <Link href="/onboarding" className="btn btn-primary">
-                Start Free →
-              </Link>
-            </div>
-          </div>
-
           <div className="footer-grid">
             <div className="col brand-col">
               <Image
@@ -1595,28 +1581,6 @@ export default function MarketingHomePage() {
           flex-direction: column;
           gap: 64px;
         }
-        .footer-cta {
-          padding-bottom: 56px;
-          border-bottom: 1px solid var(--rule);
-        }
-        .footer-cta h5 {
-          font-family: var(--display);
-          font-weight: 700;
-          font-size: clamp(36px, 4.6vw, 60px);
-          line-height: 0.98;
-          letter-spacing: -0.04em;
-          text-transform: uppercase;
-          max-width: 600px;
-          margin-bottom: 18px;
-        }
-        .footer-cta h5 .accent { color: var(--vermilion); }
-        .footer-cta p {
-          color: var(--ink-2);
-          font-size: 14px;
-          max-width: 460px;
-          margin-bottom: 22px;
-        }
-
         .footer-grid {
           display: grid;
           grid-template-columns: 1.4fr repeat(3, 1fr);
