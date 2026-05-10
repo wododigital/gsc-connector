@@ -20,7 +20,6 @@ export default function MarketingLayout({
   return (
     <div className="atmosphere min-h-screen">
       <header className="topbar">
-        <div className="gcell" aria-hidden="true" />
         <div className="brand">
           <Image
             src="/omg-logo-light.webp"
@@ -58,7 +57,7 @@ export default function MarketingLayout({
           top: 0;
           z-index: 50;
           display: grid;
-          grid-template-columns: 80px auto 1fr auto auto;
+          grid-template-columns: auto 1fr auto auto;
           align-items: stretch;
           background: var(--topbar-bg);
           backdrop-filter: blur(14px) saturate(1.4);
@@ -68,14 +67,11 @@ export default function MarketingLayout({
           font-size: 12px;
           letter-spacing: 0.04em;
         }
-        .topbar > .gcell {
-          border-right: 1px solid var(--rule);
-        }
         .topbar .brand {
           display: flex;
           align-items: center;
           gap: 14px;
-          padding: 14px 24px;
+          padding: 14px 24px 14px 56px;
           border-right: 1px solid var(--rule-strong);
         }
         .topbar .brand .logo-img {
@@ -137,7 +133,6 @@ export default function MarketingLayout({
         }
         @media (max-width: 980px) {
           .topbar { grid-template-columns: 1fr auto; }
-          .topbar > .gcell { display: none; }
           .topbar nav { display: none; }
           .topbar .desktop-actions { display: none; }
           .topbar .mobile-actions { display: flex; }
