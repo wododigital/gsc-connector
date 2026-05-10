@@ -2,8 +2,6 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import db from "@/lib/db";
 import { CopyButton } from "@/components/copy-button";
-import { PropertyManager } from "@/components/property-manager";
-import { GA4PropertyManager } from "@/components/ga4-property-manager";
 import { ConnectionActions } from "@/components/connection-actions";
 import { BrandStatusCard } from "@/components/brand-status-card";
 import type { Metadata } from "next";
@@ -198,10 +196,6 @@ export default async function DashboardPage() {
             {totalActiveProperties} connected propert{totalActiveProperties === 1 ? "y" : "ies"}.
           </p>
         </div>
-        <div className="actions">
-          <a href="/dashboard/logs" className="btn">EXPORT ↗</a>
-          <a href="/dashboard/prompts" className="btn btn-primary">+ NEW PROMPT</a>
-        </div>
       </div>
 
       {/* Stats row */}
@@ -282,62 +276,53 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* GSC + GA4 property managers (preserved functionality) */}
+      {/* GSC + GA4 property exposure preview (top 5; full list lives on /dashboard/properties) */}
       <div className="section-header">
         <h2>Property Exposure</h2>
         <div className="right">
-          <a href="/dashboard/logs">VIEW ALL LOGS →</a>
+          <a href="/dashboard/properties">MANAGE PROPERTIES →</a>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-        <div style={{ background: "var(--surface-1)", border: "1px solid var(--rule-strong)", padding: 22 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-            <h3 style={{ fontFamily: "var(--display)", fontSize: 14, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ink)" }}>
-              GOOGLE SEARCH CONSOLE
-            </h3>
-            <span className={`pill ${hasGscConnected ? "info" : ""}`}>
-              {hasGscConnected ? "CONNECTED" : "NOT CONNECTED"}
-            </span>
-          </div>
-          {properties.length > 0 ? (
-            <PropertyManager properties={properties} />
-          ) : (
-            <div style={{ textAlign: "center", padding: "24px 0" }}>
-              <p style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 14 }}>
-                Connect your Google Search Console to get started.
-              </p>
-              <a href="/api/gsc/connect" className="btn btn-primary">+ CONNECT GSC</a>
-            </div>
-          )}
-        </div>
-        <div style={{ background: "var(--surface-1)", border: "1px solid var(--rule-strong)", padding: 22 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-            <h3 style={{ fontFamily: "var(--display)", fontSize: 14, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ink)" }}>
-              GOOGLE ANALYTICS 4
-            </h3>
-            <span className={`pill ${hasAnalyticsScope ? "info" : "warn"}`}>
-              {hasAnalyticsScope ? "AUTHORIZED" : "NOT AUTHORIZED"}
-            </span>
-          </div>
-          {!hasAnalyticsScope ? (
-            <div style={{ textAlign: "center", padding: "24px 0" }}>
-              <p style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 14 }}>
-                {hasCredential
-                  ? "Connected before GA4 support was added. Reconnect to grant Analytics permission."
-                  : "Account not yet connected. Authorize Google to enable Analytics."}
-              </p>
-              <a href="/api/gsc/connect" className="btn btn-primary">RECONNECT GOOGLE</a>
-            </div>
-          ) : ga4Properties.length > 0 ? (
-            <GA4PropertyManager properties={ga4Properties} />
-          ) : (
-            <div style={{ textAlign: "center", padding: "24px 0" }}>
-              <p style={{ fontSize: 13, color: "var(--ink-2)" }}>
-                No GA4 properties found. Make sure your Google account has access to GA4.
-              </p>
-            </div>
-          )}
-        </div>
+        <PropertyPreviewCard
+          title="GOOGLE SEARCH CONSOLE"
+          connected={hasGscConnected}
+          connectedLabel="CONNECTED"
+          notConnectedLabel="NOT CONNECTED"
+          rows={properties.slice(0, 5).map((p) => ({
+            id: p.id,
+            label: p.siteUrl,
+            isActive: p.isActive,
+          }))}
+          totalCount={properties.length}
+          emptyCopy="Connect your Google Search Console to get started."
+          emptyCta={{ href: "/api/gsc/connect", label: "+ CONNECT GSC" }}
+        />
+        <PropertyPreviewCard
+          title="GOOGLE ANALYTICS 4"
+          connected={hasAnalyticsScope && ga4Properties.length > 0}
+          connectedLabel="AUTHORIZED"
+          notConnectedLabel={hasAnalyticsScope ? "NO PROPERTIES" : "NOT AUTHORIZED"}
+          rows={ga4Properties.slice(0, 5).map((p) => ({
+            id: p.id,
+            label: p.displayName ?? p.propertyId,
+            sub: p.accountName ?? undefined,
+            isActive: p.isActive,
+          }))}
+          totalCount={ga4Properties.length}
+          emptyCopy={
+            !hasAnalyticsScope
+              ? hasCredential
+                ? "Connected before GA4 support was added. Reconnect to grant Analytics permission."
+                : "Account not yet connected. Authorize Google to enable Analytics."
+              : "No GA4 properties found. Make sure your Google account has access to GA4."
+          }
+          emptyCta={
+            !hasAnalyticsScope
+              ? { href: "/api/gsc/connect", label: "RECONNECT GOOGLE" }
+              : undefined
+          }
+        />
       </div>
 
       {/* Recent queries */}
@@ -421,6 +406,95 @@ export default async function DashboardPage() {
       </div>
       <SetupInstructions />
     </>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
+ * Property preview card — top 5 rows + "Manage all" link.
+ * Used on the overview to give a glanceable view; full management
+ * lives on /dashboard/properties.
+ * ──────────────────────────────────────────────────────────── */
+function PropertyPreviewCard({
+  title,
+  connected,
+  connectedLabel,
+  notConnectedLabel,
+  rows,
+  totalCount,
+  emptyCopy,
+  emptyCta,
+}: {
+  title: string;
+  connected: boolean;
+  connectedLabel: string;
+  notConnectedLabel: string;
+  rows: { id: string; label: string; sub?: string; isActive: boolean }[];
+  totalCount: number;
+  emptyCopy: string;
+  emptyCta?: { href: string; label: string };
+}) {
+  const hidden = totalCount - rows.length;
+  return (
+    <div style={{ background: "var(--surface-1)", border: "1px solid var(--rule-strong)", padding: 22, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <h3 style={{ fontFamily: "var(--display)", fontSize: 14, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ink)" }}>
+          {title}
+        </h3>
+        <span className={`pill ${connected ? "info" : ""}`}>
+          {connected ? connectedLabel : notConnectedLabel}
+        </span>
+      </div>
+
+      {rows.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <p style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: emptyCta ? 14 : 0 }}>{emptyCopy}</p>
+          {emptyCta && (
+            <a href={emptyCta.href} className="btn btn-primary">{emptyCta.label}</a>
+          )}
+        </div>
+      ) : (
+        <>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {rows.map((row) => (
+              <div
+                key={row.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
+                  gap: 12,
+                  alignItems: "center",
+                  padding: "10px 0",
+                  borderBottom: "1px solid var(--rule)",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {row.label}
+                  </div>
+                  {row.sub && (
+                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {row.sub}
+                    </div>
+                  )}
+                </div>
+                <span className={`pill${row.isActive ? " info" : ""}`} style={{ fontSize: 9 }}>
+                  {row.isActive ? "EXPOSED" : "HIDDEN"}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, letterSpacing: "0.10em", textTransform: "uppercase" }}>
+            <span style={{ color: "var(--ink-3)" }}>
+              Showing {rows.length} of {totalCount}
+              {hidden > 0 ? ` · +${hidden} more` : ""}
+            </span>
+            <a href="/dashboard/properties" style={{ color: "var(--teal)", textDecoration: "none" }}>
+              View all →
+            </a>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

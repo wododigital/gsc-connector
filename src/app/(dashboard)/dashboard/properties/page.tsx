@@ -52,9 +52,11 @@ async function getGa4Properties(userId: string) {
 function EmptyServicePane({
   service,
   copy,
+  comingSoon = false,
 }: {
   service: string;
   copy: string;
+  comingSoon?: boolean;
 }) {
   return (
     <div
@@ -75,7 +77,7 @@ function EmptyServicePane({
           marginBottom: 8,
         }}
       >
-        No {service} connected
+        {comingSoon ? `${service} · Coming soon` : `No ${service} connected`}
       </div>
       <p
         style={{
@@ -87,9 +89,18 @@ function EmptyServicePane({
       >
         {copy}
       </p>
-      <Link className="btn btn-primary" href="/onboarding">
-        + CONNECT
-      </Link>
+      {comingSoon ? (
+        <span
+          className="pill info"
+          style={{ fontSize: 11, padding: "5px 12px" }}
+        >
+          Coming soon
+        </span>
+      ) : (
+        <Link className="btn btn-primary" href="/onboarding">
+          + CONNECT
+        </Link>
+      )}
     </div>
   );
 }
@@ -145,15 +156,17 @@ export default async function PropertiesPage() {
 
   const gbpPane = (
     <EmptyServicePane
+      comingSoon
       service="Business Profile"
-      copy="Connect Google Business Profile to query reviews, calls, direction requests and post performance for any locations you manage."
+      copy="Reviews, calls, direction requests and post performance for any locations you manage. We are wiring this up next."
     />
   );
 
   const adsPane = (
     <EmptyServicePane
-      service="Ads accounts"
-      copy="Connect Google Ads to query campaigns, spend, ROAS and keyword bids from any Ads accounts you manage."
+      comingSoon
+      service="Google Ads"
+      copy="Campaigns, spend, ROAS and keyword bids from any Ads accounts you manage. Landing soon."
     />
   );
 
@@ -173,9 +186,6 @@ export default async function PropertiesPage() {
           <a href="/api/gsc/connect" className="btn">
             Reconnect ↺
           </a>
-          <Link href="/onboarding" className="btn btn-primary">
-            + Add Connection
-          </Link>
         </div>
       </div>
 
