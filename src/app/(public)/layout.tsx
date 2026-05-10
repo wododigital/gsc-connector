@@ -1,34 +1,31 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navLinks = [
   { href: "/features", label: "FEATURES" },
+  { href: "/#how-it-works", label: "HOW IT WORKS" },
   { href: "/pricing", label: "PRICING" },
   { href: "/guides", label: "GUIDES" },
   { href: "/faq", label: "FAQ" },
 ];
 
-const productLinks = [
+const productLinks: { href: string; label: string; external?: boolean }[] = [
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
-  { href: "#", label: "Integrations" },
-  { href: "#", label: "Changelog" },
-  { href: "#", label: "Roadmap" },
+  { href: "/#how-it-works", label: "How it works" },
 ];
 
-const resourceLinks = [
+const resourceLinks: { href: string; label: string; external?: boolean }[] = [
   { href: "/guides", label: "Documentation" },
-  { href: "/guides", label: "Setup guides" },
-  { href: "#", label: "API reference" },
-  { href: "#", label: "MCP overview" },
-  { href: "#", label: "Status page" },
-];
-
-const companyLinks = [
-  { href: "#", label: "About" },
-  { href: "mailto:hello@theomg.ai", label: "Contact" },
+  { href: "/faq", label: "FAQ" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
+];
+
+const companyLinks: { href: string; label: string; external?: boolean }[] = [
+  { href: "mailto:hello@theomg.ai", label: "Contact" },
+  { href: "https://wodo.digital", label: "About", external: true },
 ];
 
 export default function PublicLayout({
@@ -59,6 +56,7 @@ export default function PublicLayout({
           ))}
         </nav>
         <div className="actions">
+          <ThemeToggle />
           <Link href="/auth/login">LOG IN</Link>
           <Link href="/onboarding" className="primary">
             START FREE →
@@ -129,11 +127,22 @@ export default function PublicLayout({
             </div>
             <div className="col">
               <h6>COMPANY</h6>
-              {companyLinks.map((l) => (
-                <Link key={l.label} href={l.href}>
-                  {l.label}
-                </Link>
-              ))}
+              {companyLinks.map((l) =>
+                l.external ? (
+                  <a
+                    key={l.label}
+                    href={l.href}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {l.label}
+                  </a>
+                ) : (
+                  <Link key={l.label} href={l.href}>
+                    {l.label}
+                  </Link>
+                ),
+              )}
             </div>
           </div>
 

@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 
 interface Message {
@@ -79,13 +78,6 @@ export default function TicketPage() {
 
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <Link href="/dashboard/tickets" style={{ color: "var(--ink-3)", textDecoration: "none" }}>
-              SUPPORT
-            </Link>
-            <span>/</span>
-            <span>TICKET #{ticket.id.slice(0, 8).toUpperCase()}</span>
-          </div>
           <h1>{ticket.subject}</h1>
           <p className="lede">
             {ticket.category.replace("_", " ").toUpperCase()} · OPENED{" "}

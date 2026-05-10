@@ -58,11 +58,6 @@ export default function AdminErrors() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">05</span>
-            <span>·</span>
-            <span>ADMIN · ERRORS &amp; HEALTH</span>
-          </div>
           <h1>
             System <span className="accent">errors.</span>
           </h1>

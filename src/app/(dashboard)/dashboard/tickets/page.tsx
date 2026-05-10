@@ -65,11 +65,6 @@ export default function TicketsPage() {
       <style>{TICKETS_CSS}</style>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">08</span>
-            <span>·</span>
-            <span>SUPPORT · TICKETS</span>
-          </div>
           <h1>Get <span className="accent">help.</span></h1>
           <p className="lede">Open a ticket and our team will respond within one business day.</p>
         </div>

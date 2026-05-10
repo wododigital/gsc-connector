@@ -73,11 +73,6 @@ export default function AdminUsers() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">03</span>
-            <span>·</span>
-            <span>ADMIN · USERS</span>
-          </div>
           <h1>
             Manage <span className="accent">accounts.</span>
           </h1>

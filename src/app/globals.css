@@ -57,6 +57,51 @@
   /* per-AI brand accents — set by JS on chat-app */
   --brand-accent: var(--teal);
   --brand-glow:   var(--teal-glow);
+
+  /* theme-aware atmospherics (used by topbars / overlays / glows) */
+  --topbar-bg:      rgba(10, 16, 24, 0.85);
+  --overlay-bg:     rgba(10, 16, 24, 0.78);
+  --body-glow-1:    rgba(0, 181, 181, 0.10);
+  --body-glow-2:    rgba(255, 107, 74, 0.06);
+  --logo-filter:    none;
+}
+
+/* ─── tokens · LIGHT theme override ────────────────────────── */
+[data-theme="light"] {
+  --bg:             #F4F1EA;
+  --surface-1:      #FFFFFF;
+  --surface-2:      #EAE6DB;
+  --surface-3:      #DAD6CB;
+  --ink:            #0A1018;
+  --ink-2:          #3D4654;
+  --ink-3:          #7A8290;
+  --rule:           rgba(10, 16, 24, 0.10);
+  --rule-strong:    rgba(10, 16, 24, 0.20);
+  --card-rule:      rgba(0, 140, 140, 0.5);
+  --teal:           #008C8C;
+  --teal-bright:    #00B5B5;
+  --teal-glow:      rgba(0, 140, 140, 0.18);
+  --vermilion:      #E55A3A;
+  --vermilion-glow: rgba(229, 90, 58, 0.18);
+  --amber:          #C99238;
+
+  --topbar-bg:      rgba(255, 255, 255, 0.85);
+  --overlay-bg:     rgba(244, 241, 234, 0.78);
+  --body-glow-1:    rgba(0, 140, 140, 0.08);
+  --body-glow-2:    rgba(229, 90, 58, 0.06);
+  /* white logos invert nicely on light bg with this filter */
+  --logo-filter:    invert(1) hue-rotate(180deg) brightness(0.92);
+}
+
+/* smooth theme transition */
+html { transition: background-color .35s ease; }
+body, .topbar, .chat-app, .ai-bar, .stats, .ribbon, .section, .poster,
+footer, .modules, .featured-grid, .module, .feat, .gutter, .modal-card,
+.modal-overlay, .data-table, .data-table th, .data-table td,
+.surface-card, .stats-row, .stat, .service-card, .filter-bar,
+.prompt-card, .tabs, .prop-table, .key-create, .endpoint-card,
+.signin-banner, .connect-card {
+  transition: background-color .35s ease, border-color .35s ease, color .35s ease;
 }
 
 /* ─── reset + base ─────────────────────────────────────────── */
@@ -85,6 +130,28 @@ body.modal-open { overflow: hidden; }
   pointer-events: none;
   z-index: 0;
 }
+
+/* ─── theme toggle (used in all topbars) ───────────────────── */
+.theme-toggle {
+  padding: 0 18px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--rule-strong);
+  color: var(--ink-2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: inherit;
+  transition: background .18s ease, color .18s ease;
+}
+.theme-toggle:hover { background: var(--surface-1); color: var(--teal-bright); }
+.theme-toggle svg { width: 16px; height: 16px; transition: transform .35s ease; display: block; }
+.theme-toggle .icon-sun  { display: none; }
+.theme-toggle .icon-moon { display: block; }
+[data-theme="light"] .theme-toggle .icon-sun  { display: block; }
+[data-theme="light"] .theme-toggle .icon-moon { display: none; }
+
+/* topbar logo adapts to theme */
+.topbar .logo-img { filter: var(--logo-filter); transition: filter .35s ease; }
 
 /* ─── shared primitives: btn ───────────────────────────────── */
 .btn {

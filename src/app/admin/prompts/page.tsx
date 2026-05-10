@@ -101,11 +101,6 @@ export default function AdminPromptsPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">07</span>
-            <span>·</span>
-            <span>ADMIN · PROMPT LIBRARY</span>
-          </div>
           <h1>
             System <span className="accent">prompts.</span>
           </h1>

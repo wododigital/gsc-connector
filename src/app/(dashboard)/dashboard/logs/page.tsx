@@ -176,11 +176,6 @@ export default async function LogsPage({ searchParams }: LogsPageProps) {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">05</span>
-            <span>·</span>
-            <span>USAGE LOGS · LIVE QUERY STREAM</span>
-          </div>
           <h1>Every query, <span className="accent">tracked.</span></h1>
           <p className="lede">
             Audit-ready log of every tool call your bridge has handled. Filter by tool, AI, status or property.

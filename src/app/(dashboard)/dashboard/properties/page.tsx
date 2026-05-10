@@ -161,11 +161,6 @@ export default async function PropertiesPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">03</span>
-            <span>·</span>
-            <span>PROPERTIES · CONFIGURE EXPOSURE</span>
-          </div>
           <h1>
             What your AI <span className="accent">can see.</span>
           </h1>

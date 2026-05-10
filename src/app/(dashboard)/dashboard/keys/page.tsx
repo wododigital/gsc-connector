@@ -47,11 +47,6 @@ export default async function ApiKeysPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">04</span>
-            <span>·</span>
-            <span>API KEYS · STATIC AUTH</span>
-          </div>
           <h1>API <span className="accent">keys.</span></h1>
           <p className="lede">
             Static keys for tools that don&apos;t support OAuth (Cursor, Claude Desktop config files).

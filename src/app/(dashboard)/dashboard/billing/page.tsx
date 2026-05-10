@@ -95,11 +95,6 @@ export default function BillingPage() {
       <style>{BILLING_CSS}</style>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">07</span>
-            <span>·</span>
-            <span>BILLING · PLAN & USAGE</span>
-          </div>
           <h1>Billing &amp; <span className="accent">plan.</span></h1>
           <p className="lede">Manage your subscription, monitor usage, and switch plans.</p>
         </div>

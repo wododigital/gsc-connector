@@ -510,7 +510,7 @@ export default function MarketingHomePage() {
       </section>
 
       {/* ── HOW IT WORKS ──────────────────────────────────── */}
-      <section className="section">
+      <section id="how-it-works" className="section">
         <div className="gutter">
           <div className="num">02</div>
           <div className="vert">HOW IT WORKS</div>
@@ -704,21 +704,18 @@ export default function MarketingHomePage() {
               <h6>PRODUCT</h6>
               <Link href="/features">Features</Link>
               <Link href="/pricing">Pricing</Link>
-              <Link href="#">Integrations</Link>
-              <Link href="#">Changelog</Link>
-              <Link href="#">Roadmap</Link>
+              <Link href="/#how-it-works">How it works</Link>
             </div>
             <div className="col">
               <h6>RESOURCES</h6>
               <Link href="/guides">Documentation</Link>
-              <Link href="/guides">Setup guides</Link>
-              <Link href="#">API reference</Link>
-              <Link href="#">MCP overview</Link>
-              <Link href="#">Status page</Link>
+              <Link href="/faq">FAQ</Link>
+              <Link href="/privacy">Privacy</Link>
+              <Link href="/terms">Terms</Link>
             </div>
             <div className="col">
               <h6>COMPANY</h6>
-              <Link href="#">About</Link>
+              <a href="https://wodo.digital" target="_blank" rel="noreferrer">About</a>
               <a href="mailto:hello@theomg.ai">Contact</a>
               <button
                 type="button"

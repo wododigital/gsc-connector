@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   SidebarLink,
   SidebarSection,
@@ -132,6 +133,7 @@ export default async function AdminLayout({
           <span className="here">CONTROL PANEL</span>
         </div>
         <div className="user">
+          <ThemeToggle />
           <div className="info">
             <span className="role-tag">ADMIN</span>
             <div className="avatar">{userInitials}</div>

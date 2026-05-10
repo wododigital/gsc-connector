@@ -75,11 +75,6 @@ export default function AdminCoupons() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">04</span>
-            <span>·</span>
-            <span>ADMIN · COUPONS</span>
-          </div>
           <h1>
             Promo <span className="accent">codes.</span>
           </h1>

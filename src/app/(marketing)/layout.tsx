@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navLinks = [
   { href: "/features", label: "FEATURES" },
+  { href: "/#how-it-works", label: "HOW IT WORKS" },
   { href: "/pricing", label: "PRICING" },
   { href: "/guides", label: "GUIDES" },
   { href: "/faq", label: "FAQ" },
@@ -34,6 +36,7 @@ export default function MarketingLayout({
           ))}
         </nav>
         <div className="actions">
+          <ThemeToggle />
           <Link href="/auth/login">LOG IN</Link>
           <Link href="/onboarding" className="primary">
             START FREE →

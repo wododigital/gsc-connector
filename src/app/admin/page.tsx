@@ -203,11 +203,6 @@ function PageHeader() {
   return (
     <div className="page-header">
       <div>
-        <div className="eyebrow">
-          <span className="num">01</span>
-          <span>·</span>
-          <span>ADMIN · OVERVIEW</span>
-        </div>
         <h1>
           Control <span className="accent">room.</span>
         </h1>

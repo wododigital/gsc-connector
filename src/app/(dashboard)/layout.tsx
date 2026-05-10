@@ -7,6 +7,7 @@ import {
   SidebarTooltipHost,
 } from "@/components/sidebar-link";
 import { UsageBanner } from "@/components/usage-banner";
+import { ThemeToggle } from "@/components/theme-toggle";
 import db from "@/lib/db";
 
 /* ────────────────────────────────────────────────────────────
@@ -158,6 +159,7 @@ export default async function DashboardLayout({
           <span className="here">DASHBOARD</span>
         </div>
         <div className="user">
+          <ThemeToggle />
           <div className="info">
             <div className="avatar">{userInitials}</div>
             <span className="email">{session.email}</span>

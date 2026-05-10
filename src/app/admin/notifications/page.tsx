@@ -65,11 +65,6 @@ export default function AdminNotifications() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">06</span>
-            <span>·</span>
-            <span>ADMIN · NOTIFICATIONS</span>
-          </div>
           <h1>
             Inbox{" "}
             {unreadCount > 0 && (

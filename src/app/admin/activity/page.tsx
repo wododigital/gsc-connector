@@ -63,11 +63,6 @@ export default function AdminActivity() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">02</span>
-            <span>·</span>
-            <span>ADMIN · AUDIT</span>
-          </div>
           <h1>
             Activity <span className="accent">log.</span>
           </h1>

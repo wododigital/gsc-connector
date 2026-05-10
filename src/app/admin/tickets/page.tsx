@@ -103,11 +103,6 @@ export default function AdminTickets() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">08</span>
-            <span>·</span>
-            <span>ADMIN · SUPPORT QUEUE</span>
-          </div>
           <h1>
             Support <span className="accent">tickets.</span>
           </h1>

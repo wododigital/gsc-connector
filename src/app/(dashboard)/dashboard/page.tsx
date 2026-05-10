@@ -141,12 +141,6 @@ function formatTime(d: Date): string {
   }).format(d);
 }
 
-function todayLabel(): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  }).format(new Date()).toUpperCase();
-}
-
 function userFirstName(email: string): string {
   if (!email) return "there";
   const local = email.split("@")[0] ?? "";
@@ -198,11 +192,6 @@ export default async function DashboardPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">
-            <span className="num">01</span>
-            <span>·</span>
-            <span>OVERVIEW · {todayLabel()}</span>
-          </div>
           <h1>Welcome back, <span className="accent">{greeting}.</span></h1>
           <p className="lede">
             Your bridge handled <strong>{usageStats.calls7d.toLocaleString()} queries</strong> this week across{" "}
