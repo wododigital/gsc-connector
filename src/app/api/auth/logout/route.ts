@@ -11,7 +11,9 @@ import { getSessionCookieOptions } from "@/lib/auth";
 
 function logout(req: NextRequest): NextResponse {
   const cookieOptions = getSessionCookieOptions();
-  const response = NextResponse.redirect(new URL("/", config.app.url));
+  // ?signed_out=1 tells the client-side Preloader to replay (it normally
+  // suppresses itself for the rest of the session via sessionStorage).
+  const response = NextResponse.redirect(new URL("/?signed_out=1", config.app.url));
 
   // Clear session cookie
   response.cookies.set(cookieOptions.name, "", {

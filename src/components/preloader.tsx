@@ -11,8 +11,27 @@ export function Preloader() {
   const [hiding, setHiding] = useState(false);
 
   useEffect(() => {
+    // After sign-out the API redirects to /?signed_out=1 — force the
+    // preloader to replay and clean the param out of the URL.
+    let forced = false;
     try {
-      if (sessionStorage.getItem(SESSION_KEY)) return;
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("signed_out") === "1") {
+        sessionStorage.removeItem(SESSION_KEY);
+        url.searchParams.delete("signed_out");
+        window.history.replaceState(
+          {},
+          "",
+          url.pathname + (url.search ? url.search : "") + url.hash,
+        );
+        forced = true;
+      }
+    } catch {
+      // ignore — fall through to the normal session check
+    }
+
+    try {
+      if (!forced && sessionStorage.getItem(SESSION_KEY)) return;
     } catch {
       // sessionStorage unavailable — still show once
     }
