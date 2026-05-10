@@ -20,18 +20,18 @@ interface TicketDetail extends Ticket {
 
 const STATUS_FILTERS = ["all", "open", "in_progress", "resolved", "closed"];
 
-const PRIORITY_BADGE: Record<string, string> = {
-  urgent: "badge-error",
-  high: "badge-warning",
-  medium: "badge-info",
-  low: "badge-muted",
+const PRIORITY_PILL: Record<string, string> = {
+  urgent: "error",
+  high: "warn",
+  medium: "info",
+  low: "info",
 };
 
-const STATUS_BADGE: Record<string, string> = {
-  open: "badge-success",
-  in_progress: "badge-info",
-  resolved: "badge-muted",
-  closed: "badge-muted",
+const STATUS_PILL: Record<string, string> = {
+  open: "success",
+  in_progress: "info",
+  resolved: "warn",
+  closed: "warn",
 };
 
 export default function AdminTickets() {
@@ -46,7 +46,10 @@ export default function AdminTickets() {
     setLoading(true);
     fetch(`/api/admin/tickets?status=${status}`)
       .then((r) => r.json())
-      .then((d) => { setTickets(d.tickets ?? []); setLoading(false); });
+      .then((d) => {
+        setTickets(d.tickets ?? []);
+        setLoading(false);
+      });
   };
 
   const fetchDetail = (ticketId: string) => {
@@ -55,7 +58,10 @@ export default function AdminTickets() {
       .then((d) => setSelected(d.ticket));
   };
 
-  useEffect(() => { fetchTickets(); }, []);
+  useEffect(() => {
+    fetchTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sendReply = async (markResolved = false) => {
     if (!selected || !reply.trim()) return;
@@ -94,143 +100,151 @@ export default function AdminTickets() {
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="page-title">Support Tickets</h1>
+    <>
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">
+            <span className="num">08</span>
+            <span>·</span>
+            <span>ADMIN · SUPPORT QUEUE</span>
+          </div>
+          <h1>
+            Support <span className="accent">tickets.</span>
+          </h1>
+          <p className="lede">
+            Reply, escalate, and resolve. Status and priority changes are reflected back to the user
+            in their dashboard immediately.
+          </p>
+        </div>
+      </div>
 
-      {/* Status filter tabs */}
-      <div className="flex gap-2">
+      <div className="filter-bar">
         {STATUS_FILTERS.map((s) => (
           <button
             key={s}
-            onClick={() => { setStatusFilter(s); fetchTickets(s); }}
-            className={statusFilter === s ? "btn-primary btn-primary-sm capitalize" : "btn-ghost btn-ghost-sm capitalize"}
+            type="button"
+            onClick={() => {
+              setStatusFilter(s);
+              fetchTickets(s);
+            }}
+            className={`chip ${statusFilter === s ? "active" : ""}`}
           >
             {s.replace("_", " ")}
           </button>
         ))}
       </div>
 
-      {/* Two-panel layout */}
-      <div className="flex gap-4" style={{ height: "calc(100vh - 220px)" }}>
-        {/* Ticket list */}
-        <div className="w-80 flex-shrink-0 glass-panel overflow-y-auto">
+      <div className="tickets-shell">
+        <div className="tickets-list">
           {loading ? (
-            <div className="text-sm p-4" style={{ color: "var(--text-muted)" }}>Loading...</div>
-          ) : tickets.length === 0 ? (
-            <div className="text-sm p-4" style={{ color: "var(--text-muted)" }}>No tickets</div>
-          ) : tickets.map((t) => (
-            <div
-              key={t.id}
-              onClick={() => fetchDetail(t.id)}
-              className="p-3 cursor-pointer"
-              style={{
-                borderBottom: "1px solid var(--glass-border)",
-                background: selected?.id === t.id ? "var(--glass-bg-active)" : "transparent",
-              }}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className={`badge ${PRIORITY_BADGE[t.priority] ?? "badge-muted"}`}>
-                  {t.priority}
-                </span>
-                <span className={`badge ${STATUS_BADGE[t.status] ?? "badge-muted"}`}>
-                  {t.status.replace("_", " ")}
-                </span>
-              </div>
-              <p className="text-sm truncate" style={{ color: "var(--text-primary)" }}>
-                {t.subject}
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{t.user.email}</p>
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                {new Date(t.updatedAt).toLocaleDateString()}
-              </p>
+            <div style={{ padding: 16, color: "var(--ink-3)", fontSize: 12 }}>
+              Loading tickets...
             </div>
-          ))}
+          ) : tickets.length === 0 ? (
+            <div style={{ padding: 16, color: "var(--ink-3)", fontSize: 12 }}>
+              No tickets in this view.
+            </div>
+          ) : (
+            tickets.map((t) => (
+              <div
+                key={t.id}
+                className={`row ${selected?.id === t.id ? "active" : ""}`}
+                onClick={() => fetchDetail(t.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") fetchDetail(t.id);
+                }}
+              >
+                <div className="head">
+                  <span className={`pill ${PRIORITY_PILL[t.priority] ?? "info"}`}>
+                    {t.priority}
+                  </span>
+                  <span className={`pill ${STATUS_PILL[t.status] ?? "info"}`}>
+                    {t.status.replace("_", " ")}
+                  </span>
+                </div>
+                <div className="subject">{t.subject}</div>
+                <div className="meta">
+                  {t.user.email}
+                  <br />
+                  {new Date(t.updatedAt).toLocaleDateString()} · {t._count.messages} msg
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
-        {/* Ticket detail */}
         {selected ? (
-          <div className="flex-1 glass-panel flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="p-4" style={{ borderBottom: "1px solid var(--glass-border)" }}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>
-                    {selected.subject}
-                  </h3>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {selected.user.email} - {selected.category}
-                  </p>
+          <div className="tickets-detail">
+            <div className="head">
+              <div>
+                <div className="title">{selected.subject}</div>
+                <div className="sub">
+                  {selected.user.email} · {selected.category}
                 </div>
-                <div className="flex gap-2">
-                  <select
-                    value={selected.priority}
-                    onChange={(e) => changePriority(e.target.value)}
-                    className="glass-select text-xs"
-                    style={{ padding: "4px 8px", width: "auto" }}
-                  >
-                    {["low", "medium", "high", "urgent"].map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={selected.status}
-                    onChange={(e) => changeStatus(e.target.value)}
-                    className="glass-select text-xs"
-                    style={{ padding: "4px 8px", width: "auto" }}
-                  >
-                    {["open", "in_progress", "resolved", "closed"].map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <select
+                  value={selected.priority}
+                  onChange={(e) => changePriority(e.target.value)}
+                  style={selectStyle}
+                >
+                  {["low", "medium", "high", "urgent"].map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={selected.status}
+                  onChange={(e) => changeStatus(e.target.value)}
+                  style={selectStyle}
+                >
+                  {["open", "in_progress", "resolved", "closed"].map((s) => (
+                    <option key={s} value={s}>
+                      {s.replace("_", " ")}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-3">
+            <div className="messages">
               {selected.messages.map((m) => (
-                <div key={m.id} className={`flex ${m.senderType === "admin" ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className="max-w-lg rounded-lg px-4 py-2 text-sm"
-                    style={{
-                      background: m.senderType === "admin"
-                        ? "rgba(0, 179, 179, 0.12)"
-                        : "rgba(14, 20, 32, 0.7)",
-                      border: `1px solid ${m.senderType === "admin" ? "var(--glass-border-accent)" : "var(--glass-border)"}`,
-                    }}
-                  >
-                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>
-                      {m.senderType === "admin" ? "Admin" : selected.user.email} - {new Date(m.createdAt).toLocaleString()}
-                    </p>
-                    <p className="whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>
-                      {m.message}
-                    </p>
+                <div
+                  key={m.id}
+                  className={`msg ${m.senderType === "admin" ? "admin" : ""}`}
+                >
+                  <div className="who">
+                    {m.senderType === "admin" ? "Admin" : selected.user.email} ·{" "}
+                    {new Date(m.createdAt).toLocaleString()}
                   </div>
+                  <div className="text">{m.message}</div>
                 </div>
               ))}
             </div>
 
-            {/* Reply area */}
-            <div className="p-4" style={{ borderTop: "1px solid var(--glass-border)" }}>
+            <div className="reply">
               <textarea
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 placeholder="Type your reply..."
-                className="glass-textarea text-sm"
-                style={{ height: "80px", resize: "none" }}
               />
-              <div className="flex gap-2 mt-2">
+              <div className="actions">
                 <button
+                  type="button"
                   onClick={() => sendReply(false)}
                   disabled={!reply.trim() || sending}
-                  className="btn-ghost btn-ghost-sm"
+                  className="btn"
                 >
-                  Reply
+                  {sending ? "Sending..." : "Reply"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => sendReply(true)}
                   disabled={!reply.trim() || sending}
-                  className="btn-primary btn-primary-sm"
+                  className="btn btn-primary"
                 >
                   Reply + Resolve
                 </button>
@@ -238,11 +252,21 @@ export default function AdminTickets() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 glass-panel flex items-center justify-center text-sm" style={{ color: "var(--text-muted)" }}>
-            Select a ticket to view
-          </div>
+          <div className="tickets-empty">Select a ticket to view</div>
         )}
       </div>
-    </div>
+    </>
   );
 }
+
+const selectStyle: React.CSSProperties = {
+  background: "var(--bg)",
+  border: "1px solid var(--rule)",
+  color: "var(--ink-2)",
+  padding: "6px 10px",
+  fontFamily: "var(--body)",
+  fontSize: 11,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+};

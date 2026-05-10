@@ -10,13 +10,13 @@ interface ActivityEntry {
   createdAt: string;
 }
 
-const ACTION_BADGE: Record<string, string> = {
-  payment_success: "badge-success",
-  payment_failed: "badge-error",
-  coupon_redeemed: "badge-accent",
-  plan_changed_by_admin: "badge-info",
-  plan_change: "badge-info",
-  subscription_cancelled: "badge-warning",
+const ACTION_PILL: Record<string, string> = {
+  payment_success: "success",
+  payment_failed: "error",
+  coupon_redeemed: "info",
+  plan_changed_by_admin: "info",
+  plan_change: "info",
+  subscription_cancelled: "warn",
 };
 
 const ACTIONS = [
@@ -27,6 +27,8 @@ const ACTIONS = [
   "plan_changed_by_admin",
   "subscription_cancelled",
 ];
+
+const PAGE_SIZE = 50;
 
 export default function AdminActivity() {
   const [logs, setLogs] = useState<ActivityEntry[]>([]);
@@ -41,93 +43,143 @@ export default function AdminActivity() {
     if (a !== "all") params.set("action", a);
     fetch(`/api/admin/activity?${params}`)
       .then((r) => r.json())
-      .then((d) => { setLogs(d.logs ?? []); setTotal(d.total ?? 0); setLoading(false); });
+      .then((d) => {
+        setLogs(d.logs ?? []);
+        setTotal(d.total ?? 0);
+        setLoading(false);
+      });
   };
 
-  useEffect(() => { fetchLogs(); }, []);
+  useEffect(() => {
+    fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const start = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const end = Math.min(total, page * PAGE_SIZE);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <>
+      <div className="page-header">
         <div>
-          <h1 className="page-title">Activity Log</h1>
-          <p className="page-subtitle">{total} entries</p>
+          <div className="eyebrow">
+            <span className="num">02</span>
+            <span>·</span>
+            <span>ADMIN · AUDIT</span>
+          </div>
+          <h1>
+            Activity <span className="accent">log.</span>
+          </h1>
+          <p className="lede">
+            Append-only audit trail of every billing event, coupon redemption, and admin override.
+          </p>
         </div>
-        <select
-          value={action}
-          onChange={(e) => { setAction(e.target.value); setPage(1); fetchLogs(1, e.target.value); }}
-          className="glass-select text-sm"
-          style={{ width: "auto" }}
-        >
-          {ACTIONS.map((a) => (
-            <option key={a} value={a}>
-              {a === "all" ? "All Actions" : a.replace(/_/g, " ")}
-            </option>
-          ))}
-        </select>
       </div>
 
-      <div className="glass-panel overflow-hidden">
-        <table className="glass-table">
-          <thead>
-            <tr>
-              {["Timestamp", "Action", "User", "Details"].map((h) => (
-                <th key={h}>{h}</th>
-              ))}
+      <div className="filter-bar">
+        {ACTIONS.map((a) => (
+          <button
+            key={a}
+            type="button"
+            onClick={() => {
+              setAction(a);
+              setPage(1);
+              fetchLogs(1, a);
+            }}
+            className={`chip ${action === a ? "active" : ""}`}
+          >
+            {a === "all" ? "All Actions" : a.replace(/_/g, " ")}
+          </button>
+        ))}
+      </div>
+
+      <div className="logs-meta">
+        <span>
+          SHOWING <strong>{start}-{end}</strong> OF <strong>{total.toLocaleString()}</strong>
+        </span>
+        <span>·</span>
+        <span>
+          FILTER <strong>{action === "all" ? "ALL" : action.replace(/_/g, " ").toUpperCase()}</strong>
+        </span>
+      </div>
+
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>TIMESTAMP</th>
+            <th>ACTION</th>
+            <th>USER</th>
+            <th>DETAILS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr className="row-empty">
+              <td colSpan={4}>Loading activity...</td>
             </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={4} className="text-center py-8" style={{ color: "var(--text-muted)" }}>
-                  Loading...
-                </td>
-              </tr>
-            ) : logs.map((l) => (
+          ) : logs.length === 0 ? (
+            <tr className="row-empty">
+              <td colSpan={4}>No activity in this view</td>
+            </tr>
+          ) : (
+            logs.map((l) => (
               <tr key={l.id}>
-                <td className="text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                  {new Date(l.createdAt).toLocaleString()}
-                </td>
+                <td className="dim mono">{new Date(l.createdAt).toLocaleString()}</td>
                 <td>
-                  <span className={`badge ${ACTION_BADGE[l.action] ?? "badge-muted"}`}>
+                  <span className={`pill ${ACTION_PILL[l.action] ?? "info"}`}>
                     {l.action.replace(/_/g, " ")}
                   </span>
                 </td>
-                <td className="text-xs" style={{ color: "var(--text-secondary)" }}>{l.userEmail}</td>
-                <td className="text-xs font-mono truncate max-w-xs" style={{ color: "var(--text-muted)" }}>
+                <td className="mono">{l.userEmail || "system"}</td>
+                <td
+                  className="dim mono"
+                  style={{
+                    maxWidth: 360,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={l.details ? JSON.stringify(l.details) : "-"}
+                >
                   {l.details ? JSON.stringify(l.details) : "-"}
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {total > 50 && (
-          <div
-            className="flex justify-between items-center px-4 py-3"
-            style={{ borderTop: "1px solid var(--glass-border)" }}
+            ))
+          )}
+        </tbody>
+      </table>
+
+      <div className="pagination">
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <div className="pages">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => {
+              const p = page - 1;
+              setPage(p);
+              fetchLogs(p);
+            }}
           >
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Page {page} of {Math.ceil(total / 50)}
-            </span>
-            <div className="flex gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => { const p = page - 1; setPage(p); fetchLogs(p); }}
-                className="btn-ghost btn-ghost-sm"
-              >
-                Prev
-              </button>
-              <button
-                disabled={page >= Math.ceil(total / 50)}
-                onClick={() => { const p = page + 1; setPage(p); fetchLogs(p); }}
-                className="btn-ghost btn-ghost-sm"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+            ‹ Prev
+          </button>
+          <span style={{ borderColor: "var(--vermilion)", color: "var(--vermilion)" }}>{page}</span>
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => {
+              const p = page + 1;
+              setPage(p);
+              fetchLogs(p);
+            }}
+          >
+            Next ›
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -36,10 +36,15 @@ export default function AdminCoupons() {
     setLoading(true);
     fetch("/api/admin/coupons")
       .then((r) => r.json())
-      .then((d) => { setCoupons(d.coupons ?? []); setLoading(false); });
+      .then((d) => {
+        setCoupons(d.coupons ?? []);
+        setLoading(false);
+      });
   };
 
-  useEffect(() => { fetchCoupons(); }, []);
+  useEffect(() => {
+    fetchCoupons();
+  }, []);
 
   const createCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,111 +65,191 @@ export default function AdminCoupons() {
     setCreating(false);
   };
 
+  const activeCount = coupons.filter((c) => c.isActive).length;
+  const totalRedeemed = coupons.reduce(
+    (acc, c) => acc + (c._count?.redemptions ?? c.timesRedeemed),
+    0,
+  );
+
   return (
-    <div className="space-y-6">
-      <h1 className="page-title">Coupons</h1>
+    <>
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">
+            <span className="num">04</span>
+            <span>·</span>
+            <span>ADMIN · COUPONS</span>
+          </div>
+          <h1>
+            Promo <span className="accent">codes.</span>
+          </h1>
+          <p className="lede">
+            Issue plan unlocks for partners, podcasts, and beta cohorts. Each code is single use per
+            account; redemptions are auditable.
+          </p>
+        </div>
+      </div>
+
+      {/* Stats row for context */}
+      <div className="stats-row">
+        <div className="stat">
+          <div className="label">Total Codes</div>
+          <div className="num">{coupons.length}</div>
+          <div className="sub">{activeCount} active</div>
+        </div>
+        <div className="stat">
+          <div className="label">Redeemed</div>
+          <div className="num teal">{totalRedeemed.toLocaleString()}</div>
+          <div className="sub">across all codes</div>
+        </div>
+        <div className="stat">
+          <div className="label">Free Codes</div>
+          <div className="num">{coupons.filter((c) => c.planId === "plan_free").length}</div>
+          <div className="sub">free plan</div>
+        </div>
+        <div className="stat">
+          <div className="label">Annual Codes</div>
+          <div className="num vermilion">
+            {coupons.filter((c) => c.planId === "plan_annual").length}
+          </div>
+          <div className="sub">annual plan</div>
+        </div>
+      </div>
 
       {/* Create form */}
-      <div className="glass-card p-5">
-        <h2 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>
-          Create Coupon
-        </h2>
-        <form onSubmit={createCoupon} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="section-header">
+        <h2>Create Coupon</h2>
+      </div>
+
+      <form onSubmit={createCoupon} className="surface-card">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 16,
+          }}
+        >
           <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Code</label>
+            <label className="input-label">Code</label>
             <input
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
               placeholder="SAVE20"
               required
-              className="glass-input text-sm uppercase"
+              className="input-field"
+              style={{ textTransform: "uppercase", fontFamily: "var(--mono)" }}
             />
           </div>
           <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Plan</label>
+            <label className="input-label">Plan</label>
             <select
               value={form.planId}
               onChange={(e) => setForm({ ...form, planId: e.target.value })}
-              className="glass-select text-sm"
+              className="input-field"
+              style={{ cursor: "pointer" }}
             >
-              {PLANS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+              {PLANS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Duration (months)</label>
+            <label className="input-label">Duration (months)</label>
             <input
               type="number"
               min="1"
               max="24"
               value={form.durationMonths}
               onChange={(e) => setForm({ ...form, durationMonths: e.target.value })}
-              className="glass-input text-sm"
+              className="input-field"
             />
           </div>
           <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Max Redemptions</label>
+            <label className="input-label">Max Redemptions</label>
             <input
               type="number"
               min="1"
               value={form.maxRedemptions}
               onChange={(e) => setForm({ ...form, maxRedemptions: e.target.value })}
-              className="glass-input text-sm"
+              className="input-field"
             />
           </div>
           {error && (
-            <p className="col-span-full text-sm" style={{ color: "var(--error)" }}>{error}</p>
+            <p
+              style={{
+                gridColumn: "1 / -1",
+                color: "var(--vermilion)",
+                fontSize: 12,
+                margin: 0,
+              }}
+            >
+              {error}
+            </p>
           )}
-          <div className="col-span-full">
-            <button type="submit" disabled={creating} className="btn-primary btn-primary-sm">
+          <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}>
+            <button type="submit" disabled={creating} className="btn btn-primary">
               {creating ? "Creating..." : "Create Coupon"}
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
 
       {/* Coupon table */}
-      <div className="glass-panel overflow-hidden">
-        <table className="glass-table">
-          <thead>
-            <tr>
-              {["Code", "Plan", "Duration", "Used / Max", "Expires", "Status", "Created"].map((h) => (
-                <th key={h}>{h}</th>
-              ))}
+      <div className="section-header">
+        <h2>All Codes</h2>
+        <div className="right">
+          <span>{coupons.length} TOTAL</span>
+        </div>
+      </div>
+
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>CODE</th>
+            <th>PLAN</th>
+            <th>DURATION</th>
+            <th className="right">USED / MAX</th>
+            <th>EXPIRES</th>
+            <th>STATUS</th>
+            <th>CREATED</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr className="row-empty">
+              <td colSpan={7}>Loading coupons...</td>
             </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-8" style={{ color: "var(--text-muted)" }}>
-                  Loading...
-                </td>
-              </tr>
-            ) : coupons.map((c) => (
+          ) : coupons.length === 0 ? (
+            <tr className="row-empty">
+              <td colSpan={7}>No coupons yet. Create one above.</td>
+            </tr>
+          ) : (
+            coupons.map((c) => (
               <tr key={c.id}>
-                <td className="font-mono font-medium" style={{ color: "var(--text-primary)" }}>
+                <td className="mono" style={{ color: "var(--ink)", fontWeight: 600 }}>
                   {c.code}
                 </td>
-                <td style={{ color: "var(--text-secondary)" }}>{c.plan?.displayName ?? c.planId}</td>
-                <td style={{ color: "var(--text-secondary)" }}>{c.durationMonths}mo</td>
-                <td style={{ color: "var(--text-secondary)" }}>
+                <td>{c.plan?.displayName ?? c.planId}</td>
+                <td className="dim">{c.durationMonths}mo</td>
+                <td className="right mono">
                   {c._count?.redemptions ?? c.timesRedeemed} / {c.maxRedemptions}
                 </td>
-                <td className="text-xs" style={{ color: "var(--text-muted)" }}>
+                <td className="dim mono">
                   {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "Never"}
                 </td>
                 <td>
-                  <span className={`badge ${c.isActive ? "badge-success" : "badge-muted"}`}>
+                  <span className={`pill ${c.isActive ? "success" : "warn"}`}>
                     {c.isActive ? "Active" : "Inactive"}
                   </span>
                 </td>
-                <td className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {new Date(c.createdAt).toLocaleDateString()}
-                </td>
+                <td className="dim mono">{new Date(c.createdAt).toLocaleDateString()}</td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            ))
+          )}
+        </tbody>
+      </table>
+    </>
   );
 }

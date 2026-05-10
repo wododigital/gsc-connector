@@ -21,122 +21,208 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetch("/api/admin/dashboard")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      });
   }, []);
 
-  if (loading) return (
-    <div className="text-sm p-4" style={{ color: "var(--text-secondary)" }}>Loading...</div>
-  );
-  if (!data) return (
-    <div className="text-sm p-4" style={{ color: "var(--error)" }}>Failed to load dashboard</div>
-  );
+  if (loading) {
+    return (
+      <>
+        <PageHeader />
+        <div className="surface-card" style={{ textAlign: "center", padding: "48px 24px", color: "var(--ink-3)" }}>
+          Loading admin overview...
+        </div>
+      </>
+    );
+  }
+
+  if (!data) {
+    return (
+      <>
+        <PageHeader />
+        <div className="admin-alert">
+          <p className="err">Failed to load admin dashboard. Try refreshing.</p>
+        </div>
+      </>
+    );
+  }
 
   const showAlert = data.errorsToday > 10 || data.openTickets > 5;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="page-title">Admin Dashboard</h1>
-        <p className="page-subtitle">Platform overview</p>
-      </div>
+    <>
+      <PageHeader />
 
       {showAlert && (
-        <div className="glass-card p-4" style={{ borderColor: "var(--error)" }}>
+        <div className="admin-alert">
           {data.errorsToday > 10 && (
-            <p className="text-sm" style={{ color: "var(--error)" }}>
-              {data.errorsToday} errors today - check the Errors page.
+            <p className="err">
+              {data.errorsToday} errors today. Check the Errors panel.
             </p>
           )}
           {data.openTickets > 5 && (
-            <p className="text-sm" style={{ color: "var(--warning)" }}>
+            <p className="warn">
               {data.openTickets} open tickets need attention.
             </p>
           )}
         </div>
       )}
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Total Users", value: data.totalUsers, sub: `+${data.newUsersToday} today` },
-          { label: "Open Tickets", value: data.openTickets, href: "/admin/tickets" },
-          { label: "Errors Today", value: data.errorsToday, href: "/admin/errors", warn: data.errorsToday > 0 },
-          { label: "Calls Today", value: data.callsToday },
-        ].map((kpi) => (
-          <div key={kpi.label} className="glass-card p-4">
-            <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>
-              {kpi.label}
-            </p>
-            <p
-              className="text-3xl font-bold mt-1"
-              style={{ color: kpi.warn ? "var(--error)" : "var(--text-primary)" }}
-            >
-              {kpi.value.toLocaleString()}
-            </p>
-            {kpi.sub && (
-              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{kpi.sub}</p>
-            )}
+      {/* KPI grid (matches dashboard demo .stats-row) */}
+      <div className="stats-row">
+        <div className="stat">
+          <div className="label">Total Users</div>
+          <div className="num">{data.totalUsers.toLocaleString()}</div>
+          <div className="sub">+{data.newUsersToday} today</div>
+        </div>
+        <div className="stat">
+          <div className="label">Open Tickets</div>
+          <div className={`num ${data.openTickets > 5 ? "amber" : ""}`}>
+            {data.openTickets.toLocaleString()}
           </div>
-        ))}
+          <div className="sub">
+            <Link href="/admin/tickets" style={{ color: "var(--teal)", textDecoration: "none" }}>
+              View queue ↗
+            </Link>
+          </div>
+        </div>
+        <div className="stat">
+          <div className="label">Errors Today</div>
+          <div className={`num ${data.errorsToday > 10 ? "vermilion" : data.errorsToday > 0 ? "amber" : ""}`}>
+            {data.errorsToday.toLocaleString()}
+          </div>
+          <div className="sub">
+            <Link href="/admin/errors" style={{ color: "var(--teal)", textDecoration: "none" }}>
+              Inspect ↗
+            </Link>
+          </div>
+        </div>
+        <div className="stat">
+          <div className="label">Calls Today</div>
+          <div className="num teal">{data.callsToday.toLocaleString()}</div>
+          <div className="sub">tool invocations</div>
+        </div>
       </div>
 
-      {/* Detail panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="glass-card p-4">
-          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: "var(--text-muted)" }}>
-            Tool Calls
-          </p>
-          {[
-            { label: "Today", value: data.callsToday },
-            { label: "This Week", value: data.callsThisWeek },
-            { label: "This Month", value: data.callsThisMonth },
-          ].map((row) => (
-            <div
-              key={row.label}
-              className="flex justify-between py-2 last:border-0"
-              style={{ borderBottom: "1px solid var(--glass-border)" }}
-            >
-              <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{row.label}</span>
-              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                {row.value.toLocaleString()}
-              </span>
-            </div>
-          ))}
+      {/* Section header */}
+      <div className="section-header">
+        <h2>Detail</h2>
+        <div className="right">
+          <span>LIVE</span>
         </div>
+      </div>
 
-        <div className="glass-card p-4">
-          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: "var(--text-muted)" }}>
-            Plan Distribution
-          </p>
-          {data.planDistribution.map((p) => (
-            <div
-              key={p.planId}
-              className="flex justify-between py-2 last:border-0"
-              style={{ borderBottom: "1px solid var(--glass-border)" }}
-            >
-              <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.planName}</span>
-              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{p.count}</span>
-            </div>
-          ))}
-        </div>
+      {/* Detail panels rendered as data tables for visual consistency */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: "16px",
+        }}
+      >
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th colSpan={2}>Tool Calls</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { label: "Today", value: data.callsToday },
+              { label: "This Week", value: data.callsThisWeek },
+              { label: "This Month", value: data.callsThisMonth },
+            ].map((row) => (
+              <tr key={row.label}>
+                <td className="dim">{row.label}</td>
+                <td className="right mono">{row.value.toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-        <div className="glass-card p-4">
-          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: "var(--text-muted)" }}>
-            Top Tools (7 days)
-          </p>
-          {data.topTools.slice(0, 7).map((t) => (
-            <div
-              key={t.toolName}
-              className="flex justify-between py-2 last:border-0"
-              style={{ borderBottom: "1px solid var(--glass-border)" }}
-            >
-              <span className="text-sm truncate mr-2" style={{ color: "var(--text-secondary)" }}>
-                {t.toolName}
-              </span>
-              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{t.count}</span>
-            </div>
-          ))}
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th colSpan={2}>Plan Distribution</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.planDistribution.length === 0 ? (
+              <tr className="row-empty">
+                <td colSpan={2}>No plans recorded</td>
+              </tr>
+            ) : (
+              data.planDistribution.map((p) => (
+                <tr key={p.planId}>
+                  <td>{p.planName}</td>
+                  <td className="right mono">{p.count.toLocaleString()}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th colSpan={2}>Top Tools (7d)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.topTools.length === 0 ? (
+              <tr className="row-empty">
+                <td colSpan={2}>No tool calls yet</td>
+              </tr>
+            ) : (
+              data.topTools.slice(0, 7).map((t) => (
+                <tr key={t.toolName}>
+                  <td className="mono" style={{ color: "var(--ink)" }}>{t.toolName}</td>
+                  <td className="right mono">{t.count.toLocaleString()}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <style>{`
+        @media (max-width: 980px) {
+          .data-table + .data-table { margin-top: 16px; }
+          div[style*='grid-template-columns: repeat(3'] {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+    </>
+  );
+}
+
+function PageHeader() {
+  return (
+    <div className="page-header">
+      <div>
+        <div className="eyebrow">
+          <span className="num">01</span>
+          <span>·</span>
+          <span>ADMIN · OVERVIEW</span>
         </div>
+        <h1>
+          Control <span className="accent">room.</span>
+        </h1>
+        <p className="lede">
+          Realtime view of platform health, user growth, and the support queue. Drill into any
+          KPI for the full breakdown.
+        </p>
+      </div>
+      <div className="actions">
+        <Link href="/admin/users" className="btn">
+          Manage Users
+        </Link>
+        <Link href="/admin/errors" className="btn btn-primary">
+          Errors Panel
+        </Link>
       </div>
     </div>
   );

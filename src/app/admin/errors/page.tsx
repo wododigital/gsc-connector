@@ -18,6 +18,19 @@ interface ErrorSummary {
   tokenIssues: number;
 }
 
+const HOUR_OPTIONS = [
+  { value: "6", label: "Last 6h" },
+  { value: "24", label: "Last 24h" },
+  { value: "48", label: "Last 48h" },
+  { value: "168", label: "Last 7 days" },
+];
+
+const SERVICE_OPTIONS = [
+  { value: "all", label: "All Services" },
+  { value: "gsc", label: "GSC" },
+  { value: "ga4", label: "GA4" },
+];
+
 export default function AdminErrors() {
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [summary, setSummary] = useState<ErrorSummary>({ total: 0, gsc: 0, ga4: 0, tokenIssues: 0 });
@@ -29,117 +42,189 @@ export default function AdminErrors() {
     setLoading(true);
     fetch(`/api/admin/errors?hours=${h}&service=${s}`)
       .then((r) => r.json())
-      .then((d) => { setErrors(d.errors ?? []); setSummary(d.summary ?? {}); setLoading(false); });
+      .then((d) => {
+        setErrors(d.errors ?? []);
+        setSummary(d.summary ?? { total: 0, gsc: 0, ga4: 0, tokenIssues: 0 });
+        setLoading(false);
+      });
   };
 
-  useEffect(() => { fetchErrors(); }, []);
+  useEffect(() => {
+    fetchErrors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="page-title">Errors &amp; Health</h1>
-        <div className="flex gap-2">
+    <>
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">
+            <span className="num">05</span>
+            <span>·</span>
+            <span>ADMIN · ERRORS &amp; HEALTH</span>
+          </div>
+          <h1>
+            System <span className="accent">errors.</span>
+          </h1>
+          <p className="lede">
+            Live error stream from the GSC and GA4 tool runners. Token issues usually mean a user
+            needs to reconnect Google.
+          </p>
+        </div>
+        <div className="actions">
           <select
             value={hours}
-            onChange={(e) => { setHours(e.target.value); fetchErrors(e.target.value, service); }}
-            className="glass-select text-sm"
-            style={{ width: "auto", padding: "6px 12px" }}
+            onChange={(e) => {
+              setHours(e.target.value);
+              fetchErrors(e.target.value, service);
+            }}
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--rule)",
+              color: "var(--ink-2)",
+              padding: "11px 14px",
+              fontFamily: "var(--body)",
+              fontSize: 12,
+              letterSpacing: "0.10em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
           >
-            <option value="6">Last 6h</option>
-            <option value="24">Last 24h</option>
-            <option value="48">Last 48h</option>
-            <option value="168">Last 7 days</option>
+            {HOUR_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </select>
           <select
             value={service}
-            onChange={(e) => { setService(e.target.value); fetchErrors(hours, e.target.value); }}
-            className="glass-select text-sm"
-            style={{ width: "auto", padding: "6px 12px" }}
+            onChange={(e) => {
+              setService(e.target.value);
+              fetchErrors(hours, e.target.value);
+            }}
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--rule)",
+              color: "var(--ink-2)",
+              padding: "11px 14px",
+              fontFamily: "var(--body)",
+              fontSize: 12,
+              letterSpacing: "0.10em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
           >
-            <option value="all">All Services</option>
-            <option value="gsc">GSC</option>
-            <option value="ga4">GA4</option>
+            {SERVICE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Total Errors", value: summary.total, warn: summary.total > 0 },
-          { label: "GSC Errors", value: summary.gsc },
-          { label: "GA4 Errors", value: summary.ga4 },
-          { label: "Token Issues", value: summary.tokenIssues, warn: summary.tokenIssues > 0 },
-        ].map((s) => (
-          <div key={s.label} className="glass-card p-4">
-            <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>
-              {s.label}
-            </p>
-            <p
-              className="text-3xl font-bold mt-1"
-              style={{ color: s.warn ? "var(--error)" : "var(--text-primary)" }}
-            >
-              {s.value}
-            </p>
+      {/* Summary stats */}
+      <div className="stats-row">
+        <div className="stat">
+          <div className="label">Total Errors</div>
+          <div className={`num ${summary.total > 10 ? "vermilion" : summary.total > 0 ? "amber" : ""}`}>
+            {summary.total.toLocaleString()}
           </div>
-        ))}
+          <div className="sub">in window</div>
+        </div>
+        <div className="stat">
+          <div className="label">GSC Errors</div>
+          <div className="num">{summary.gsc.toLocaleString()}</div>
+          <div className="sub">search console</div>
+        </div>
+        <div className="stat">
+          <div className="label">GA4 Errors</div>
+          <div className="num">{summary.ga4.toLocaleString()}</div>
+          <div className="sub">analytics</div>
+        </div>
+        <div className="stat">
+          <div className="label">Token Issues</div>
+          <div className={`num ${summary.tokenIssues > 0 ? "vermilion" : ""}`}>
+            {summary.tokenIssues.toLocaleString()}
+          </div>
+          <div className="sub">auth failures</div>
+        </div>
       </div>
 
       {summary.tokenIssues > 0 && (
-        <div className="glass-card p-4" style={{ borderColor: "var(--warning)" }}>
-          <p className="text-sm" style={{ color: "var(--warning)" }}>
-            {summary.tokenIssues} token/auth errors detected. Users may need to reconnect their Google accounts.
+        <div className="admin-alert">
+          <p className="warn">
+            {summary.tokenIssues} token or auth errors detected. Affected users may need to
+            reconnect their Google accounts.
           </p>
         </div>
       )}
 
-      {/* Error table */}
-      <div className="glass-panel overflow-hidden">
-        <table className="glass-table">
-          <thead>
-            <tr>
-              {["Time", "User ID", "Service", "Tool", "Error"].map((h) => (
-                <th key={h}>{h}</th>
-              ))}
+      <div className="section-header">
+        <h2>Error Stream</h2>
+        <div className="right">
+          <span>WINDOW {HOUR_OPTIONS.find((o) => o.value === hours)?.label}</span>
+        </div>
+      </div>
+
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>TIMESTAMP</th>
+            <th>USER</th>
+            <th>SERVICE</th>
+            <th>TOOL</th>
+            <th>ERROR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr className="row-empty">
+              <td colSpan={5}>Loading error stream...</td>
             </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={5} className="text-center py-8" style={{ color: "var(--text-muted)" }}>
-                  Loading...
-                </td>
-              </tr>
-            ) : errors.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-8" style={{ color: "var(--success)" }}>
-                  No errors in this time range
-                </td>
-              </tr>
-            ) : errors.map((e) => (
+          ) : errors.length === 0 ? (
+            <tr className="row-empty row-good">
+              <td colSpan={5}>All clear in this window</td>
+            </tr>
+          ) : (
+            errors.map((e) => (
               <tr key={e.id}>
-                <td className="text-xs whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                  {new Date(e.timestamp).toLocaleString()}
-                </td>
-                <td className="text-xs truncate max-w-[120px]" style={{ color: "var(--text-secondary)" }}>
+                <td className="dim mono">{new Date(e.timestamp).toLocaleString()}</td>
+                <td
+                  className="dim mono"
+                  style={{
+                    maxWidth: 140,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={e.userId}
+                >
                   {e.userId}
                 </td>
                 <td>
-                  <span className={`badge ${e.service === "gsc" ? "badge-info" : "badge-warning"}`}>
+                  <span className={`pill ${e.service === "gsc" ? "info" : "warn"}`}>
                     {e.service.toUpperCase()}
                   </span>
                 </td>
-                <td className="text-xs font-mono" style={{ color: "var(--text-secondary)" }}>
-                  {e.tool}
-                </td>
-                <td className="text-xs truncate max-w-xs" style={{ color: "var(--error)" }}>
+                <td className="mono">{e.tool}</td>
+                <td
+                  style={{
+                    maxWidth: 360,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    color: "var(--vermilion)",
+                  }}
+                  title={e.errorMessage ?? ""}
+                >
                   {e.errorMessage ?? "Unknown error"}
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            ))
+          )}
+        </tbody>
+      </table>
+    </>
   );
 }

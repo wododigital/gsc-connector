@@ -58,7 +58,9 @@ export default function AdminPromptsPage() {
     setLoading(false);
   };
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const toggleActive = async (p: Prompt) => {
     await fetch(`/api/admin/prompts/${p.id}`, {
@@ -87,87 +89,187 @@ export default function AdminPromptsPage() {
   };
 
   const deletePrompt = async (p: Prompt) => {
-    if (!confirm(`Deactivate "${p.title}"? It will be hidden from users but kept in the database.`)) return;
+    if (!confirm(`Deactivate "${p.title}"? It will be hidden from users but kept in the database.`))
+      return;
     await fetch(`/api/admin/prompts/${p.id}`, { method: "DELETE" });
     refresh();
   };
 
+  const activeCount = prompts.filter((p) => p.isActive).length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <>
+      <div className="page-header">
         <div>
-          <h1 className="page-title">Prompts</h1>
-          <p className="page-subtitle">System-wide prompt templates available to every user.</p>
+          <div className="eyebrow">
+            <span className="num">07</span>
+            <span>·</span>
+            <span>ADMIN · PROMPT LIBRARY</span>
+          </div>
+          <h1>
+            System <span className="accent">prompts.</span>
+          </h1>
+          <p className="lede">
+            Templates available to every workspace. Use brand placeholders so each user gets a
+            personalized copy on paste.
+          </p>
         </div>
-        <button className="btn-primary btn-primary-sm" onClick={() => setEditing("new")}>+ New Prompt</button>
+        <div className="actions">
+          <button type="button" className="btn btn-primary" onClick={() => setEditing("new")}>
+            + New Prompt
+          </button>
+        </div>
       </div>
 
-      <div className="glass-panel overflow-hidden">
-        <table className="glass-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Category</th>
-              <th>Connections</th>
-              <th>Sort</th>
-              <th>Tags</th>
-              <th>Status</th>
-              <th>Actions</th>
+      <div className="logs-meta">
+        <span>
+          TOTAL <strong>{prompts.length}</strong>
+        </span>
+        <span>·</span>
+        <span>
+          ACTIVE <strong>{activeCount}</strong>
+        </span>
+        <span>·</span>
+        <span>
+          INACTIVE <strong>{prompts.length - activeCount}</strong>
+        </span>
+      </div>
+
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>TITLE</th>
+            <th>CATEGORY</th>
+            <th>CONNECTIONS</th>
+            <th className="right">SORT</th>
+            <th>TAGS</th>
+            <th>STATUS</th>
+            <th className="right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr className="row-empty">
+              <td colSpan={7}>Loading prompt library...</td>
             </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} className="text-center py-8" style={{ color: "var(--text-muted)" }}>Loading...</td></tr>
-            ) : prompts.map((p) => (
+          ) : prompts.length === 0 ? (
+            <tr className="row-empty">
+              <td colSpan={7}>No prompts yet. Create the first one above.</td>
+            </tr>
+          ) : (
+            prompts.map((p) => (
               <tr key={p.id}>
                 <td>
-                  <div className="font-medium" style={{ color: "var(--text-primary)" }}>{p.title}</div>
-                  <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{p.description}</div>
-                </td>
-                <td><span className="badge badge-muted" style={{ fontSize: "11px" }}>{p.category}</span></td>
-                <td>
-                  <div className="flex gap-1">
-                    {p.requiredConnections.map((c) => (
-                      <span key={c} className="badge badge-accent" style={{ fontSize: "10px" }}>{c.toUpperCase()}</span>
-                    ))}
+                  <div style={{ color: "var(--ink)", fontWeight: 500 }}>{p.title}</div>
+                  <div className="dim" style={{ fontSize: 11, marginTop: 2 }}>
+                    {p.description}
                   </div>
                 </td>
-                <td className="text-xs" style={{ color: "var(--text-muted)" }}>{p.sortOrder}</td>
-                <td className="text-xs" style={{ color: "var(--text-muted)", maxWidth: 180 }}>
-                  {(p.semanticTags ?? []).slice(0, 5).join(", ")}
-                  {(p.semanticTags ?? []).length > 5 && "..."}
+                <td>
+                  <span className="pill info">{p.category}</span>
+                </td>
+                <td>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {p.requiredConnections.length === 0 ? (
+                      <span className="dim mono" style={{ fontSize: 11 }}>
+                        none
+                      </span>
+                    ) : (
+                      p.requiredConnections.map((c) => (
+                        <span key={c} className="pill success">
+                          {c.toUpperCase()}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </td>
+                <td className="right mono">{p.sortOrder}</td>
+                <td
+                  className="dim mono"
+                  style={{ maxWidth: 200, fontSize: 11 }}
+                  title={(p.semanticTags ?? []).join(", ")}
+                >
+                  {(p.semanticTags ?? []).slice(0, 4).join(", ")}
+                  {(p.semanticTags ?? []).length > 4 && "..."}
                 </td>
                 <td>
                   <button
+                    type="button"
                     onClick={() => toggleActive(p)}
-                    className={`badge ${p.isActive ? "badge-success" : "badge-muted"} cursor-pointer`}
+                    className={`pill ${p.isActive ? "success" : "warn"}`}
+                    style={{ cursor: "pointer", background: "transparent" }}
                   >
                     {p.isActive ? "Active" : "Inactive"}
                   </button>
                 </td>
-                <td>
-                  <div className="flex gap-2">
-                    <button onClick={() => setEditing(p)} className="text-xs" style={{ color: "var(--accent-light)" }}>Edit</button>
-                    <button onClick={() => retag(p)} disabled={retagging === p.id} className="text-xs" style={{ color: "var(--text-muted)" }}>
+                <td className="right">
+                  <div style={{ display: "inline-flex", gap: 14, fontSize: 11, letterSpacing: "0.10em", textTransform: "uppercase" }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(p)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--teal)",
+                        cursor: "pointer",
+                        font: "inherit",
+                        letterSpacing: "0.10em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => retag(p)}
+                      disabled={retagging === p.id}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--ink-2)",
+                        cursor: "pointer",
+                        font: "inherit",
+                        letterSpacing: "0.10em",
+                        textTransform: "uppercase",
+                        opacity: retagging === p.id ? 0.5 : 1,
+                      }}
+                    >
                       {retagging === p.id ? "..." : "Retag"}
                     </button>
-                    <button onClick={() => deletePrompt(p)} className="text-xs" style={{ color: "var(--error)" }}>Deactivate</button>
+                    <button
+                      type="button"
+                      onClick={() => deletePrompt(p)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--vermilion)",
+                        cursor: "pointer",
+                        font: "inherit",
+                        letterSpacing: "0.10em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Deactivate
+                    </button>
                   </div>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            ))
+          )}
+        </tbody>
+      </table>
 
       {editing !== null && (
         <PromptModal
           prompt={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); refresh(); }}
+          onSaved={() => {
+            setEditing(null);
+            refresh();
+          }}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -230,50 +332,84 @@ function PromptModal({
     }));
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
-      <form onSubmit={save} className="glass-panel max-w-3xl w-full max-h-[92vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--glass-border)" }}>
-          <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-            {prompt ? "Edit System Prompt" : "New System Prompt"}
-          </h2>
-          <button type="button" onClick={onClose} className="text-sm" style={{ color: "var(--text-muted)" }}>Close</button>
+    <div className="modal-backdrop" onClick={onClose}>
+      <form className="modal-shell" onClick={(e) => e.stopPropagation()} onSubmit={save}>
+        <div className="head">
+          <h2>{prompt ? "Edit System Prompt" : "New System Prompt"}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--ink-3)",
+              cursor: "pointer",
+              fontSize: 20,
+              lineHeight: 1,
+            }}
+            aria-label="Close"
+          >
+            ×
+          </button>
         </div>
-        <div className="p-4 space-y-4 overflow-y-auto" style={{ flex: 1 }}>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Title</label>
-              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="glass-input text-sm w-full" required maxLength={200} />
+
+        <div className="body">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label className="input-label">Title</label>
+              <input
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                className="input-field"
+                required
+                maxLength={200}
+              />
             </div>
-            <div className="col-span-2">
-              <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Description</label>
-              <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="glass-input text-sm w-full" required maxLength={500} />
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label className="input-label">Description</label>
+              <input
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="input-field"
+                required
+                maxLength={500}
+              />
             </div>
             <div>
-              <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Category</label>
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="glass-select text-sm w-full">
-                {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              <label className="input-label">Category</label>
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                className="input-field"
+                style={{ cursor: "pointer" }}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Sort Order</label>
-              <input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} className="glass-input text-sm w-full" />
+              <label className="input-label">Sort Order</label>
+              <input
+                type="number"
+                value={form.sortOrder}
+                onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })}
+                className="input-field"
+              />
             </div>
           </div>
 
           <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Required Connections</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="input-label">Required Connections</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {CONNECTIONS.map((c) => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => toggleConnection(c.id)}
-                  className={`badge ${form.requiredConnections.includes(c.id) ? "badge-success" : "badge-muted"} cursor-pointer`}
-                  style={{ padding: "4px 10px", fontSize: "12px" }}
+                  className={`tag-toggle ${form.requiredConnections.includes(c.id) ? "on" : ""}`}
                 >
                   {c.label}
                 </button>
@@ -282,16 +418,46 @@ function PromptModal({
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs" style={{ color: "var(--text-muted)" }}>Clarifying Questions</label>
-              <button type="button" onClick={addQuestion} className="text-xs" style={{ color: "var(--accent-light)" }}>+ Add</button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <label className="input-label" style={{ marginBottom: 0 }}>
+                Clarifying Questions
+              </label>
+              <button
+                type="button"
+                onClick={addQuestion}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--teal)",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  letterSpacing: "0.10em",
+                  textTransform: "uppercase",
+                  font: "inherit",
+                }}
+              >
+                + Add
+              </button>
             </div>
-            <div className="space-y-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {form.questions.map((q, i) => (
-                <div key={i} className="flex gap-2">
-                  <input value={q} onChange={(e) => updateQuestion(i, e.target.value)} className="glass-input text-sm flex-1" placeholder={`Question ${i + 1}`} />
+                <div key={i} style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={q}
+                    onChange={(e) => updateQuestion(i, e.target.value)}
+                    className="input-field"
+                    placeholder={`Question ${i + 1}`}
+                    style={{ flex: 1 }}
+                  />
                   {form.questions.length > 1 && (
-                    <button type="button" onClick={() => removeQuestion(i)} className="btn-ghost btn-ghost-sm" style={{ color: "var(--error)" }}>×</button>
+                    <button
+                      type="button"
+                      onClick={() => removeQuestion(i)}
+                      className="btn btn-danger"
+                      style={{ padding: "8px 14px" }}
+                    >
+                      ×
+                    </button>
                   )}
                 </div>
               ))}
@@ -299,25 +465,30 @@ function PromptModal({
           </div>
 
           <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Prompt Body</label>
+            <label className="input-label">Prompt Body</label>
             <textarea
               value={form.body}
               onChange={(e) => setForm({ ...form, body: e.target.value })}
-              className="glass-input text-xs font-mono w-full"
               rows={14}
               required
               maxLength={20000}
             />
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-              Use {"{{brand.companyName}}"}, {"{{brand.logoUrl}}"}, {"{{brand.primaryColor}}"}, etc. for brand placeholders. They are populated when copied.
+            <p style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 6 }}>
+              Use {"{{brand.companyName}}"}, {"{{brand.logoUrl}}"}, {"{{brand.primaryColor}}"}, etc.
+              for brand placeholders. They are populated when copied.
             </p>
           </div>
 
-          {error && <p className="text-sm" style={{ color: "var(--error)" }}>{error}</p>}
+          {error && (
+            <p style={{ color: "var(--vermilion)", fontSize: 12, margin: 0 }}>{error}</p>
+          )}
         </div>
-        <div className="p-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--glass-border)" }}>
-          <button type="button" onClick={onClose} className="btn-ghost btn-ghost-sm">Cancel</button>
-          <button type="submit" disabled={saving} className="btn-primary btn-primary-sm">
+
+        <div className="foot">
+          <button type="button" onClick={onClose} className="btn">
+            Cancel
+          </button>
+          <button type="submit" disabled={saving} className="btn btn-primary">
             {saving ? "Saving..." : prompt ? "Save Changes" : "Create Prompt"}
           </button>
         </div>

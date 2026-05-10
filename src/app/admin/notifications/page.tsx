@@ -12,20 +12,13 @@ interface Notification {
   createdAt: string;
 }
 
-const SEVERITY_BORDER: Record<string, string> = {
-  error: "var(--error)",
-  warning: "var(--warning)",
-  info: "var(--info)",
-  success: "var(--success)",
-};
-
-const TYPE_BADGE: Record<string, string> = {
-  new_user: "badge-success",
-  payment_success: "badge-success",
-  payment_failed: "badge-error",
-  subscription_cancelled: "badge-warning",
-  new_ticket: "badge-info",
-  webhook_error: "badge-error",
+const TYPE_PILL: Record<string, string> = {
+  new_user: "success",
+  payment_success: "success",
+  payment_failed: "error",
+  subscription_cancelled: "warn",
+  new_ticket: "info",
+  webhook_error: "error",
 };
 
 export default function AdminNotifications() {
@@ -45,7 +38,10 @@ export default function AdminNotifications() {
       });
   };
 
-  useEffect(() => { fetchNotifications(); }, []);
+  useEffect(() => {
+    fetchNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const markRead = async (ids: string[]) => {
     await fetch("/api/admin/notifications", {
@@ -66,71 +62,103 @@ export default function AdminNotifications() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="page-title">Notifications</h1>
-          {unreadCount > 0 && (
-            <span className="badge badge-error">{unreadCount}</span>
-          )}
+    <>
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">
+            <span className="num">06</span>
+            <span>·</span>
+            <span>ADMIN · NOTIFICATIONS</span>
+          </div>
+          <h1>
+            Inbox{" "}
+            {unreadCount > 0 && (
+              <span className="accent">({unreadCount.toLocaleString()} unread).</span>
+            )}
+            {unreadCount === 0 && <span className="accent">all clear.</span>}
+          </h1>
+          <p className="lede">
+            Platform events that need a human eye. Click any card to mark it read.
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="actions">
           <button
-            onClick={() => { setUnreadOnly(!unreadOnly); fetchNotifications(!unreadOnly); }}
-            className={unreadOnly ? "btn-primary btn-primary-sm" : "btn-ghost btn-ghost-sm"}
+            type="button"
+            onClick={() => {
+              setUnreadOnly(!unreadOnly);
+              fetchNotifications(!unreadOnly);
+            }}
+            className={unreadOnly ? "btn btn-primary" : "btn"}
           >
-            Unread only
+            {unreadOnly ? "Showing Unread" : "Show Unread Only"}
           </button>
           {unreadCount > 0 && (
-            <button onClick={markAllRead} className="btn-ghost btn-ghost-sm">
-              Mark all read
+            <button type="button" onClick={markAllRead} className="btn btn-danger">
+              Mark All Read
             </button>
           )}
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {loading ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading...</p>
-        ) : notifications.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No notifications</p>
-        ) : notifications.map((n) => (
           <div
-            key={n.id}
-            onClick={() => !n.isRead && markRead([n.id])}
-            className="glass-card p-4 cursor-pointer border-l-4"
-            style={{
-              borderLeftColor: SEVERITY_BORDER[n.severity] ?? "var(--glass-border)",
-              opacity: n.isRead ? 0.6 : 1,
-            }}
+            className="surface-card"
+            style={{ textAlign: "center", padding: "32px", color: "var(--ink-3)" }}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  {!n.isRead && (
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: "var(--info)" }}
-                    />
-                  )}
-                  <span className={`badge ${TYPE_BADGE[n.type] ?? "badge-muted"}`}>
-                    {n.type.replace(/_/g, " ")}
-                  </span>
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    {new Date(n.createdAt).toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                  {n.title}
-                </p>
-                <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                  {n.message}
-                </p>
-              </div>
-            </div>
+            Loading notifications...
           </div>
-        ))}
+        ) : notifications.length === 0 ? (
+          <div
+            className="surface-card"
+            style={{ textAlign: "center", padding: "32px", color: "var(--ink-3)" }}
+          >
+            {unreadOnly ? "No unread notifications." : "No notifications yet."}
+          </div>
+        ) : (
+          notifications.map((n) => {
+            const sevClass =
+              n.severity === "error"
+                ? "severity-error"
+                : n.severity === "warning"
+                ? "severity-warning"
+                : n.severity === "success"
+                ? "severity-success"
+                : "severity-info";
+            const stateClass = n.isRead ? "read" : "unread";
+            return (
+              <div
+                key={n.id}
+                onClick={() => !n.isRead && markRead([n.id])}
+                className={`notif-card ${sevClass} ${stateClass}`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !n.isRead) markRead([n.id]);
+                }}
+              >
+                <div className="col">
+                  <div className="meta-row">
+                    {!n.isRead && (
+                      <span
+                        className="status-dot"
+                        style={{ width: 6, height: 6 }}
+                        aria-label="unread"
+                      />
+                    )}
+                    <span className={`pill ${TYPE_PILL[n.type] ?? "info"}`}>
+                      {n.type.replace(/_/g, " ")}
+                    </span>
+                    <span className="ts">{new Date(n.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className="title">{n.title}</div>
+                  <div className="body">{n.message}</div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
-    </div>
+    </>
   );
 }
