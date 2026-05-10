@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -51,54 +50,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <div className="atmosphere min-h-screen bg-bg text-ink">
-      {/* ─── Sticky topbar ───────────────────────────────── */}
-      <header
-        className="fixed top-0 left-0 right-0 z-50 grid items-center px-6 py-3.5 backdrop-blur-md"
-        style={{
-          gridTemplateColumns: "auto 1fr auto",
-          minHeight: 64,
-          borderBottom: "1px solid var(--teal)",
-          background: "rgba(10,16,24,0.92)",
-        }}
-      >
-        <Link href="/" className="block">
-          <Image
-            src="/omg-logo-light.webp"
-            alt="OMG / BRIDGE"
-            width={140}
-            height={28}
-            priority
-            className="h-7 w-auto block"
-          />
-        </Link>
-        <div
-          className="hidden md:block text-center text-ink-3"
-          style={{
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-          }}
-        >
-          <span className="text-teal">·</span> SECURE · OAUTH 2.0 · READ-ONLY
-        </div>
-        <div
-          className="flex gap-4 text-ink-3"
-          style={{ fontSize: 11, letterSpacing: "0.10em", textTransform: "uppercase" }}
-        >
-          <a
-            href="mailto:hello@wododigital.com"
-            className="text-ink-2 no-underline transition-colors hover:text-vermilion"
-          >
-            NEED HELP?
-          </a>
-        </div>
-      </header>
-
       {/* ─── Login screen ────────────────────────────────── */}
-      <main className="relative z-10" style={{ paddingTop: 65 }}>
+      <main className="relative z-10">
         <section
           className="grid place-items-center px-6 py-16"
-          style={{ minHeight: "calc(100vh - 65px)" }}
+          style={{ minHeight: "100vh" }}
         >
           <div
             className="relative w-full bg-surface-1"
@@ -220,9 +176,40 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 .
               </span>
             </div>
+
+            {/* Back to home */}
+            <Link
+              href="/"
+              className="back-home"
+              style={{
+                marginTop: 18,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 14px",
+                border: "1px solid var(--rule-strong)",
+                color: "var(--ink-2)",
+                textDecoration: "none",
+                fontFamily: "var(--body)",
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                transition: "color 0.18s ease, border-color 0.18s ease",
+              }}
+            >
+              <span aria-hidden="true">←</span>
+              Back to home
+            </Link>
           </div>
         </section>
       </main>
+      <style>{`
+        .back-home:hover {
+          color: var(--teal-bright);
+          border-color: var(--teal);
+        }
+      `}</style>
     </div>
   );
 }

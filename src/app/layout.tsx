@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Preloader } from "@/components/preloader";
 
 export const metadata: Metadata = {
   title: "OMG / Bridge - Talk to your data, in any AI",
@@ -27,7 +28,10 @@ export default function RootLayout({
         />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <Preloader />
+        {children}
+      </body>
     </html>
   );
 }
