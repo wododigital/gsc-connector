@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 interface NavLink {
@@ -15,6 +16,11 @@ interface MobileMenuProps {
 
 export function MobileMenu({ navLinks }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -31,6 +37,62 @@ export function MobileMenu({ navLinks }: MobileMenuProps) {
 
   const close = () => setOpen(false);
 
+  const overlay = (
+    <div
+      className="mobile-menu-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Site navigation"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) close();
+      }}
+    >
+      <div className="mobile-menu-panel">
+        <div className="mobile-menu-head">
+          <span className="mobile-menu-eyebrow">MENU</span>
+          <button
+            type="button"
+            className="mobile-menu-close"
+            aria-label="Close menu"
+            onClick={close}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mobile-menu-theme">
+          <span className="mobile-menu-label">THEME</span>
+          <ThemeToggle />
+        </div>
+
+        <nav className="mobile-menu-nav">
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href} onClick={close}>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="mobile-menu-actions">
+          <Link
+            href="/auth/login"
+            className="mobile-menu-login"
+            onClick={close}
+          >
+            LOG IN
+          </Link>
+          <Link
+            href="/onboarding"
+            className="mobile-menu-cta"
+            onClick={close}
+          >
+            START FREE →
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <button
@@ -45,61 +107,7 @@ export function MobileMenu({ navLinks }: MobileMenuProps) {
         <span />
       </button>
 
-      {open && (
-        <div
-          className="mobile-menu-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Site navigation"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) close();
-          }}
-        >
-          <div className="mobile-menu-panel">
-            <div className="mobile-menu-head">
-              <span className="mobile-menu-eyebrow">MENU</span>
-              <button
-                type="button"
-                className="mobile-menu-close"
-                aria-label="Close menu"
-                onClick={close}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="mobile-menu-theme">
-              <span className="mobile-menu-label">THEME</span>
-              <ThemeToggle />
-            </div>
-
-            <nav className="mobile-menu-nav">
-              {navLinks.map((link) => (
-                <Link key={link.href} href={link.href} onClick={close}>
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="mobile-menu-actions">
-              <Link
-                href="/auth/login"
-                className="mobile-menu-login"
-                onClick={close}
-              >
-                LOG IN
-              </Link>
-              <Link
-                href="/onboarding"
-                className="mobile-menu-cta"
-                onClick={close}
-              >
-                START FREE →
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+      {open && mounted && createPortal(overlay, document.body)}
 
       <style jsx>{`
         .mobile-menu-trigger {

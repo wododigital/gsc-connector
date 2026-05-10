@@ -405,6 +405,38 @@ function AiLogo({ svg, name, tag }: { svg: string; name: string; tag: string }) 
 }
 
 /* ────────────────────────────────────────────────────────────
+   Footer column (mobile = collapsible accordion, desktop = open)
+   ──────────────────────────────────────────────────────────── */
+
+function FooterCol({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const panelId = `footer-col-${title.toLowerCase()}`;
+  return (
+    <div className={`col footer-col${open ? " is-open" : ""}`}>
+      <button
+        type="button"
+        className="footer-col-trigger"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <h6>{title}</h6>
+        <span className="footer-col-chevron" aria-hidden="true" />
+      </button>
+      <div id={panelId} className="footer-col-body">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────
    Page
    ──────────────────────────────────────────────────────────── */
 
@@ -715,21 +747,18 @@ export default function MarketingHomePage() {
                 SQL. No dashboards. Just answers.
               </p>
             </div>
-            <div className="col">
-              <h6>PRODUCT</h6>
+            <FooterCol title="PRODUCT">
               <Link href="/features">Features</Link>
               <Link href="/pricing">Pricing</Link>
               <Link href="/#how-it-works">How it works</Link>
-            </div>
-            <div className="col">
-              <h6>RESOURCES</h6>
+            </FooterCol>
+            <FooterCol title="RESOURCES">
               <Link href="/guides">Documentation</Link>
               <Link href="/faq">FAQ</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
-            </div>
-            <div className="col">
-              <h6>COMPANY</h6>
+            </FooterCol>
+            <FooterCol title="COMPANY">
               <a href="https://wodo.digital" target="_blank" rel="noreferrer">About</a>
               <Link href="/contact">Contact</Link>
               <button
@@ -741,7 +770,7 @@ export default function MarketingHomePage() {
               </button>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
-            </div>
+            </FooterCol>
           </div>
 
           <div className="footer-bottom">
@@ -1603,6 +1632,7 @@ export default function MarketingHomePage() {
           margin-bottom: 18px;
           padding-bottom: 10px;
           border-bottom: 1px solid var(--rule);
+          margin-top: 0;
         }
         .footer-grid .col a,
         .footer-grid .col .footer-link-btn {
@@ -1621,6 +1651,22 @@ export default function MarketingHomePage() {
         }
         .footer-grid .col a:hover,
         .footer-grid .col .footer-link-btn:hover { color: var(--teal); }
+
+        /* footer accordions - desktop = static heading + open body */
+        .footer-col-trigger {
+          background: none;
+          border: none;
+          padding: 0;
+          margin: 0;
+          width: 100%;
+          display: block;
+          text-align: left;
+          color: inherit;
+          font: inherit;
+          cursor: default;
+        }
+        .footer-col-chevron { display: none; }
+        .footer-col-body { display: block; }
 
         .brand-col .footer-logo {
           height: 32px;
@@ -1800,9 +1846,10 @@ export default function MarketingHomePage() {
           .hero-chat { order: 1; }
           .section .section-body { padding: 40px 20px 56px; }
 
-          /* compact chat for tablet/mobile */
+          /* compact chat for tablet/mobile - locked height to prevent layout shift */
           .chat-app {
             min-height: 0;
+            height: 460px;
           }
           .chat-chrome {
             padding: 10px 12px;
@@ -1814,6 +1861,8 @@ export default function MarketingHomePage() {
             padding: 14px;
             gap: 12px;
             min-height: 0;
+            flex: 1;
+            overflow: hidden;
           }
           .chat-msg.user .msg-content,
           .chat-msg.ai .msg-content {
@@ -1884,7 +1933,80 @@ export default function MarketingHomePage() {
           .poster .stamp { text-align: left; align-items: flex-start; }
 
           .site-footer .footer-body { padding: 48px 20px 32px; gap: 48px; }
-          .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
+          .footer-grid {
+            grid-template-columns: 1fr;
+            gap: 0;
+          }
+          .footer-grid .brand-col {
+            grid-column: 1 / -1;
+            padding-bottom: 28px;
+            border-bottom: 1px solid var(--rule);
+            margin-bottom: 4px;
+          }
+          .footer-grid .brand-col p { max-width: none; }
+
+          /* footer accordions - mobile only */
+          .footer-col {
+            border-bottom: 1px solid var(--rule);
+          }
+          .footer-col-trigger {
+            cursor: pointer;
+            padding: 18px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            transition: color 0.18s ease;
+          }
+          .footer-col-trigger:hover h6 { color: var(--ink-2); }
+          .footer-col-trigger h6 {
+            margin: 0;
+            padding: 0;
+            border-bottom: none;
+            font-size: 12px;
+          }
+          .footer-col-chevron {
+            display: block;
+            position: relative;
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+          }
+          .footer-col-chevron::before,
+          .footer-col-chevron::after {
+            content: "";
+            position: absolute;
+            background: var(--ink-3);
+            transition: transform 0.22s ease, opacity 0.22s ease;
+          }
+          .footer-col-chevron::before {
+            top: 50%;
+            left: 0;
+            width: 14px;
+            height: 1.5px;
+            transform: translateY(-50%);
+          }
+          .footer-col-chevron::after {
+            top: 0;
+            left: 50%;
+            width: 1.5px;
+            height: 14px;
+            transform: translateX(-50%);
+          }
+          .footer-col.is-open .footer-col-chevron::after {
+            transform: translateX(-50%) scaleY(0);
+            opacity: 0;
+          }
+          .footer-col-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.28s ease, padding-bottom 0.28s ease;
+            padding-bottom: 0;
+          }
+          .footer-col.is-open .footer-col-body {
+            max-height: 360px;
+            padding-bottom: 14px;
+          }
           .footer-bottom { flex-direction: column; gap: 12px; }
         }
       `}</style>
