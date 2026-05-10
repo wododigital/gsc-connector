@@ -68,7 +68,6 @@ export default function PricingPage() {
       <section className="page-hero">
         <div className="page-hero-body">
           <div className="section-eyebrow">
-            <span className="num">01</span>
             <span>PRICING</span>
             <span className="rule" />
           </div>

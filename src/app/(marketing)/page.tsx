@@ -736,7 +736,6 @@ export default function MarketingHomePage() {
             <FooterCol title="PRODUCT">
               <Link href="/features">Features</Link>
               <Link href="/pricing">Pricing</Link>
-              <Link href="/#how-it-works">How it works</Link>
             </FooterCol>
             <FooterCol title="RESOURCES">
               <Link href="/guides">Documentation</Link>

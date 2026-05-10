@@ -83,7 +83,6 @@ export default function FeaturesPage() {
       <section className="page-hero">
         <div className="page-hero-body">
           <div className="section-eyebrow">
-            <span className="num">01</span>
             <span>FEATURES</span>
             <span className="rule" />
           </div>

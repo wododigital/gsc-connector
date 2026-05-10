@@ -16,7 +16,6 @@ export default function TermsOfServicePage() {
       <section className="legal-hero">
         <div className="legal-hero-body">
           <div className="section-eyebrow">
-            <span className="num">01</span>
             <span>LEGAL</span>
             <span className="rule" />
           </div>

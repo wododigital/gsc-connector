@@ -5,7 +5,6 @@ import { MobileMenu } from "@/components/mobile-menu";
 
 const navLinks = [
   { href: "/features", label: "FEATURES" },
-  { href: "/#how-it-works", label: "HOW IT WORKS" },
   { href: "/pricing", label: "PRICING" },
   { href: "/guides", label: "GUIDES" },
   { href: "/faq", label: "FAQ" },
@@ -15,7 +14,6 @@ const navLinks = [
 const productLinks: { href: string; label: string; external?: boolean }[] = [
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/#how-it-works", label: "How it works" },
 ];
 
 const resourceLinks: { href: string; label: string; external?: boolean }[] = [

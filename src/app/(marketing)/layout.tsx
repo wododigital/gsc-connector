@@ -5,7 +5,6 @@ import { MobileMenu } from "@/components/mobile-menu";
 
 const navLinks = [
   { href: "/features", label: "FEATURES" },
-  { href: "/#how-it-works", label: "HOW IT WORKS" },
   { href: "/pricing", label: "PRICING" },
   { href: "/guides", label: "GUIDES" },
   { href: "/faq", label: "FAQ" },

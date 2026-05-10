@@ -126,7 +126,6 @@ export default function GuidesPage() {
       <section className="page-hero">
         <div className="page-hero-body">
           <div className="section-eyebrow">
-            <span className="num">01</span>
             <span>SETUP</span>
             <span className="rule" />
           </div>
