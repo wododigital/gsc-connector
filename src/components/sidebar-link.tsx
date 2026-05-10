@@ -144,25 +144,46 @@ export function SidebarTooltipHost() {
       if (!document.body.classList.contains("sidebar-collapsed")) return;
       const t = navItem.getAttribute("title");
       if (!t) return;
+      if (hideTimeout.current) {
+        clearTimeout(hideTimeout.current);
+        hideTimeout.current = null;
+      }
       const rect = navItem.getBoundingClientRect();
       setText(t);
       setPos({ left: rect.right + 10, top: rect.top + rect.height / 2 });
       setVisible(true);
     };
     const onLeave = (e: Event) => {
-      const related = (e as MouseEvent).relatedTarget;
-      if (related instanceof Node && (e.currentTarget as HTMLElement)?.contains(related)) return;
+      if (!(e instanceof MouseEvent)) return;
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const navItem = target.closest<HTMLElement>("[data-nav-link]");
+      if (!navItem) return;
+      const related = e.relatedTarget;
+      // Cursor moved to a child of the same nav item — keep tooltip visible.
+      if (related instanceof Node && navItem.contains(related)) return;
       if (hideTimeout.current) clearTimeout(hideTimeout.current);
-      hideTimeout.current = setTimeout(() => setVisible(false), 60);
+      hideTimeout.current = setTimeout(() => setVisible(false), 80);
     };
-    const onForceHide = () => setVisible(false);
+    const onForceHide = () => {
+      if (hideTimeout.current) {
+        clearTimeout(hideTimeout.current);
+        hideTimeout.current = null;
+      }
+      setVisible(false);
+    };
     document.addEventListener("mouseover", onEnter);
     document.addEventListener("mouseout", onLeave);
     window.addEventListener("omg:sidebar-tooltip-hide", onForceHide);
+    window.addEventListener("scroll", onForceHide, true);
+    window.addEventListener("blur", onForceHide);
     return () => {
       document.removeEventListener("mouseover", onEnter);
       document.removeEventListener("mouseout", onLeave);
       window.removeEventListener("omg:sidebar-tooltip-hide", onForceHide);
+      window.removeEventListener("scroll", onForceHide, true);
+      window.removeEventListener("blur", onForceHide);
+      if (hideTimeout.current) clearTimeout(hideTimeout.current);
     };
   }, []);
 
