@@ -81,9 +81,6 @@ export default function FeaturesPage() {
     <div className="page-shell">
       {/* HERO */}
       <section className="page-hero">
-        <div className="gutter">
-          <div className="num">01</div>
-        </div>
         <div className="page-hero-body">
           <div className="section-eyebrow">
             <span className="num">01</span>
@@ -106,9 +103,6 @@ export default function FeaturesPage() {
 
       {/* PRODUCT COLUMNS */}
       <section className="prod-section">
-        <div className="gutter">
-          <div className="num">02</div>
-        </div>
         <div className="prod-body">
           <div className="prod-grid">
             {columns.map((col) => (
@@ -143,9 +137,6 @@ export default function FeaturesPage() {
 
       {/* WORKS WITH STRIP */}
       <section className="works-section">
-        <div className="gutter">
-          <div className="num">03</div>
-        </div>
         <div className="works-body">
           <h3>
             Works in the AI tools you<br />
@@ -184,24 +175,8 @@ function PageStyles() {
 
       /* page hero */
       .page-hero {
-        display: grid;
-        grid-template-columns: 80px 1fr;
+        display: block;
         border-bottom: 1px solid var(--rule);
-      }
-      .page-hero .gutter {
-        border-right: 1px solid var(--rule);
-        padding: 40px 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-      }
-      .page-hero .gutter .num {
-        font-family: var(--display);
-        font-size: 38px;
-        font-weight: 700;
-        color: var(--ink);
-        letter-spacing: -0.04em;
-        line-height: 1;
       }
       .page-hero-body {
         padding: 64px 56px 72px;
@@ -232,24 +207,8 @@ function PageStyles() {
 
       /* product section */
       .prod-section {
-        display: grid;
-        grid-template-columns: 80px 1fr;
+        display: block;
         border-bottom: 1px solid var(--rule);
-      }
-      .prod-section .gutter {
-        border-right: 1px solid var(--rule);
-        padding: 40px 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-      }
-      .prod-section .gutter .num {
-        font-family: var(--display);
-        font-size: 38px;
-        font-weight: 700;
-        color: var(--ink);
-        letter-spacing: -0.04em;
-        line-height: 1;
       }
       .prod-body { padding: 56px 56px 72px; }
 
@@ -344,25 +303,9 @@ function PageStyles() {
 
       /* works section */
       .works-section {
-        display: grid;
-        grid-template-columns: 80px 1fr;
+        display: block;
         border-bottom: 1px solid var(--rule);
         background: var(--surface-1);
-      }
-      .works-section .gutter {
-        border-right: 1px solid var(--rule);
-        padding: 40px 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-      }
-      .works-section .gutter .num {
-        font-family: var(--display);
-        font-size: 38px;
-        font-weight: 700;
-        color: var(--ink);
-        letter-spacing: -0.04em;
-        line-height: 1;
       }
       .works-body { padding: 64px 56px 72px; max-width: 900px; }
       .works-body h3 {
@@ -396,12 +339,6 @@ function PageStyles() {
       .works-cta { display: flex; gap: 12px; flex-wrap: wrap; }
 
       @media (max-width: 980px) {
-        .page-hero,
-        .prod-section,
-        .works-section { grid-template-columns: 1fr; }
-        .page-hero .gutter,
-        .prod-section .gutter,
-        .works-section .gutter { display: none; }
         .page-hero-body { padding: 40px 20px 48px; }
         .prod-body { padding: 32px 20px 56px; }
         .works-body { padding: 40px 20px 56px; }

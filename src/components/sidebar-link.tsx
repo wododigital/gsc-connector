@@ -8,25 +8,14 @@ interface SidebarLinkProps {
   exact?: boolean;
   /** Optional badge text shown on the right (e.g. "12", "PRO"). */
   badge?: string | number | null;
-  /** SVG icon (16x16, stroke-current). New Swiss Dark sidebar API. */
-  icon?: ReactNode;
-  /** Visible label (hidden when sidebar is collapsed). New API. */
-  label?: string;
+  /** SVG icon (16x16, stroke-current). */
+  icon: ReactNode;
+  /** Visible label (hidden when sidebar is collapsed). */
+  label: string;
   /** Optional title for the tooltip when collapsed. Defaults to label. */
   title?: string;
-  /**
-   * Legacy children API (used by admin sidebar). When provided, the link
-   * renders the children directly with the legacy "sidebar-item" class so
-   * existing admin styles keep working.
-   */
-  children?: ReactNode;
 }
 
-/**
- * Sidebar nav item. Supports two render modes:
- *  - New (Swiss Dark Modernist): pass `icon` + `label` (+ optional `badge`).
- *  - Legacy: pass `children`. Renders with .sidebar-item for admin layout compat.
- */
 export function SidebarLink({
   href,
   exact = false,
@@ -34,23 +23,12 @@ export function SidebarLink({
   icon,
   label,
   title,
-  children,
 }: SidebarLinkProps) {
   const pathname = usePathname();
   const isActive = exact
     ? pathname === href
     : pathname === href || pathname.startsWith(href + "/");
 
-  // Legacy mode: just render children with the old class name.
-  if (children !== undefined && (icon === undefined && label === undefined)) {
-    return (
-      <a href={href} className={`sidebar-item${isActive ? " active" : ""}`}>
-        {children}
-      </a>
-    );
-  }
-
-  // Modern Swiss Dark sidebar item.
   return (
     <a
       href={href}

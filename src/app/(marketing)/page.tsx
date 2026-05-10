@@ -417,12 +417,8 @@ export default function MarketingHomePage() {
     <>
       {/* ── HERO ───────────────────────────────────────────── */}
       <section className="hero">
-        <div className="gutter">
-          <div className="num">01</div>
-          <div className="vert">SESSION · GOOGLE → AI</div>
-        </div>
         <div className="hero-main">
-          <div className="reveal">
+          <div className="reveal hero-text">
             <h1>
               Talk to your <span className="underline">data</span>{" "}
               <span className="accent">in any AI.</span>
@@ -461,13 +457,14 @@ export default function MarketingHomePage() {
             </div>
           </div>
 
-          <ChatApp />
+          <div className="hero-chat">
+            <ChatApp />
+          </div>
         </div>
       </section>
 
       {/* ── RIBBON · WHO IT'S FOR ─────────────────────────── */}
       <section className="ribbon">
-        <div className="gcell">WHO IT&apos;S FOR</div>
         <div className="marquee">
           <div className="marquee-track">
             {[
@@ -500,7 +497,6 @@ export default function MarketingHomePage() {
 
       {/* ── AI BAR · WORKS WITH ───────────────────────────── */}
       <section className="ai-bar">
-        <div className="gcell">WORKS WITH</div>
         <AiLogo svg={SVG_CHATGPT} name="CHATGPT" tag="CUSTOM GPT" />
         <AiLogo svg={SVG_CLAUDE} name="CLAUDE" tag="MCP · API" />
         <AiLogo svg={SVG_GEMINI} name="GEMINI" tag="FUNCTION CALL" />
@@ -511,10 +507,6 @@ export default function MarketingHomePage() {
 
       {/* ── HOW IT WORKS ──────────────────────────────────── */}
       <section id="how-it-works" className="section">
-        <div className="gutter">
-          <div className="num">02</div>
-          <div className="vert">HOW IT WORKS</div>
-        </div>
         <div className="section-body">
           <h2>
             Three steps. <span className="accent">Ninety seconds.</span>
@@ -559,10 +551,6 @@ export default function MarketingHomePage() {
 
       {/* ── WHAT YOU GET ──────────────────────────────────── */}
       <section className="section">
-        <div className="gutter">
-          <div className="num">03</div>
-          <div className="vert">WHAT YOU GET</div>
-        </div>
         <div className="section-body">
           <h2>
             Built for the <span className="accent">questions</span>
@@ -612,7 +600,6 @@ export default function MarketingHomePage() {
 
       {/* ── METRICS ───────────────────────────────────────── */}
       <section className="stats">
-        <div className="gcell">METRICS</div>
         <div className="stat">
           <div className="num">90s</div>
           <div className="label">From signup to first answer</div>
@@ -633,10 +620,6 @@ export default function MarketingHomePage() {
 
       {/* ── POSTER MANIFESTO ──────────────────────────────── */}
       <section className="poster">
-        <div className="gutter">
-          <div className="num">04</div>
-          <div className="vert">MANIFESTO</div>
-        </div>
         <div className="poster-body">
           <div className="big">
             YOUR DATA.
@@ -658,10 +641,6 @@ export default function MarketingHomePage() {
 
       {/* ── FOOTER (CTA + 4-COL + BOTTOM) ────────────────── */}
       <footer className="site-footer">
-        <div className="gutter">
-          <div className="num">05</div>
-          <div className="vert">END · SESSION</div>
-        </div>
         <div className="footer-body">
           <div className="footer-cta">
             <div>
@@ -674,12 +653,6 @@ export default function MarketingHomePage() {
               <Link href="/onboarding" className="btn btn-primary">
                 Start Free →
               </Link>
-            </div>
-            <div className="right">
-              <div className="meta">
-                <span className="num">●</span> ALL SYSTEMS NOMINAL
-              </div>
-              <div className="meta">UPDATED 2 DAYS AGO</div>
             </div>
           </div>
 
@@ -696,9 +669,6 @@ export default function MarketingHomePage() {
                 The bridge between your Google data and any AI assistant. No
                 SQL. No dashboards. Just answers.
               </p>
-              <div className="footer-status">
-                <span className="status-dot" /> ALL SYSTEMS NOMINAL
-              </div>
             </div>
             <div className="col">
               <h6>PRODUCT</h6>
@@ -716,7 +686,7 @@ export default function MarketingHomePage() {
             <div className="col">
               <h6>COMPANY</h6>
               <a href="https://wodo.digital" target="_blank" rel="noreferrer">About</a>
-              <a href="mailto:hello@theomg.ai">Contact</a>
+              <Link href="/contact">Contact</Link>
               <button
                 type="button"
                 className="footer-link-btn"
@@ -748,31 +718,9 @@ export default function MarketingHomePage() {
         .hero {
           position: relative;
           z-index: 2;
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
         }
-        .hero .gutter {
-          border-right: 1px solid var(--rule);
-          padding: 40px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          font-family: var(--body);
-          font-size: 11px;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--ink-3);
-        }
-        .hero .gutter .num {
-          font-family: var(--display);
-          font-size: 38px;
-          font-weight: 700;
-          color: var(--ink);
-          letter-spacing: -0.04em;
-          line-height: 1;
-        }
-        .hero .gutter .vert { display: none; }
         .hero-main {
           padding: 56px 56px 64px;
           display: grid;
@@ -780,6 +728,8 @@ export default function MarketingHomePage() {
           gap: 56px;
           align-items: center;
         }
+        .hero-text { order: 0; }
+        .hero-chat { order: 0; }
         .hero h1 {
           font-family: var(--display);
           font-weight: 700;
@@ -1055,40 +1005,17 @@ export default function MarketingHomePage() {
 
         /* ── ribbon ───────────────────────────────────────── */
         .ribbon {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
           background: var(--bg);
-        }
-        .ribbon .gcell {
-          border-right: 1px solid var(--rule);
-          padding: 18px 16px;
-          writing-mode: vertical-rl;
-          transform: rotate(180deg);
-          font-family: var(--body);
-          font-size: 11px;
-          letter-spacing: 0.20em;
-          text-transform: uppercase;
-          color: var(--ink-3);
         }
 
         /* ── ai bar ───────────────────────────────────────── */
         .ai-bar {
           display: grid;
-          grid-template-columns: 80px repeat(6, 1fr);
+          grid-template-columns: repeat(6, 1fr);
           border-bottom: 1px solid var(--rule);
           background: var(--surface-1);
-        }
-        .ai-bar .gcell {
-          border-right: 1px solid var(--rule);
-          padding: 24px 16px;
-          writing-mode: vertical-rl;
-          transform: rotate(180deg);
-          font-family: var(--body);
-          font-size: 11px;
-          letter-spacing: 0.20em;
-          text-transform: uppercase;
-          color: var(--ink-3);
         }
         .ai-logo {
           padding: 28px 22px;
@@ -1129,20 +1056,9 @@ export default function MarketingHomePage() {
         /* ── stats ────────────────────────────────────────── */
         .stats {
           display: grid;
-          grid-template-columns: 80px repeat(4, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           border-bottom: 1px solid var(--rule);
           background: var(--bg);
-        }
-        .stats .gcell {
-          border-right: 1px solid var(--rule);
-          padding: 24px 16px;
-          writing-mode: vertical-rl;
-          transform: rotate(180deg);
-          font-family: var(--body);
-          font-size: 11px;
-          letter-spacing: 0.20em;
-          text-transform: uppercase;
-          color: var(--ink-3);
         }
         .stat {
           padding: 26px 24px;
@@ -1172,31 +1088,9 @@ export default function MarketingHomePage() {
 
         /* ── section ──────────────────────────────────────── */
         .section {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
         }
-        .section .gutter {
-          border-right: 1px solid var(--rule);
-          padding: 40px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          font-family: var(--body);
-          font-size: 11px;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--ink-3);
-        }
-        .section .gutter .num {
-          font-family: var(--display);
-          font-size: 38px;
-          font-weight: 700;
-          color: var(--ink);
-          letter-spacing: -0.04em;
-          line-height: 1;
-        }
-        .section .gutter .vert { display: none; }
         .section .section-body { padding: 64px 56px 80px; }
         .section h2 {
           font-family: var(--display);
@@ -1334,8 +1228,7 @@ export default function MarketingHomePage() {
         /* ── poster ───────────────────────────────────────── */
         .poster {
           position: relative;
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
           background: var(--bg);
           overflow: hidden;
@@ -1349,27 +1242,6 @@ export default function MarketingHomePage() {
             radial-gradient(circle at 78% 50%, var(--vermilion-glow), transparent 55%);
           pointer-events: none;
         }
-        .poster .gutter {
-          border-right: 1px solid var(--rule);
-          padding: 40px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          font-family: var(--body);
-          font-size: 11px;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--ink-3);
-        }
-        .poster .gutter .num {
-          font-family: var(--display);
-          font-size: 38px;
-          font-weight: 700;
-          color: var(--ink);
-          letter-spacing: -0.04em;
-          line-height: 1;
-        }
-        .poster .gutter .vert { display: none; }
         .poster .poster-body {
           padding: 110px 56px;
           display: grid;
@@ -1412,31 +1284,9 @@ export default function MarketingHomePage() {
 
         /* ── footer ───────────────────────────────────────── */
         .site-footer {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           background: var(--bg);
         }
-        .site-footer .gutter {
-          border-right: 1px solid var(--rule);
-          padding: 40px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          font-family: var(--body);
-          font-size: 11px;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--ink-3);
-        }
-        .site-footer .gutter .num {
-          font-family: var(--display);
-          font-size: 38px;
-          font-weight: 700;
-          color: var(--ink);
-          letter-spacing: -0.04em;
-          line-height: 1;
-        }
-        .site-footer .gutter .vert { display: none; }
         .site-footer .footer-body {
           padding: 80px 56px 32px;
           display: flex;
@@ -1444,10 +1294,6 @@ export default function MarketingHomePage() {
           gap: 64px;
         }
         .footer-cta {
-          display: grid;
-          grid-template-columns: 1.4fr 1fr;
-          gap: 56px;
-          align-items: end;
           padding-bottom: 56px;
           border-bottom: 1px solid var(--rule);
         }
@@ -1468,15 +1314,6 @@ export default function MarketingHomePage() {
           max-width: 460px;
           margin-bottom: 22px;
         }
-        .footer-cta .right { text-align: right; }
-        .footer-cta .right .meta {
-          font-size: 11px;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--ink-3);
-          margin-bottom: 14px;
-        }
-        .footer-cta .right .meta .num { color: var(--teal); }
 
         .footer-grid {
           display: grid;
@@ -1552,7 +1389,7 @@ export default function MarketingHomePage() {
           background: rgba(10, 16, 24, 0.78);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
-          z-index: 100;
+          z-index: 200;
           display: grid;
           place-items: center;
           padding: 32px;
@@ -1681,22 +1518,13 @@ export default function MarketingHomePage() {
 
         /* ── responsive ───────────────────────────────────── */
         @media (max-width: 980px) {
-          .hero,
-          .section,
-          .poster,
-          .ribbon,
-          .stats,
-          .ai-bar,
-          .site-footer { grid-template-columns: 1fr; }
-          .hero .gutter,
-          .section .gutter,
-          .poster .gutter,
-          .site-footer .gutter,
-          .ribbon .gcell,
-          .stats .gcell,
-          .ai-bar .gcell { display: none; }
-
-          .hero-main { grid-template-columns: 1fr; gap: 40px; padding: 32px 20px; }
+          .hero-main {
+            grid-template-columns: 1fr;
+            gap: 40px;
+            padding: 32px 20px;
+          }
+          .hero-text { order: 2; }
+          .hero-chat { order: 1; }
           .section .section-body { padding: 40px 20px 56px; }
 
           .ai-bar { grid-template-columns: 1fr 1fr; }
@@ -1736,8 +1564,6 @@ export default function MarketingHomePage() {
           .poster .stamp { text-align: left; align-items: flex-start; }
 
           .site-footer .footer-body { padding: 48px 20px 32px; gap: 48px; }
-          .footer-cta { grid-template-columns: 1fr; gap: 32px; align-items: start; }
-          .footer-cta .right { text-align: left; }
           .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
           .footer-bottom { flex-direction: column; gap: 12px; }
         }

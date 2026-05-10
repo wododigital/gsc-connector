@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MobileMenu } from "@/components/mobile-menu";
 
 const navLinks = [
   { href: "/features", label: "FEATURES" },
@@ -8,6 +9,7 @@ const navLinks = [
   { href: "/pricing", label: "PRICING" },
   { href: "/guides", label: "GUIDES" },
   { href: "/faq", label: "FAQ" },
+  { href: "/contact", label: "CONTACT" },
 ];
 
 export default function MarketingLayout({
@@ -35,12 +37,15 @@ export default function MarketingLayout({
             </Link>
           ))}
         </nav>
-        <div className="actions">
+        <div className="actions desktop-actions">
           <ThemeToggle />
           <Link href="/auth/login">LOG IN</Link>
           <Link href="/onboarding" className="primary">
             START FREE →
           </Link>
+        </div>
+        <div className="mobile-actions">
+          <MobileMenu navLinks={navLinks} />
         </div>
       </header>
 
@@ -52,7 +57,7 @@ export default function MarketingLayout({
           top: 0;
           z-index: 50;
           display: grid;
-          grid-template-columns: auto 1fr auto;
+          grid-template-columns: auto 1fr auto auto;
           align-items: stretch;
           background: rgba(10, 16, 24, 0.85);
           backdrop-filter: blur(14px) saturate(1.4);
@@ -122,12 +127,17 @@ export default function MarketingLayout({
           background: var(--vermilion);
           color: #fff;
         }
+        .topbar .mobile-actions {
+          display: none;
+          align-items: center;
+        }
         @media (max-width: 980px) {
           .topbar { grid-template-columns: 1fr auto; }
           .topbar nav { display: none; }
-          .topbar .brand { padding: 12px 16px; gap: 10px; }
-          .topbar .brand .logo-img { height: 24px; }
-          .topbar .actions a { padding: 12px 14px; font-size: 10px; }
+          .topbar .desktop-actions { display: none; }
+          .topbar .mobile-actions { display: flex; }
+          .topbar .brand { padding: 10px 16px; gap: 10px; }
+          .topbar .brand .logo-img { height: 32px; }
         }
       `}</style>
     </div>

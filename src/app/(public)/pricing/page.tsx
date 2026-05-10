@@ -66,9 +66,6 @@ export default function PricingPage() {
     <div className="page-shell">
       {/* HERO */}
       <section className="page-hero">
-        <div className="gutter">
-          <div className="num">01</div>
-        </div>
         <div className="page-hero-body">
           <div className="section-eyebrow">
             <span className="num">01</span>
@@ -88,9 +85,6 @@ export default function PricingPage() {
 
       {/* PLANS */}
       <section className="plans-section">
-        <div className="gutter">
-          <div className="num">02</div>
-        </div>
         <div className="plans-body">
           <div className="plans-grid">
             {plans.map((plan) => (
@@ -138,24 +132,8 @@ export default function PricingPage() {
 
         /* page hero */
         .page-hero {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
-        }
-        .page-hero .gutter {
-          border-right: 1px solid var(--rule);
-          padding: 40px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-        .page-hero .gutter .num {
-          font-family: var(--display);
-          font-size: 38px;
-          font-weight: 700;
-          color: var(--ink);
-          letter-spacing: -0.04em;
-          line-height: 1;
         }
         .page-hero-body { padding: 64px 56px 72px; max-width: 1100px; }
         .page-hero h1 {
@@ -183,24 +161,8 @@ export default function PricingPage() {
 
         /* plans */
         .plans-section {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
-        }
-        .plans-section .gutter {
-          border-right: 1px solid var(--rule);
-          padding: 40px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-        .plans-section .gutter .num {
-          font-family: var(--display);
-          font-size: 38px;
-          font-weight: 700;
-          color: var(--ink);
-          letter-spacing: -0.04em;
-          line-height: 1;
         }
         .plans-body { padding: 56px 56px 80px; }
         .plans-grid {
@@ -311,10 +273,6 @@ export default function PricingPage() {
         .plans-note > div { display: inline-flex; align-items: center; gap: 8px; }
 
         @media (max-width: 980px) {
-          .page-hero,
-          .plans-section { grid-template-columns: 1fr; }
-          .page-hero .gutter,
-          .plans-section .gutter { display: none; }
           .page-hero-body { padding: 40px 20px 48px; }
           .plans-body { padding: 32px 20px 56px; }
           .plans-grid { grid-template-columns: 1fr; }

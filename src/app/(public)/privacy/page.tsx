@@ -14,9 +14,6 @@ export default function PrivacyPolicyPage() {
     <div className="page-shell">
       {/* HERO */}
       <section className="legal-hero">
-        <div className="gutter">
-          <div className="num">01</div>
-        </div>
         <div className="legal-hero-body">
           <div className="section-eyebrow">
             <span className="num">01</span>
@@ -32,9 +29,6 @@ export default function PrivacyPolicyPage() {
 
       {/* POLICY BODY */}
       <section className="legal-section">
-        <div className="gutter">
-          <div className="num">02</div>
-        </div>
         <div className="legal-body">
           <Section n="01" title="Who we are">
             <p>
@@ -321,26 +315,8 @@ function LegalStyles() {
 
       .legal-hero,
       .legal-section {
-        display: grid;
-        grid-template-columns: 80px 1fr;
+        display: block;
         border-bottom: 1px solid var(--rule);
-      }
-      .legal-hero .gutter,
-      .legal-section .gutter {
-        border-right: 1px solid var(--rule);
-        padding: 40px 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-      }
-      .legal-hero .gutter .num,
-      .legal-section .gutter .num {
-        font-family: var(--display);
-        font-size: 38px;
-        font-weight: 700;
-        color: var(--ink);
-        letter-spacing: -0.04em;
-        line-height: 1;
       }
       .legal-hero-body { padding: 64px 56px 56px; max-width: 1100px; }
       .legal-hero h1 {
@@ -435,10 +411,6 @@ function LegalStyles() {
       }
 
       @media (max-width: 980px) {
-        .legal-hero,
-        .legal-section { grid-template-columns: 1fr; }
-        .legal-hero .gutter,
-        .legal-section .gutter { display: none; }
         .legal-hero-body { padding: 40px 20px 40px; }
         .legal-body { padding: 32px 20px 56px; }
       }

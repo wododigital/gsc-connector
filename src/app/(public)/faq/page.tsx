@@ -101,9 +101,6 @@ export default function FaqPage() {
     <div className="page-shell">
       {/* HERO */}
       <section className="page-hero">
-        <div className="gutter">
-          <div className="num">01</div>
-        </div>
         <div className="page-hero-body">
           <div className="section-eyebrow">
             <span className="num">01</span>
@@ -125,9 +122,6 @@ export default function FaqPage() {
       {/* FAQ SECTIONS */}
       {faqs.map((section, idx) => (
         <section key={section.section} className="faq-section">
-          <div className="gutter">
-            <div className="num">{String(idx + 2).padStart(2, "0")}</div>
-          </div>
           <div className="faq-body">
             <div className="section-eyebrow">
               <span className="num">{String(idx + 2).padStart(2, "0")}</span>
@@ -155,26 +149,8 @@ export default function FaqPage() {
         .page-shell { min-height: 100%; }
 
         .page-hero {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
-        }
-        .page-hero .gutter,
-        .faq-section .gutter {
-          border-right: 1px solid var(--rule);
-          padding: 40px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-        .page-hero .gutter .num,
-        .faq-section .gutter .num {
-          font-family: var(--display);
-          font-size: 38px;
-          font-weight: 700;
-          color: var(--ink);
-          letter-spacing: -0.04em;
-          line-height: 1;
         }
         .page-hero-body { padding: 64px 56px 72px; max-width: 1100px; }
         .page-hero h1 {
@@ -195,8 +171,7 @@ export default function FaqPage() {
         }
 
         .faq-section {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
         }
         .faq-body { padding: 56px 56px 72px; max-width: 920px; }
@@ -247,10 +222,6 @@ export default function FaqPage() {
         }
 
         @media (max-width: 980px) {
-          .page-hero,
-          .faq-section { grid-template-columns: 1fr; }
-          .page-hero .gutter,
-          .faq-section .gutter { display: none; }
           .page-hero-body { padding: 40px 20px 48px; }
           .faq-body { padding: 32px 20px 56px; }
           .faq-item summary .q-text { font-size: 16px; }

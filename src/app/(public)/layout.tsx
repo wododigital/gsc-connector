@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MobileMenu } from "@/components/mobile-menu";
 
 const navLinks = [
   { href: "/features", label: "FEATURES" },
@@ -8,6 +9,7 @@ const navLinks = [
   { href: "/pricing", label: "PRICING" },
   { href: "/guides", label: "GUIDES" },
   { href: "/faq", label: "FAQ" },
+  { href: "/contact", label: "CONTACT" },
 ];
 
 const productLinks: { href: string; label: string; external?: boolean }[] = [
@@ -24,7 +26,7 @@ const resourceLinks: { href: string; label: string; external?: boolean }[] = [
 ];
 
 const companyLinks: { href: string; label: string; external?: boolean }[] = [
-  { href: "mailto:hello@theomg.ai", label: "Contact" },
+  { href: "/contact", label: "Contact" },
   { href: "https://wodo.digital", label: "About", external: true },
 ];
 
@@ -55,22 +57,21 @@ export default function PublicLayout({
             </Link>
           ))}
         </nav>
-        <div className="actions">
+        <div className="actions desktop-actions">
           <ThemeToggle />
           <Link href="/auth/login">LOG IN</Link>
           <Link href="/onboarding" className="primary">
             START FREE →
           </Link>
         </div>
+        <div className="mobile-actions">
+          <MobileMenu navLinks={navLinks} />
+        </div>
       </header>
 
       <main className="flex-1">{children}</main>
 
       <footer className="site-footer">
-        <div className="gutter">
-          <div className="num">05</div>
-          <div className="vert">END · SESSION</div>
-        </div>
         <div className="footer-body">
           <div className="footer-cta">
             <div>
@@ -83,12 +84,6 @@ export default function PublicLayout({
               <Link href="/onboarding" className="btn btn-primary">
                 Start Free →
               </Link>
-            </div>
-            <div className="right">
-              <div className="meta">
-                <span className="num">●</span> ALL SYSTEMS NOMINAL
-              </div>
-              <div className="meta">UPDATED 2 DAYS AGO</div>
             </div>
           </div>
 
@@ -105,9 +100,6 @@ export default function PublicLayout({
                 The bridge between your Google data and any AI assistant. No SQL.
                 No dashboards. Just answers.
               </p>
-              <div className="footer-status">
-                <span className="status-dot" /> ALL SYSTEMS NOMINAL
-              </div>
             </div>
             <div className="col">
               <h6>PRODUCT</h6>
@@ -165,7 +157,7 @@ export default function PublicLayout({
           top: 0;
           z-index: 50;
           display: grid;
-          grid-template-columns: auto 1fr auto;
+          grid-template-columns: auto 1fr auto auto;
           align-items: stretch;
           background: rgba(10, 16, 24, 0.85);
           backdrop-filter: blur(14px) saturate(1.4);
@@ -221,11 +213,14 @@ export default function PublicLayout({
         .topbar .actions a:hover { background: var(--surface-1); color: var(--teal-bright); }
         .topbar .actions a.primary { background: var(--teal); color: #fff; font-weight: 600; }
         .topbar .actions a.primary:hover { background: var(--vermilion); color: #fff; }
+        .topbar .mobile-actions {
+          display: none;
+          align-items: center;
+        }
 
         /* footer */
         .site-footer {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           background: var(--bg);
           border-top: 1px solid var(--rule);
           margin-top: 80px;
@@ -237,10 +232,6 @@ export default function PublicLayout({
           gap: 64px;
         }
         .footer-cta {
-          display: grid;
-          grid-template-columns: 1.4fr 1fr;
-          gap: 56px;
-          align-items: end;
           padding-bottom: 56px;
           border-bottom: 1px solid var(--rule);
         }
@@ -261,15 +252,6 @@ export default function PublicLayout({
           max-width: 460px;
           margin-bottom: 22px;
         }
-        .footer-cta .right { text-align: right; }
-        .footer-cta .right .meta {
-          font-size: 11px;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--ink-3);
-          margin-bottom: 14px;
-        }
-        .footer-cta .right .meta .num { color: var(--teal); }
 
         .footer-grid {
           display: grid;
@@ -310,15 +292,6 @@ export default function PublicLayout({
           max-width: 280px;
           margin-bottom: 18px;
         }
-        .footer-status {
-          font-size: 10px;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: var(--teal);
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-        }
 
         .footer-bottom {
           display: flex;
@@ -331,40 +304,15 @@ export default function PublicLayout({
         .footer-bottom a { color: var(--ink-3); text-decoration: none; }
         .footer-bottom a:hover { color: var(--teal); }
 
-        /* gutter shared */
-        .site-footer .gutter {
-          border-right: 1px solid var(--rule);
-          padding: 40px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          font-family: var(--body);
-          font-size: 11px;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--ink-3);
-        }
-        .site-footer .gutter .num {
-          font-family: var(--display);
-          font-size: 38px;
-          font-weight: 700;
-          color: var(--ink);
-          letter-spacing: -0.04em;
-          line-height: 1;
-        }
-
         @media (max-width: 980px) {
           .topbar { grid-template-columns: 1fr auto; }
           .topbar nav { display: none; }
-          .topbar .brand { padding: 12px 16px; gap: 10px; }
-          .topbar .brand .logo-img { height: 24px; }
-          .topbar .actions a { padding: 12px 14px; font-size: 10px; }
+          .topbar .desktop-actions { display: none; }
+          .topbar .mobile-actions { display: flex; }
+          .topbar .brand { padding: 10px 16px; gap: 10px; }
+          .topbar .brand .logo-img { height: 32px; }
 
-          .site-footer { grid-template-columns: 1fr; }
-          .site-footer .gutter { display: none; }
           .site-footer .footer-body { padding: 48px 20px 32px; gap: 48px; }
-          .footer-cta { grid-template-columns: 1fr; gap: 32px; align-items: start; }
-          .footer-cta .right { text-align: left; }
           .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
           .footer-bottom { flex-direction: column; gap: 12px; }
         }

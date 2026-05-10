@@ -124,9 +124,6 @@ export default function GuidesPage() {
     <div className="page-shell">
       {/* HERO */}
       <section className="page-hero">
-        <div className="gutter">
-          <div className="num">01</div>
-        </div>
         <div className="page-hero-body">
           <div className="section-eyebrow">
             <span className="num">01</span>
@@ -148,9 +145,6 @@ export default function GuidesPage() {
       {/* GUIDES */}
       {guides.map((guide) => (
         <section key={guide.number} className="guide-section">
-          <div className="gutter">
-            <div className="num">{guide.number}</div>
-          </div>
           <div className="guide-body">
             <div className="guide-head">
               <div className="guide-num">{guide.number}</div>
@@ -182,26 +176,8 @@ export default function GuidesPage() {
         .page-shell { min-height: 100%; }
 
         .page-hero {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
-        }
-        .page-hero .gutter,
-        .guide-section .gutter {
-          border-right: 1px solid var(--rule);
-          padding: 40px 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-        .page-hero .gutter .num,
-        .guide-section .gutter .num {
-          font-family: var(--display);
-          font-size: 38px;
-          font-weight: 700;
-          color: var(--ink);
-          letter-spacing: -0.04em;
-          line-height: 1;
         }
         .page-hero-body { padding: 64px 56px 72px; max-width: 1100px; }
         .page-hero h1 {
@@ -228,8 +204,7 @@ export default function GuidesPage() {
         }
 
         .guide-section {
-          display: grid;
-          grid-template-columns: 80px 1fr;
+          display: block;
           border-bottom: 1px solid var(--rule);
         }
         .guide-body { padding: 48px 56px 64px; max-width: 920px; }
@@ -320,10 +295,6 @@ export default function GuidesPage() {
         }
 
         @media (max-width: 980px) {
-          .page-hero,
-          .guide-section { grid-template-columns: 1fr; }
-          .page-hero .gutter,
-          .guide-section .gutter { display: none; }
           .page-hero-body { padding: 40px 20px 48px; }
           .guide-body { padding: 32px 20px 48px; }
           .guide-head { flex-wrap: wrap; }
