@@ -93,17 +93,6 @@
   --logo-filter:    invert(1) hue-rotate(180deg) brightness(0.92);
 }
 
-/* smooth theme transition */
-html { transition: background-color .35s ease; }
-body, .topbar, .chat-app, .ai-bar, .stats, .ribbon, .section, .poster,
-footer, .modules, .featured-grid, .module, .feat, .gutter, .modal-card,
-.modal-overlay, .data-table, .data-table th, .data-table td,
-.surface-card, .stats-row, .stat, .service-card, .filter-bar,
-.prompt-card, .tabs, .prop-table, .key-create, .endpoint-card,
-.signin-banner, .connect-card {
-  transition: background-color .35s ease, border-color .35s ease, color .35s ease;
-}
-
 /* ─── reset + base ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }

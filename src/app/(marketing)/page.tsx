@@ -50,7 +50,7 @@ const sessions: Session[] = [
   {
     brand: "chatgpt",
     title: "CHATGPT",
-    model: "GPT-4o",
+    model: "ChatGPT",
     accent: "#10A37F",
     glow: "rgba(16,163,127,0.18)",
     placeholder: "Message ChatGPT...",
@@ -69,7 +69,7 @@ const sessions: Session[] = [
   {
     brand: "claude",
     title: "CLAUDE",
-    model: "Claude Sonnet 4.5",
+    model: "Claude",
     accent: "#D97757",
     glow: "rgba(217,119,87,0.18)",
     placeholder: "Reply to Claude...",
@@ -88,7 +88,7 @@ const sessions: Session[] = [
   {
     brand: "gemini",
     title: "GEMINI",
-    model: "Gemini 2.0 Pro",
+    model: "Gemini",
     accent: "#4285F4",
     glow: "rgba(66,133,244,0.18)",
     placeholder: "Ask Gemini...",
@@ -224,7 +224,7 @@ function ChatApp() {
         </div>
         <div className="model">
           <span ref={modelMarkRef} />
-          <span ref={modelNameRef}>GPT-4o</span>
+          <span ref={modelNameRef}>ChatGPT</span>
           <span className="caret">▾</span>
         </div>
         <div className="status">CONNECTED</div>
@@ -792,16 +792,6 @@ export default function MarketingHomePage() {
           overflow: hidden;
           transition: box-shadow 0.6s ease;
         }
-        .chat-app::after {
-          content: "";
-          position: absolute;
-          top: -10px;
-          right: -10px;
-          width: 88px;
-          height: 88px;
-          background: var(--vermilion);
-          z-index: -1;
-        }
         .chat-app .brand-strip {
           position: absolute;
           top: 0;
@@ -1127,13 +1117,13 @@ export default function MarketingHomePage() {
         }
         .module:last-child { border-right: none; }
         .module:nth-child(2) { background: var(--surface-2); }
-        .module:hover { background: var(--teal); color: var(--bg); }
-        .module:hover .number { color: var(--bg); }
+        .module:hover { background: var(--teal); color: #fff; }
+        .module:hover .number { color: #fff; }
         .module:hover .label {
-          color: rgba(10, 16, 24, 0.65);
-          border-color: rgba(10, 16, 24, 0.18);
+          color: rgba(255, 255, 255, 0.72);
+          border-color: rgba(255, 255, 255, 0.22);
         }
-        .module:hover p { color: rgba(10, 16, 24, 0.85); }
+        .module:hover p { color: rgba(255, 255, 255, 0.92); }
         .module .number {
           font-family: var(--display);
           font-weight: 700;
