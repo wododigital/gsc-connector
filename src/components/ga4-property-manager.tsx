@@ -1,8 +1,7 @@
 "use client";
 
 /**
- * GA4PropertyManager
- * Renders all GA4 properties with checkboxes and a Save button.
+ * GA4PropertyManager — Swiss Dark Modernist prop-table for GA4 properties.
  * Submits to POST /api/ga4/properties to persist the active selection.
  */
 
@@ -62,49 +61,44 @@ export function GA4PropertyManager({ properties }: GA4PropertyManagerProps) {
 
   return (
     <div>
-      <div className="space-y-2 mb-4 max-h-56 overflow-y-auto pr-1">
-        {properties.map((property) => (
-          <label
-            key={property.id}
-            className={`glass-list-item ${active.has(property.id) ? "active" : "inactive"}`}
-          >
-            <input
-              type="checkbox"
-              checked={active.has(property.id)}
-              onChange={() => toggle(property.id)}
-              className="shrink-0"
-              style={{ accentColor: "var(--accent)" }}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                {property.displayName}
-              </p>
-              <p className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
-                {property.propertyId}
-                {property.accountName && (
-                  <span className="ml-1">- {property.accountName}</span>
-                )}
-              </p>
-            </div>
-            <span className={`badge ${active.has(property.id) ? "badge-info" : "badge-muted"}`}>
-              {active.has(property.id) ? "Active" : "Inactive"}
-            </span>
-          </label>
-        ))}
+      <div className="prop-table">
+        {properties.length === 0 ? (
+          <div className="prop-empty">No GA4 properties available.</div>
+        ) : (
+          properties.map((property, idx) => {
+            const exposed = active.has(property.id);
+            return (
+              <div key={property.id} className={`prop-row${exposed ? " exposed" : ""}`}>
+                <button
+                  type="button"
+                  className="toggle"
+                  onClick={() => toggle(property.id)}
+                  aria-label={`${exposed ? "Hide" : "Expose"} ${property.displayName}`}
+                />
+                <div className="info">
+                  <div className="url">{property.displayName}</div>
+                  <div className="meta">
+                    PROPERTY {property.propertyId}
+                    {property.accountName ? ` · ${property.accountName.toUpperCase()}` : ""}
+                  </div>
+                </div>
+                {idx === 0 ? <span className="pill">PRIMARY</span> : <span />}
+                <span className="pill state">{exposed ? "EXPOSED" : "HIDDEN"}</span>
+                <span className="menu">⋯</span>
+              </div>
+            );
+          })
+        )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          onClick={save}
-          disabled={isPending}
-          className="btn-primary btn-primary-sm"
-        >
-          {isPending ? "Saving..." : "Save selection"}
+      <div className="prop-actions">
+        <button onClick={save} disabled={isPending} className="btn btn-primary">
+          {isPending ? "SAVING..." : "SAVE SELECTION"}
         </button>
-        {saved && <span className="badge badge-success">Saved</span>}
-        {error && <span className="badge badge-error">{error}</span>}
-        <span className="ml-auto text-xs" style={{ color: "var(--text-muted)" }}>
-          {active.size} of {properties.length} active
+        {saved && <span className="pill success">SAVED</span>}
+        {error && <span className="pill error">{error}</span>}
+        <span className="prop-count">
+          {active.size} OF {properties.length} EXPOSED
         </span>
       </div>
     </div>

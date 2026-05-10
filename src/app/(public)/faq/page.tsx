@@ -53,7 +53,7 @@ const faqs = [
     items: [
       {
         q: "Is there a free plan?",
-        a: "Yes. The Free plan includes 200 tool calls per month and 1 Google account - enough to explore and test the integration.",
+        a: "Yes. The Free plan includes 200 tool calls per month and 1 Google account. Enough to explore and test the integration.",
       },
       {
         q: "What counts as a tool call?",
@@ -65,7 +65,7 @@ const faqs = [
       },
       {
         q: "How does Annual billing work?",
-        a: "Annual is a single $199/year charge that unlocks unlimited tool calls and unlimited connected Google accounts. Cancel anytime - your access continues until the end of the paid period.",
+        a: "Annual is a single $199/year charge that unlocks unlimited tool calls and unlimited connected Google accounts. Cancel anytime. Your access continues until the end of the paid period.",
       },
       {
         q: "Do you offer refunds?",
@@ -98,49 +98,164 @@ const faqs = [
 
 export default function FaqPage() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-20">
-      <div className="text-center mb-12">
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            color: "var(--accent-light)",
-            marginBottom: 12,
-          }}
-        >
-          Support
+    <div className="page-shell">
+      {/* HERO */}
+      <section className="page-hero">
+        <div className="gutter">
+          <div className="num">01</div>
         </div>
-        <h1 className="text-4xl font-bold mb-3" style={{ color: "var(--text-primary)" }}>
-          Frequently Asked Questions
-        </h1>
-        <p style={{ color: "var(--text-secondary)" }}>Everything you need to know about OMG Bridge.</p>
-      </div>
+        <div className="page-hero-body">
+          <div className="section-eyebrow">
+            <span className="num">01</span>
+            <span>SUPPORT</span>
+            <span className="rule" />
+          </div>
+          <h1>
+            Frequently asked
+            <br />
+            <span className="accent">questions.</span>
+          </h1>
+          <p className="lede">
+            Everything you need to know about OMG Bridge. Connecting Google,
+            wiring up AI tools, security, billing.
+          </p>
+        </div>
+      </section>
 
-      <div className="space-y-12">
-        {faqs.map((section) => (
-          <div key={section.section}>
-            <h2
-              className="text-lg font-semibold mb-4 pb-2"
-              style={{
-                color: "var(--text-primary)",
-                borderBottom: "1px solid var(--glass-border)",
-              }}
-            >
-              {section.section}
-            </h2>
-            <div className="space-y-6">
+      {/* FAQ SECTIONS */}
+      {faqs.map((section, idx) => (
+        <section key={section.section} className="faq-section">
+          <div className="gutter">
+            <div className="num">{String(idx + 2).padStart(2, "0")}</div>
+          </div>
+          <div className="faq-body">
+            <div className="section-eyebrow">
+              <span className="num">{String(idx + 2).padStart(2, "0")}</span>
+              <span>{section.section.toUpperCase()}</span>
+              <span className="rule" />
+            </div>
+            <div className="faq-list">
               {section.items.map((item) => (
-                <div key={item.q}>
-                  <h3 className="font-medium mb-1" style={{ color: "var(--text-primary)" }}>{item.q}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{item.a}</p>
-                </div>
+                <details key={item.q} className="faq-item">
+                  <summary>
+                    <span className="q-text">{item.q}</span>
+                    <span className="q-icon" aria-hidden="true">
+                      +
+                    </span>
+                  </summary>
+                  <div className="a-text">{item.a}</div>
+                </details>
               ))}
             </div>
           </div>
-        ))}
-      </div>
+        </section>
+      ))}
+
+      <style>{`
+        .page-shell { min-height: 100%; }
+
+        .page-hero {
+          display: grid;
+          grid-template-columns: 80px 1fr;
+          border-bottom: 1px solid var(--rule);
+        }
+        .page-hero .gutter,
+        .faq-section .gutter {
+          border-right: 1px solid var(--rule);
+          padding: 40px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+        .page-hero .gutter .num,
+        .faq-section .gutter .num {
+          font-family: var(--display);
+          font-size: 38px;
+          font-weight: 700;
+          color: var(--ink);
+          letter-spacing: -0.04em;
+          line-height: 1;
+        }
+        .page-hero-body { padding: 64px 56px 72px; max-width: 1100px; }
+        .page-hero h1 {
+          font-family: var(--display);
+          font-weight: 700;
+          font-size: clamp(40px, 5.4vw, 64px);
+          line-height: 1.0;
+          letter-spacing: -0.035em;
+          text-transform: uppercase;
+          margin-bottom: 24px;
+        }
+        .page-hero h1 .accent { color: var(--vermilion); }
+        .page-hero .lede {
+          font-size: 16px;
+          line-height: 1.65;
+          color: var(--ink-2);
+          max-width: 580px;
+        }
+
+        .faq-section {
+          display: grid;
+          grid-template-columns: 80px 1fr;
+          border-bottom: 1px solid var(--rule);
+        }
+        .faq-body { padding: 56px 56px 72px; max-width: 920px; }
+
+        .faq-list {
+          border-top: 1px solid var(--rule-strong);
+        }
+        .faq-item {
+          border-bottom: 1px solid var(--rule-strong);
+        }
+        .faq-item summary {
+          list-style: none;
+          cursor: pointer;
+          padding: 22px 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 24px;
+          transition: color 0.18s ease;
+        }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item summary:hover { color: var(--teal-bright); }
+        .faq-item summary .q-text {
+          font-family: var(--display);
+          font-weight: 600;
+          font-size: 18px;
+          letter-spacing: -0.015em;
+          color: var(--ink);
+        }
+        .faq-item summary .q-icon {
+          color: var(--teal);
+          font-size: 22px;
+          line-height: 1;
+          font-weight: 400;
+          font-family: var(--body);
+          transition: transform 0.2s ease, color 0.18s ease;
+        }
+        .faq-item[open] summary .q-icon {
+          transform: rotate(45deg);
+          color: var(--vermilion);
+        }
+        .faq-item .a-text {
+          padding: 0 0 24px;
+          font-size: 14px;
+          color: var(--ink-2);
+          line-height: 1.7;
+          max-width: 720px;
+        }
+
+        @media (max-width: 980px) {
+          .page-hero,
+          .faq-section { grid-template-columns: 1fr; }
+          .page-hero .gutter,
+          .faq-section .gutter { display: none; }
+          .page-hero-body { padding: 40px 20px 48px; }
+          .faq-body { padding: 32px 20px 56px; }
+          .faq-item summary .q-text { font-size: 16px; }
+        }
+      `}</style>
     </div>
   );
 }

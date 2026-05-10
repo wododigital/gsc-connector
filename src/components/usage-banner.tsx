@@ -23,9 +23,9 @@ function computeLevel(callsUsed: number, callsLimit: number, isFreeUser: boolean
 }
 
 /**
- * Plan-aware usage banner.
+ * Plan-aware usage banner — Swiss Dark Modernist treatment.
  * Free users see escalating prompts at 25%, 90%, and 100% of monthly quota.
- * Annual users never see this.
+ * Annual users never see this. Renders as a teal left rail inside .usage-banner.
  */
 export function UsageBanner({ callsUsed, callsLimit, isFreeUser, periodEnd }: Props) {
   const level = computeLevel(callsUsed, callsLimit, isFreeUser);
@@ -46,13 +46,16 @@ export function UsageBanner({ callsUsed, callsLimit, isFreeUser, periodEnd }: Pr
   if (level === "info" && dismissed) return null;
 
   const remaining = Math.max(0, callsLimit - callsUsed);
-  const styles = {
-    info: { bg: "rgba(0,179,179,0.10)", border: "rgba(0,179,179,0.45)", color: "var(--accent-light)", icon: "i" },
-    warn: { bg: "rgba(251,191,36,0.10)", border: "rgba(251,191,36,0.45)", color: "var(--warning)", icon: "!" },
-    blocked: { bg: "rgba(239,68,68,0.10)", border: "rgba(239,68,68,0.45)", color: "var(--error)", icon: "✕" },
-  }[level];
-
+  const pct = Math.min(100, Math.round((callsUsed / callsLimit) * 100));
   const periodResetDate = new Date(periodEnd).toLocaleDateString();
+
+  // Per-level rail color and CTA tone.
+  const rail =
+    level === "blocked"
+      ? "rgba(255, 107, 74, 0.7)"
+      : level === "warn"
+      ? "rgba(244, 184, 96, 0.7)"
+      : "rgba(0, 181, 181, 0.5)";
 
   const dismiss = () => {
     setDismissed(true);
@@ -60,44 +63,77 @@ export function UsageBanner({ callsUsed, callsLimit, isFreeUser, periodEnd }: Pr
   };
 
   return (
-    <div
-      className="rounded-lg p-3 flex items-center gap-3 mb-4"
-      style={{ background: styles.bg, border: `1px solid ${styles.border}` }}
-    >
-      <div
-        className="flex items-center justify-center rounded-full text-xs font-bold shrink-0"
-        style={{ width: 22, height: 22, background: styles.color, color: "#06080d" }}
-      >
-        {styles.icon}
+    <>
+      <style>{USAGE_BANNER_CSS}</style>
+      <div className="usage-banner" style={{ borderLeftColor: rail }}>
+        <div className="info">
+          {level === "info" && (
+            <>
+              <strong>
+                {callsUsed.toLocaleString()} of {callsLimit.toLocaleString()}
+              </strong>{" "}
+              queries used this period · {pct}% of your monthly quota.
+            </>
+          )}
+          {level === "warn" && (
+            <>
+              <strong>{remaining.toLocaleString()} queries</strong> remaining this period. Upgrade to
+              Annual for unlimited tool calls.
+            </>
+          )}
+          {level === "blocked" && (
+            <>
+              You&apos;ve reached your monthly limit of{" "}
+              <strong>{callsLimit.toLocaleString()} queries</strong>. Tool calls are paused until your
+              period resets on <strong>{periodResetDate}</strong>.
+            </>
+          )}
+        </div>
+        <div className="banner-actions">
+          <a href="/dashboard/billing">UPGRADE PLAN →</a>
+          {level === "info" && (
+            <button onClick={dismiss} className="dismiss" aria-label="Dismiss">
+              ×
+            </button>
+          )}
+        </div>
       </div>
-      <div className="flex-1 text-xs leading-relaxed" style={{ color: "var(--text-primary)" }}>
-        {level === "info" && (
-          <>You&apos;ve used <strong>{callsUsed} of {callsLimit}</strong> free tool calls this month. Upgrade to Annual for unlimited calls - $199/year.</>
-        )}
-        {level === "warn" && (
-          <>You have <strong>{remaining} tool calls</strong> remaining this month. Upgrade to Annual for unlimited calls - $199/year.</>
-        )}
-        {level === "blocked" && (
-          <>You&apos;ve reached your monthly limit of <strong>{callsLimit} tool calls</strong>. Tool calls are paused until your period resets on <strong>{periodResetDate}</strong>. Upgrade now for unlimited access - $199/year.</>
-        )}
-      </div>
-      <a
-        href="/dashboard/billing"
-        className="btn-primary btn-primary-sm shrink-0"
-        style={level === "blocked" ? undefined : { background: styles.color, color: "#06080d" }}
-      >
-        Upgrade
-      </a>
-      {level === "info" && (
-        <button
-          onClick={dismiss}
-          className="text-xs shrink-0"
-          style={{ color: "var(--text-muted)" }}
-          aria-label="Dismiss"
-        >
-          ×
-        </button>
-      )}
-    </div>
+    </>
   );
 }
+
+const USAGE_BANNER_CSS = `
+.usage-banner {
+  padding: 14px 18px;
+  background: var(--surface-1);
+  border-left: 3px solid rgba(0, 181, 181, 0.5);
+  margin: 24px 0;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.usage-banner .info { color: var(--ink-2); }
+.usage-banner .info strong { color: var(--ink); font-weight: 600; }
+.usage-banner .banner-actions {
+  display: flex; align-items: center; gap: 14px;
+}
+.usage-banner .banner-actions a {
+  color: var(--teal);
+  text-decoration: none;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  transition: color .15s;
+}
+.usage-banner .banner-actions a:hover { color: var(--vermilion); }
+.usage-banner .banner-actions .dismiss {
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--ink-3);
+  width: 22px; height: 22px;
+  font-size: 14px; line-height: 1;
+  cursor: pointer;
+  transition: all .15s;
+}
+.usage-banner .banner-actions .dismiss:hover { color: var(--vermilion); border-color: var(--vermilion); }
+`;

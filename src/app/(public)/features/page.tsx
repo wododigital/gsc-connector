@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Features - OMG Bridge",
@@ -32,145 +33,385 @@ const gbpFeatures = [
   { title: "Performance", description: "Track profile views, search impressions, and customer actions." },
   { title: "Search Keywords", description: "See the actual search terms people used to find your business." },
   { title: "Posts", description: "Read business posts and announcements published to your profile." },
-  { title: "Photos & Media", description: "Audit the media attached to each location." },
+  { title: "Photos and Media", description: "Audit the media attached to each location." },
   { title: "Location Overview", description: "Summary view per location with key metrics in one call." },
 ];
 
-interface SectionProps {
+interface ProductColumn {
+  number: string;
   title: string;
   count: number;
   blurb: string;
-  accent: string;
   features: { title: string; description: string }[];
+  highlight: boolean;
 }
 
-function FeatureSection({ title, count, blurb, accent, features }: SectionProps) {
+const columns: ProductColumn[] = [
+  {
+    number: "01",
+    title: "Google Search Console",
+    count: 13,
+    blurb:
+      "13 MCP tools covering every aspect of GSC. From search analytics to site verification.",
+    features: gscFeatures,
+    highlight: true,
+  },
+  {
+    number: "02",
+    title: "Google Analytics 4",
+    count: 10,
+    blurb:
+      "10 MCP tools bringing your GA4 traffic, conversion, and audience data into every AI conversation.",
+    features: ga4Features,
+    highlight: false,
+  },
+  {
+    number: "03",
+    title: "Google Business Profile",
+    count: 7,
+    blurb:
+      "7 MCP tools so your AI can read GBP locations, reviews, search keywords, and performance.",
+    features: gbpFeatures,
+    highlight: false,
+  },
+];
+
+export default function FeaturesPage() {
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "var(--radius-sm)",
-            background: `${accent}1A`,
-            border: `1px solid ${accent}33`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: accent, boxShadow: `0 0 8px ${accent}` }} />
+    <div className="page-shell">
+      {/* HERO */}
+      <section className="page-hero">
+        <div className="gutter">
+          <div className="num">01</div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
-            {title}
-          </h2>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {count} MCP tools
+        <div className="page-hero-body">
+          <div className="section-eyebrow">
+            <span className="num">01</span>
+            <span>FEATURES</span>
+            <span className="rule" />
+          </div>
+          <h1>
+            Every SEO insight,
+            <br />
+            <span className="underline">inside</span> your{" "}
+            <span className="accent">AI assistant.</span>
+          </h1>
+          <p className="lede">
+            OMG Bridge gives Claude, ChatGPT, and Cursor direct access to your
+            Google Search Console, GA4, and Business Profile data via the
+            Model Context Protocol. 30 tools. One endpoint.
           </p>
         </div>
-      </div>
-      <p className="mb-5 text-sm" style={{ color: "var(--text-secondary)" }}>
-        {blurb}
-      </p>
-      <div className="space-y-3">
-        {features.map((f) => (
-          <div key={f.title} className="flex gap-3">
-            <span style={{ color: accent, marginTop: 2, flexShrink: 0, fontWeight: 700 }}>✓</span>
-            <div>
-              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{f.title}</p>
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>{f.description}</p>
-            </div>
+      </section>
+
+      {/* PRODUCT COLUMNS */}
+      <section className="prod-section">
+        <div className="gutter">
+          <div className="num">02</div>
+        </div>
+        <div className="prod-body">
+          <div className="prod-grid">
+            {columns.map((col) => (
+              <article
+                key={col.title}
+                className={`prod-card${col.highlight ? " highlight" : ""}`}
+              >
+                <div className="prod-head">
+                  <div className="prod-num">{col.number}</div>
+                  <div>
+                    <h2>{col.title}</h2>
+                    <div className="prod-count">{col.count} MCP TOOLS</div>
+                  </div>
+                </div>
+                <p className="prod-blurb">{col.blurb}</p>
+                <ul>
+                  {col.features.map((f) => (
+                    <li key={f.title}>
+                      <span className="plus">+</span>
+                      <div>
+                        <div className="ftitle">{f.title}</div>
+                        <div className="fdesc">{f.description}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      </section>
+
+      {/* WORKS WITH STRIP */}
+      <section className="works-section">
+        <div className="gutter">
+          <div className="num">03</div>
+        </div>
+        <div className="works-body">
+          <h3>
+            Works in the AI tools you<br />
+            <span className="accent">already use.</span>
+          </h3>
+          <div className="works-pills">
+            {["Claude.ai", "Claude Desktop", "Cursor", "ChatGPT", "Gemini", "Copilot"].map((t) => (
+              <span key={t} className="works-pill">
+                {t}
+              </span>
+            ))}
+          </div>
+          <div className="works-cta">
+            <Link href="/onboarding" className="btn btn-primary">
+              Start Free →
+            </Link>
+            <Link href="/guides" className="btn">
+              Read setup guides
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <PageStyles />
     </div>
   );
 }
 
-export default function FeaturesPage() {
+/* ────────────────────────────────────────────────────────────
+   Shared page styles (reused on Pricing/FAQ/Guides via copy)
+   ──────────────────────────────────────────────────────────── */
+function PageStyles() {
   return (
-    <div className="max-w-6xl mx-auto px-6 py-20">
-      <div className="text-center mb-16">
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            color: "var(--accent-light)",
-            marginBottom: 12,
-          }}
-        >
-          Features
-        </div>
-        <h1 className="text-4xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>
-          Every SEO insight, inside your AI assistant
-        </h1>
-        <p
-          className="text-xl max-w-2xl mx-auto"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          OMG Bridge gives Claude, ChatGPT, and Cursor direct access to your Google Search Console, GA4, and Business Profile data via the Model Context Protocol.
-        </p>
-      </div>
+    <style>{`
+      .page-shell { min-height: 100%; }
 
-      <div className="grid md:grid-cols-3 gap-12 mb-20">
-        <FeatureSection
-          title="Google Search Console"
-          count={13}
-          blurb="13 MCP tools covering every aspect of GSC - from search analytics to site verification."
-          accent="var(--accent)"
-          features={gscFeatures}
-        />
-        <FeatureSection
-          title="Google Analytics 4"
-          count={10}
-          blurb="10 MCP tools bringing your GA4 traffic, conversion, and audience data into every AI conversation."
-          accent="#6366F1"
-          features={ga4Features}
-        />
-        <FeatureSection
-          title="Google Business Profile"
-          count={7}
-          blurb="7 MCP tools so your AI can read GBP locations, reviews, search keywords, and performance."
-          accent="#F59E0B"
-          features={gbpFeatures}
-        />
-      </div>
+      /* page hero */
+      .page-hero {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        border-bottom: 1px solid var(--rule);
+      }
+      .page-hero .gutter {
+        border-right: 1px solid var(--rule);
+        padding: 40px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .page-hero .gutter .num {
+        font-family: var(--display);
+        font-size: 38px;
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -0.04em;
+        line-height: 1;
+      }
+      .page-hero-body {
+        padding: 64px 56px 72px;
+        max-width: 1100px;
+      }
+      .page-hero h1 {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: clamp(40px, 5.4vw, 64px);
+        line-height: 1.0;
+        letter-spacing: -0.035em;
+        text-transform: uppercase;
+        margin-bottom: 24px;
+      }
+      .page-hero h1 .accent { color: var(--vermilion); }
+      .page-hero h1 .underline {
+        text-decoration: underline;
+        text-decoration-color: var(--teal);
+        text-decoration-thickness: 4px;
+        text-underline-offset: 6px;
+      }
+      .page-hero .lede {
+        font-size: 16px;
+        line-height: 1.65;
+        color: var(--ink-2);
+        max-width: 580px;
+      }
 
-      <div
-        className="rounded-2xl p-8 text-center"
-        style={{
-          background: "rgba(14,20,32,0.5)",
-          border: "1px solid var(--glass-border)",
-        }}
-      >
-        <h2 className="text-2xl font-bold mb-3" style={{ color: "var(--text-primary)" }}>
-          Works with your AI tools
-        </h2>
-        <p className="mb-6" style={{ color: "var(--text-secondary)" }}>
-          One MCP endpoint that connects to Claude.ai, Claude Desktop, Cursor, ChatGPT, and any MCP-compatible tool.
-        </p>
-        <div className="flex justify-center gap-3 flex-wrap">
-          {["Claude.ai", "Claude Desktop", "Cursor", "ChatGPT"].map((tool) => (
-            <span
-              key={tool}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "var(--radius-sm)",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid var(--glass-border)",
-                color: "var(--text-secondary)",
-                fontSize: 14,
-              }}
-            >
-              {tool}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
+      /* product section */
+      .prod-section {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        border-bottom: 1px solid var(--rule);
+      }
+      .prod-section .gutter {
+        border-right: 1px solid var(--rule);
+        padding: 40px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .prod-section .gutter .num {
+        font-family: var(--display);
+        font-size: 38px;
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -0.04em;
+        line-height: 1;
+      }
+      .prod-body { padding: 56px 56px 72px; }
+
+      .prod-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border: 1px solid var(--rule-strong);
+      }
+      .prod-card {
+        padding: 32px;
+        background: var(--surface-1);
+        border-right: 1px solid var(--rule-strong);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .prod-card:last-child { border-right: none; }
+      .prod-card.highlight {
+        background: var(--bg);
+        box-shadow: inset 4px 0 0 var(--teal);
+        padding-left: 36px;
+        border-right: 1px solid rgba(0, 181, 181, 0.5);
+      }
+      .prod-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .prod-num {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 38px;
+        line-height: 0.9;
+        color: var(--teal);
+        letter-spacing: -0.04em;
+      }
+      .prod-card.highlight .prod-num { color: var(--teal-bright); }
+      .prod-head h2 {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 18px;
+        text-transform: uppercase;
+        letter-spacing: -0.015em;
+        line-height: 1.1;
+        color: var(--ink);
+        margin-bottom: 4px;
+      }
+      .prod-count {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: var(--vermilion);
+        font-weight: 600;
+      }
+      .prod-blurb {
+        font-size: 13px;
+        color: var(--ink-2);
+        line-height: 1.65;
+      }
+      .prod-card ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .prod-card ul li {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .prod-card ul li:last-child { border-bottom: none; }
+      .prod-card ul li .plus {
+        color: var(--teal-bright);
+        font-weight: 700;
+        flex-shrink: 0;
+        font-size: 14px;
+      }
+      .prod-card ul li .ftitle {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 2px;
+      }
+      .prod-card ul li .fdesc {
+        font-size: 12px;
+        color: var(--ink-3);
+        line-height: 1.55;
+      }
+
+      /* works section */
+      .works-section {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        border-bottom: 1px solid var(--rule);
+        background: var(--surface-1);
+      }
+      .works-section .gutter {
+        border-right: 1px solid var(--rule);
+        padding: 40px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .works-section .gutter .num {
+        font-family: var(--display);
+        font-size: 38px;
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -0.04em;
+        line-height: 1;
+      }
+      .works-body { padding: 64px 56px 72px; max-width: 900px; }
+      .works-body h3 {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: clamp(28px, 3.6vw, 42px);
+        line-height: 1.05;
+        letter-spacing: -0.035em;
+        text-transform: uppercase;
+        margin-bottom: 32px;
+      }
+      .works-body h3 .accent { color: var(--vermilion); }
+      .works-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 32px;
+      }
+      .works-pill {
+        padding: 10px 18px;
+        background: var(--bg);
+        border: 1px solid var(--rule-strong);
+        color: var(--ink-2);
+        font-size: 12px;
+        letter-spacing: 0.05em;
+        font-family: var(--body);
+        font-weight: 500;
+        transition: border-color 0.18s, color 0.18s;
+      }
+      .works-pill:hover { border-color: var(--teal); color: var(--teal-bright); }
+      .works-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+
+      @media (max-width: 980px) {
+        .page-hero,
+        .prod-section,
+        .works-section { grid-template-columns: 1fr; }
+        .page-hero .gutter,
+        .prod-section .gutter,
+        .works-section .gutter { display: none; }
+        .page-hero-body { padding: 40px 20px 48px; }
+        .prod-body { padding: 32px 20px 56px; }
+        .works-body { padding: 40px 20px 56px; }
+        .prod-grid { grid-template-columns: 1fr; }
+        .prod-card {
+          border-right: none;
+          border-bottom: 1px solid var(--rule-strong);
+        }
+        .prod-card:last-child { border-bottom: none; }
+      }
+    `}</style>
   );
 }

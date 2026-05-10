@@ -14,5 +14,23 @@ export default async function BrandingPage() {
 
   const profile = await db.brandProfile.findUnique({ where: { userId: session.id } });
 
-  return <BrandingClient initial={profile} />;
+  return (
+    <>
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">
+            <span className="num">06</span>
+            <span>·</span>
+            <span>BRANDING · REPORT TEMPLATES</span>
+          </div>
+          <h1>Brand <span className="accent">your reports.</span></h1>
+          <p className="lede">
+            Configure once, applied everywhere. AI-generated reports use these defaults unless overridden per-prompt.
+          </p>
+        </div>
+      </div>
+
+      <BrandingClient initial={profile} />
+    </>
+  );
 }
