@@ -29,8 +29,8 @@ interface Props {
   onSaved?: (profile: BrandProfile) => void;
 }
 
-const DEFAULT_LOGO_LIGHT_FALLBACK = "/omg-bridge-logo-light.svg";
-const DEFAULT_LOGO_DARK_FALLBACK = "/omg-bridge-logo-dark.svg";
+const DEFAULT_LOGO_LIGHT_FALLBACK = "/omg-logo-light.webp";
+const DEFAULT_LOGO_DARK_FALLBACK = "/omg-logo-light.webp";
 const DEFAULT_ACCENT = "#00B5B5"; // OMG teal - the brand highlight
 
 const THEME_DEFAULTS: Record<"light" | "dark", { primary: string; secondary: string }> = {
@@ -424,7 +424,19 @@ export function BrandingClient({ initial, embedded, onSaved }: Props) {
               className="branding-preview-head"
               style={{ borderBottomColor: activeAccent }}
             >
-              <img src={previewLogo} alt="logo preview" style={{ height: 30, maxWidth: 200, objectFit: "contain" }} />
+              <img
+                src={previewLogo}
+                alt="logo preview"
+                style={{ height: 30, maxWidth: 200, objectFit: "contain" }}
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  if (img.src.endsWith(DEFAULT_LOGO_LIGHT_FALLBACK)) {
+                    img.style.visibility = "hidden";
+                  } else {
+                    img.src = DEFAULT_LOGO_LIGHT_FALLBACK;
+                  }
+                }}
+              />
               <div style={{ textAlign: "right", color: previewMuted, fontSize: 12 }}>
                 <div style={{ color: primary, fontWeight: 600, fontSize: 13 }}>Monthly SEO Performance</div>
                 <div>April 1 - April 30, 2026</div>
@@ -531,6 +543,13 @@ function LogoSlot({
   onPick: () => void; onDrop: (e: React.DragEvent) => void;
   uploading: boolean; highlighted: boolean;
 }) {
+  const [imgErrored, setImgErrored] = useState(false);
+  useEffect(() => {
+    setImgErrored(false);
+  }, [value]);
+
+  const showImage = Boolean(value) && !imgErrored;
+
   return (
     <div className={`logo-slot${highlighted ? " active" : ""}`}>
       <div className="logo-slot-head">
@@ -547,17 +566,26 @@ function LogoSlot({
         className="logo-slot-drop"
         style={{ background: bg, color: textColor, borderColor: textColor === "#F8FAFC" ? "rgba(248,250,252,0.25)" : "rgba(0,0,0,0.15)" }}
       >
-        {value ? (
-          <img src={value} alt={title} style={{ maxHeight: 64, maxWidth: "85%", objectFit: "contain" }} />
+        {showImage ? (
+          <img
+            src={value as string}
+            alt={title}
+            style={{ maxHeight: 64, maxWidth: "85%", objectFit: "contain" }}
+            onError={() => setImgErrored(true)}
+          />
         ) : (
-          <span style={{ opacity: 0.7, fontSize: 11 }}>
-            {uploading ? "UPLOADING..." : "CLICK OR DROP TO UPLOAD"}
+          <span style={{ opacity: 0.7, fontSize: 11, textAlign: "center", lineHeight: 1.5 }}>
+            {uploading
+              ? "UPLOADING..."
+              : imgErrored
+                ? "PREVIOUS LOGO UNAVAILABLE — CLICK TO UPLOAD"
+                : "CLICK OR DROP TO UPLOAD"}
           </span>
         )}
       </div>
       <div className="logo-slot-foot">
         <button type="button" onClick={onPick} className="logo-slot-btn">
-          {value ? "REPLACE" : "UPLOAD"}
+          {showImage ? "REPLACE" : "UPLOAD"}
         </button>
       </div>
     </div>

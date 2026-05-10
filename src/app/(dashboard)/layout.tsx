@@ -151,7 +151,28 @@ export default async function DashboardLayout({
       <header className="topbar">
         <a href="/dashboard" className="brand">
           <img src="/omg-logo-light.webp" alt="OMG / BRIDGE" className="logo-img" />
-          <img src="/omg-bridge-icon.svg" alt="OMG" className="logo-icon" />
+          <svg
+            className="logo-icon"
+            viewBox="0 0 28 28"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-label="OMG"
+            role="img"
+          >
+            <rect width="28" height="28" rx="2" />
+            <text
+              x="14"
+              y="14"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontFamily='"Funnel Display", "Inter Tight", system-ui, sans-serif'
+              fontSize="10.5"
+              fontWeight="700"
+              letterSpacing="-0.5"
+              fill="#FFFFFF"
+            >
+              OMG
+            </text>
+          </svg>
         </a>
         <div className="breadcrumb">
           <span className="dot" />
@@ -276,7 +297,9 @@ body::before {
   transition: padding .25s ease, justify-content .25s ease;
 }
 .topbar .brand img { height: 26px; width: auto; }
-.topbar .brand .logo-icon { display: none; height: 28px; width: auto; }
+.topbar .brand .logo-icon { display: none; height: 28px; width: 28px; }
+.topbar .brand .logo-icon rect { fill: var(--teal); }
+.topbar .brand:hover .logo-icon rect { fill: var(--teal-bright); }
 body.sidebar-collapsed .topbar .brand { padding: 14px 0; justify-content: center; gap: 0; }
 body.sidebar-collapsed .topbar .brand .logo-img { display: none; }
 body.sidebar-collapsed .topbar .brand .logo-icon { display: block; }
