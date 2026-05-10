@@ -42,6 +42,8 @@ export default async function OnboardingPage() {
 
   return (
     <OnboardingClient
+      sessionEmail={session.email}
+      sessionName={session.name ?? null}
       hasGoogleConnection={Boolean(credential)}
       hasAnalyticsScope={Boolean(credential?.scopes.includes("analytics.readonly"))}
       gscProperties={gscProperties}

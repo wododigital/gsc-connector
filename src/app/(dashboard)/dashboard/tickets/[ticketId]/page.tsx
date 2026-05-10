@@ -20,11 +20,11 @@ interface Ticket {
   messages: Message[];
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  open: "badge-success",
-  in_progress: "badge-info",
-  resolved: "badge-muted",
-  closed: "badge-muted",
+const STATUS_PILL: Record<string, string> = {
+  open: "success",
+  in_progress: "info",
+  resolved: "warn",
+  closed: "warn",
 };
 
 export default function TicketPage() {
@@ -42,7 +42,7 @@ export default function TicketPage() {
       .then((d) => { setTicket(d.ticket); setLoading(false); });
   };
 
-  useEffect(() => { fetchTicket(); }, [ticketId]);
+  useEffect(() => { fetchTicket(); /* eslint-disable-next-line */ }, [ticketId]);
 
   const sendReply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,94 +64,139 @@ export default function TicketPage() {
     setSending(false);
   };
 
-  if (loading) return (
-    <div className="text-sm p-4" style={{ color: "var(--text-muted)" }}>Loading...</div>
-  );
-  if (!ticket) return (
-    <div className="text-sm p-4" style={{ color: "var(--error)" }}>Ticket not found.</div>
-  );
+  if (loading) {
+    return <div style={{ padding: 36, color: "var(--ink-3)" }}>Loading ticket...</div>;
+  }
+  if (!ticket) {
+    return <div style={{ padding: 36, color: "var(--vermilion)" }}>Ticket not found.</div>;
+  }
 
   const canReply = ticket.status === "open" || ticket.status === "in_progress";
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-3">
-        <Link href="/dashboard/tickets" className="text-sm transition-colors" style={{ color: "var(--text-muted)" }}>
-          Tickets
-        </Link>
-        <span style={{ color: "var(--text-muted)" }}>/</span>
-        <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
-          {ticket.subject}
-        </span>
-      </div>
+    <>
+      <style>{TICKET_CSS}</style>
 
-      {/* Ticket header */}
-      <div className="glass-card p-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-              {ticket.subject}
-            </h1>
-            <p className="text-xs mt-1 capitalize" style={{ color: "var(--text-muted)" }}>
-              {ticket.category.replace("_", " ")} - opened {new Date(ticket.createdAt).toLocaleDateString()}
-            </p>
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">
+            <Link href="/dashboard/tickets" style={{ color: "var(--ink-3)", textDecoration: "none" }}>
+              SUPPORT
+            </Link>
+            <span>/</span>
+            <span>TICKET #{ticket.id.slice(0, 8).toUpperCase()}</span>
           </div>
-          <span className={`badge ${STATUS_BADGE[ticket.status] ?? "badge-muted"}`}>
-            {ticket.status.replace("_", " ")}
+          <h1>{ticket.subject}</h1>
+          <p className="lede">
+            {ticket.category.replace("_", " ").toUpperCase()} · OPENED{" "}
+            {new Date(ticket.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="actions">
+          <span className={`pill ${STATUS_PILL[ticket.status] ?? ""}`}>
+            {ticket.status.replace("_", " ").toUpperCase()}
           </span>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="space-y-3">
+      <div className="ticket-thread">
         {ticket.messages.map((m) => (
-          <div key={m.id} className={`flex ${m.senderType === "admin" ? "justify-start" : "justify-end"}`}>
-            <div
-              className="max-w-md rounded-lg px-4 py-3"
-              style={{
-                background: m.senderType === "admin"
-                  ? "rgba(14, 20, 32, 0.7)"
-                  : "rgba(0, 179, 179, 0.12)",
-                border: `1px solid ${m.senderType === "admin" ? "var(--glass-border)" : "var(--glass-border-accent)"}`,
-              }}
-            >
-              <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>
-                {m.senderType === "admin" ? "Support Team" : "You"} - {new Date(m.createdAt).toLocaleString()}
-              </p>
-              <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>
-                {m.message}
-              </p>
+          <div
+            key={m.id}
+            className={`ticket-msg${m.senderType === "admin" ? " admin" : " user"}`}
+          >
+            <div className="ticket-msg-head">
+              <span className="ticket-msg-who">
+                {m.senderType === "admin" ? "SUPPORT TEAM" : "YOU"}
+              </span>
+              <span className="ticket-msg-when">
+                {new Date(m.createdAt).toLocaleString()}
+              </span>
             </div>
+            <p>{m.message}</p>
           </div>
         ))}
       </div>
 
-      {/* Reply form or closed notice */}
       {canReply ? (
-        <form onSubmit={sendReply} className="glass-card p-4 space-y-3">
-          <label className="text-xs block" style={{ color: "var(--text-muted)" }}>Reply</label>
+        <form onSubmit={sendReply} className="ticket-reply">
+          <label className="input-label">REPLY</label>
           <textarea
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             placeholder="Type your reply..."
-            rows={3}
-            className="glass-textarea text-sm"
+            rows={4}
+            className="input-field"
           />
-          {error && <p className="text-xs" style={{ color: "var(--error)" }}>{error}</p>}
-          <button
-            type="submit"
-            disabled={!reply.trim() || sending}
-            className="btn-primary btn-primary-sm"
-          >
-            {sending ? "Sending..." : "Send Reply"}
-          </button>
+          {error && <p className="ticket-reply-error">{error}</p>}
+          <div className="ticket-reply-actions">
+            <button type="submit" disabled={!reply.trim() || sending} className="btn btn-primary">
+              {sending ? "SENDING..." : "SEND REPLY"}
+            </button>
+          </div>
         </form>
       ) : (
-        <div className="glass-card p-4 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+        <div className="ticket-closed">
           This ticket is {ticket.status}. Open a new ticket if you need further assistance.
         </div>
       )}
-    </div>
+    </>
   );
 }
+
+const TICKET_CSS = `
+.ticket-thread {
+  display: flex; flex-direction: column; gap: 12px;
+  margin-bottom: 24px;
+}
+.ticket-msg {
+  background: var(--surface-1);
+  border: 1px solid var(--rule-strong);
+  padding: 16px 18px;
+  max-width: 75%;
+}
+.ticket-msg.admin {
+  align-self: flex-start;
+}
+.ticket-msg.user {
+  align-self: flex-end;
+  border-color: var(--card-rule);
+}
+.ticket-msg-head {
+  display: flex; justify-content: space-between;
+  font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 8px;
+}
+.ticket-msg-who { color: var(--teal); font-weight: 500; }
+.ticket-msg p {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+.ticket-reply {
+  background: var(--surface-1);
+  border: 1px solid var(--rule-strong);
+  padding: 18px;
+}
+.ticket-reply-error {
+  margin-top: 10px;
+  color: var(--vermilion);
+  font-size: 12px;
+}
+.ticket-reply-actions {
+  margin-top: 14px;
+  display: flex; justify-content: flex-end;
+}
+.ticket-closed {
+  padding: 24px;
+  text-align: center;
+  background: var(--surface-1);
+  border: 1px dashed var(--rule-strong);
+  color: var(--ink-3);
+  font-size: 13px;
+}
+`;

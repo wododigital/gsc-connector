@@ -19,6 +19,7 @@ interface ApiKeysClientProps {
 export function ApiKeysClient({ initialKeys }: ApiKeysClientProps) {
   const [keys, setKeys] = useState<ApiKeyDisplay[]>(initialKeys);
   const [newKeyName, setNewKeyName] = useState("");
+  const [expiresIn, setExpiresIn] = useState<string>("never");
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
@@ -52,10 +53,9 @@ export function ApiKeysClient({ initialKeys }: ApiKeysClientProps) {
         createdAt: string;
       };
 
-      // Show the full key once
+      // Show the full key once.
       setNewlyCreatedKey(data.key);
 
-      // Add to keys list
       setKeys((prev) => [
         {
           id: data.id,
@@ -85,9 +85,7 @@ export function ApiKeysClient({ initialKeys }: ApiKeysClientProps) {
     setRevokingId(keyId);
 
     try {
-      const response = await fetch(`/api/keys/${keyId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(`/api/keys/${keyId}`, { method: "DELETE" });
 
       if (!response.ok) {
         const data = (await response.json()) as { error?: string };
@@ -104,81 +102,102 @@ export function ApiKeysClient({ initialKeys }: ApiKeysClientProps) {
 
   const formatDate = (dateStr: string) => {
     try {
-      return new Date(dateStr).toLocaleDateString("en-US", {
-        year: "numeric",
+      return new Date(dateStr).toLocaleString("en-US", {
+        day: "2-digit",
         month: "short",
-        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
       });
     } catch {
       return dateStr;
     }
   };
 
+  const formatLastUsed = (dateStr: string | null) => {
+    if (!dateStr) return "Never used";
+    const ms = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.round(ms / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return `${hrs} hr ago`;
+    const days = Math.round(hrs / 24);
+    return `${days}d ago`;
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Newly created key - shown once */}
-      {newlyCreatedKey && (
-        <div className="glass-card p-4" style={{ borderColor: "var(--glass-border-accent)" }}>
-          <div className="flex items-start justify-between gap-4 mb-3">
-            <div>
-              <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--success)" }}>
-                API key created successfully
-              </h3>
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                Copy this key now - it will not be shown again.
-              </p>
+    <>
+      <style>{KEYS_CSS}</style>
+      <div>
+        {/* Newly-created key banner */}
+        {newlyCreatedKey && (
+          <div className="new-key-banner">
+            <div className="info">
+              <div className="banner-eyebrow">▸ NEW KEY GENERATED · COPY IT NOW</div>
+              <div className="key">{newlyCreatedKey}</div>
+              <div className="warning">⚠ This is the only time you&apos;ll see this key. Store it securely.</div>
             </div>
+            <div className="banner-actions">
+              <CopyButton text={newlyCreatedKey} label="Copy" />
+              <button
+                onClick={() => setNewlyCreatedKey(null)}
+                className="btn btn-primary"
+                type="button"
+              >
+                DISMISS ✓
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Generate Key CTA + inline create form */}
+        {!showCreateForm ? (
+          <div className="generate-bar">
             <button
-              onClick={() => setNewlyCreatedKey(null)}
-              className="btn-ghost btn-ghost-sm shrink-0"
-              aria-label="Dismiss"
+              type="button"
+              onClick={() => setShowCreateForm(true)}
+              className="btn btn-primary"
             >
-              Dismiss
+              + GENERATE KEY
             </button>
           </div>
-          <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: "rgba(6,10,16,0.6)", border: "1px solid var(--glass-border)" }}>
-            <code className="flex-1 text-sm font-mono break-all" style={{ color: "var(--accent-light)" }}>
-              {newlyCreatedKey}
-            </code>
-            <CopyButton text={newlyCreatedKey} label="Copy key" />
-          </div>
-        </div>
-      )}
-
-      {/* Create key form */}
-      {showCreateForm ? (
-        <div className="glass-card p-4">
-          <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>Create new API key</h3>
-          <form onSubmit={handleCreate} className="space-y-3">
-            <div>
-              <label
-                htmlFor="key-name"
-                className="block text-xs mb-1"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Key name (e.g., "Claude Desktop", "Cursor - Work")
-              </label>
-              <input
-                id="key-name"
-                type="text"
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-                placeholder="My API key"
-                maxLength={64}
-                className="glass-input text-sm"
-                autoFocus
-              />
-            </div>
-            {createError && (
-              <p className="text-sm" style={{ color: "var(--error)" }}>{createError}</p>
-            )}
-            <div className="flex gap-2">
+        ) : (
+          <form onSubmit={handleCreate} className="key-create active">
+            <h3>Generate a new API key</h3>
+            <div className="fields">
+              <div>
+                <label className="input-label">KEY NAME</label>
+                <input
+                  type="text"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  placeholder="e.g. cursor-laptop, claude-desktop"
+                  maxLength={64}
+                  className="input-field"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="input-label">EXPIRES</label>
+                <select
+                  value={expiresIn}
+                  onChange={(e) => setExpiresIn(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="never">Never</option>
+                  <option value="30">30 days</option>
+                  <option value="90">90 days</option>
+                  <option value="365">1 year</option>
+                </select>
+              </div>
               <button
                 type="submit"
                 disabled={isCreating || !newKeyName.trim()}
-                className="btn-primary btn-primary-sm"
+                className="btn btn-primary"
               >
-                {isCreating ? "Creating..." : "Create key"}
+                {isCreating ? "GENERATING..." : "GENERATE"}
               </button>
               <button
                 type="button"
@@ -187,69 +206,139 @@ export function ApiKeysClient({ initialKeys }: ApiKeysClientProps) {
                   setNewKeyName("");
                   setCreateError(null);
                 }}
-                className="btn-ghost btn-ghost-sm"
+                className="btn"
               >
-                Cancel
+                CANCEL
               </button>
             </div>
+            {createError && <p className="key-create-error">{createError}</p>}
           </form>
-        </div>
-      ) : (
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="btn-primary btn-primary-sm"
-        >
-          + Create new API key
-        </button>
-      )}
+        )}
 
-      {/* Keys list */}
-      {keys.length === 0 ? (
-        <div className="text-center py-12 text-sm" style={{ color: "var(--text-muted)" }}>
-          No API keys yet. Create one to use OMG Bridge with Claude Desktop or Cursor.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {keys.map((key) => (
-            <div
-              key={key.id}
-              className="glass-card flex items-center gap-4 p-4"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                    {key.name}
-                  </span>
-                  {key.isActive ? (
-                    <span className="badge badge-success">Active</span>
-                  ) : (
-                    <span className="badge badge-muted">Revoked</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-4 text-xs" style={{ color: "var(--text-muted)" }}>
-                  <span className="font-mono">{key.keyPrefix}...</span>
-                  <span>Created {formatDate(key.createdAt)}</span>
-                  {key.lastUsedAt && (
-                    <span>Last used {formatDate(key.lastUsedAt)}</span>
-                  )}
-                  {!key.lastUsedAt && (
-                    <span>Never used</span>
-                  )}
-                </div>
-              </div>
-              {key.isActive && (
-                <button
-                  onClick={() => handleRevoke(key.id)}
-                  disabled={revokingId === key.id}
-                  className="btn-ghost btn-ghost-sm shrink-0"
-                >
-                  {revokingId === key.id ? "Revoking..." : "Revoke"}
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+        {/* Keys table */}
+        {keys.length === 0 ? (
+          <div className="key-empty">
+            No API keys yet. Generate one to use OMG Bridge with Claude Desktop or Cursor.
+          </div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>NAME</th>
+                <th>KEY PREVIEW</th>
+                <th>CREATED</th>
+                <th>LAST USED</th>
+                <th>STATUS</th>
+                <th className="right">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {keys.map((key) => (
+                <tr key={key.id}>
+                  <td><strong style={{ color: "var(--ink)" }}>{key.name}</strong></td>
+                  <td className="mono">{key.keyPrefix}...</td>
+                  <td className="dim">{formatDate(key.createdAt)}</td>
+                  <td className="dim">{formatLastUsed(key.lastUsedAt)}</td>
+                  <td>
+                    {key.isActive ? (
+                      <span className="pill success">ACTIVE</span>
+                    ) : (
+                      <span className="pill error">REVOKED</span>
+                    )}
+                  </td>
+                  <td className="right">
+                    {key.isActive && (
+                      <button
+                        type="button"
+                        onClick={() => handleRevoke(key.id)}
+                        disabled={revokingId === key.id}
+                        className="btn btn-danger"
+                      >
+                        {revokingId === key.id ? "REVOKING..." : "REVOKE"}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
   );
 }
+
+const KEYS_CSS = `
+.generate-bar {
+  display: flex; justify-content: flex-end;
+  margin-bottom: 24px;
+}
+.new-key-banner {
+  padding: 16px 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--card-rule);
+  margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  flex-wrap: wrap;
+}
+.new-key-banner .info { font-size: 12px; color: var(--ink-2); flex: 1; min-width: 220px; }
+.new-key-banner .banner-eyebrow {
+  font-size: 11px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--teal);
+}
+.new-key-banner .key {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--teal-bright);
+  margin-top: 6px;
+  word-break: break-all;
+}
+.new-key-banner .warning {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-top: 6px;
+}
+.new-key-banner .banner-actions { display: flex; gap: 10px; align-items: center; }
+
+.key-create {
+  background: var(--surface-1);
+  border: 1px solid var(--rule-strong);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.key-create h3 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+  color: var(--ink);
+}
+.key-create .fields {
+  display: grid;
+  grid-template-columns: 1fr 200px auto auto;
+  gap: 12px;
+  align-items: end;
+}
+.key-create-error {
+  margin-top: 10px;
+  color: var(--vermilion);
+  font-size: 12px;
+}
+
+.key-empty {
+  text-align: center;
+  padding: 56px 24px;
+  background: var(--surface-1);
+  border: 1px dashed var(--rule-strong);
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+@media (max-width: 980px) {
+  .key-create .fields { grid-template-columns: 1fr; }
+}
+`;

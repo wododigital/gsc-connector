@@ -23,13 +23,13 @@ interface ApiResponse {
 }
 
 const CATEGORIES: { id: string; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "seo-report", label: "SEO Reports" },
-  { id: "traffic-analysis", label: "Traffic" },
+  { id: "all", label: "ALL" },
+  { id: "seo-report", label: "SEO REPORTS" },
+  { id: "traffic-analysis", label: "TRAFFIC" },
   { id: "aeo", label: "AEO" },
-  { id: "technical-seo", label: "Technical" },
+  { id: "technical-seo", label: "TECHNICAL" },
   { id: "gbp-report", label: "GBP" },
-  { id: "custom", label: "Custom" },
+  { id: "custom", label: "CUSTOM" },
 ];
 
 const CONNECTIONS: { id: string; label: string }[] = [
@@ -37,6 +37,14 @@ const CONNECTIONS: { id: string; label: string }[] = [
   { id: "ga4", label: "GA4" },
   { id: "gbp", label: "GBP" },
 ];
+
+/** Map category to a tag color class (used on the prompt card eyebrow). */
+function tagToneFor(category: string): string {
+  if (category.includes("traffic") || category === "ga4") return "amber";
+  if (category.includes("aeo") || category === "gbp-report") return "magenta";
+  if (category === "custom") return "green";
+  return ""; // default vermilion
+}
 
 export function PromptLibraryClient() {
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -86,8 +94,12 @@ export function PromptLibraryClient() {
     });
   }, [all, search, activeCategory, activeConnections]);
 
-  const systemFiltered = filtered.filter((p) => !p.isUserOwned);
-  const userFiltered = filtered.filter((p) => p.isUserOwned);
+  // Counts per category, computed from the unfiltered list.
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: all.length };
+    for (const p of all) counts[p.category] = (counts[p.category] || 0) + 1;
+    return counts;
+  }, [all]);
 
   const copyPrompt = async (p: Prompt) => {
     try {
@@ -112,153 +124,128 @@ export function PromptLibraryClient() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Prompt Library</h1>
-          <p className="page-subtitle">Discover and use prompt templates for reports.</p>
-        </div>
-        <button className="btn-primary btn-primary-sm" onClick={() => setEditing("new")}>+ New Prompt</button>
-      </div>
-
-      {data && !data.hasBrandProfile && (
-        <div className="glass-card p-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-              Reports will use OMG Bridge default branding
-            </p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-              Set up your brand profile to white-label generated reports with your logo and colors.
-            </p>
+    <>
+      <style>{PROMPT_CSS}</style>
+      <div>
+        {/* Brand setup notices */}
+        {data && !data.hasBrandProfile && (
+          <div className="prompt-notice">
+            <div>
+              <p className="prompt-notice-title">Reports will use OMG Bridge default branding</p>
+              <p className="prompt-notice-desc">
+                Set up your brand profile to white-label generated reports with your logo and colors.
+              </p>
+            </div>
+            <a href="/dashboard/branding" className="btn">SET UP BRANDING</a>
           </div>
-          <a href="/dashboard/branding" className="btn-ghost btn-ghost-sm">Set up branding</a>
-        </div>
-      )}
-
-      {data && !data.hasReportRules && (
-        <div className="glass-card p-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-              Add Report Rules to enforce your style in every report
-            </p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-              Optional do&apos;s and don&apos;ts (e.g. &quot;no emojis&quot;, &quot;sentence case headings&quot;) get injected into every prompt so the AI follows your conventions.
-            </p>
+        )}
+        {data && !data.hasReportRules && (
+          <div className="prompt-notice">
+            <div>
+              <p className="prompt-notice-title">Add Report Rules to enforce your style</p>
+              <p className="prompt-notice-desc">
+                Optional do&apos;s and don&apos;ts get injected into every prompt so the AI follows your conventions.
+              </p>
+            </div>
+            <a href="/dashboard/branding#report-rules" className="btn">UPDATE RULES</a>
           </div>
-          <a href="/dashboard/branding#report-rules" className="btn-ghost btn-ghost-sm">Update Report Rules</a>
-        </div>
-      )}
+        )}
 
-      {/* Search + filter row */}
-      <div className="glass-card p-4 space-y-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search prompts..."
-          className="glass-input text-sm w-full"
-        />
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setActiveCategory(c.id)}
-              className={`badge ${activeCategory === c.id ? "badge-accent" : "badge-muted"} cursor-pointer`}
-              style={{ padding: "4px 10px", fontSize: "12px" }}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 items-center pt-2" style={{ borderTop: "1px solid var(--glass-border)" }}>
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Requires:</span>
+        {/* Filter bar */}
+        <div className="filter-bar">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search prompts..."
+            className="search"
+          />
+          {CATEGORIES.map((c) => {
+            const count = categoryCounts[c.id] ?? 0;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setActiveCategory(c.id)}
+                className={`filter${activeCategory === c.id ? " active" : ""}`}
+              >
+                {c.label} · {count}
+              </button>
+            );
+          })}
+          <span style={{ flex: 1 }} />
           {CONNECTIONS.map((c) => (
             <button
               key={c.id}
+              type="button"
               onClick={() => toggleConnection(c.id)}
-              className={`badge ${activeConnections.includes(c.id) ? "badge-success" : "badge-muted"} cursor-pointer`}
-              style={{ padding: "4px 10px", fontSize: "12px" }}
+              className={`filter${activeConnections.includes(c.id) ? " active" : ""}`}
+              title={`Filter by ${c.label}`}
             >
               {c.label}
             </button>
           ))}
           {activeConnections.length > 0 && (
             <button
+              type="button"
               onClick={() => setActiveConnections([])}
-              className="text-xs"
-              style={{ color: "var(--text-muted)", textDecoration: "underline" }}
+              className="filter"
             >
-              clear
+              CLEAR
             </button>
           )}
         </div>
+
+        {error && (
+          <div className="prompt-error">{error}</div>
+        )}
+
+        {/* New prompt CTA */}
+        <div className="new-prompt-bar">
+          <span className="new-prompt-count">
+            {filtered.length} OF {all.length} PROMPTS
+          </span>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setEditing("new")}
+          >
+            + NEW PROMPT
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="prompt-loading">Loading prompts...</div>
+        ) : filtered.length === 0 ? (
+          <div className="prompt-empty">No prompts match the current filters.</div>
+        ) : (
+          <div className="prompt-grid">
+            {filtered.map((p) => (
+              <PromptCard
+                key={p.id}
+                prompt={p}
+                copied={copiedId === p.id}
+                onCopy={() => copyPrompt(p)}
+                onPreview={() => setPreviewing(p)}
+                onEdit={p.isUserOwned ? () => setEditing(p) : undefined}
+                onDelete={p.isUserOwned ? () => deletePrompt(p) : undefined}
+              />
+            ))}
+          </div>
+        )}
+
+        {editing !== null && (
+          <PromptModal
+            prompt={editing === "new" ? null : editing}
+            onClose={() => setEditing(null)}
+            onSaved={() => { setEditing(null); refresh(); }}
+          />
+        )}
+
+        {previewing && (
+          <PreviewModal prompt={previewing} onClose={() => setPreviewing(null)} />
+        )}
       </div>
-
-      {error && <div className="glass-card p-3 text-sm" style={{ color: "var(--error)" }}>{error}</div>}
-
-      {loading ? (
-        <div className="text-center py-12" style={{ color: "var(--text-muted)" }}>Loading prompts...</div>
-      ) : (
-        <>
-          <section>
-            <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>
-              Templates ({systemFiltered.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {systemFiltered.map((p) => (
-                <PromptCard
-                  key={p.id}
-                  prompt={p}
-                  copied={copiedId === p.id}
-                  onCopy={() => copyPrompt(p)}
-                  onPreview={() => setPreviewing(p)}
-                />
-              ))}
-              {systemFiltered.length === 0 && (
-                <div className="col-span-full text-sm py-6 text-center" style={{ color: "var(--text-muted)" }}>
-                  No templates match the current filters.
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-sm font-semibold mb-3 mt-8" style={{ color: "var(--text-primary)" }}>
-              Your Custom Prompts ({userFiltered.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {userFiltered.map((p) => (
-                <PromptCard
-                  key={p.id}
-                  prompt={p}
-                  copied={copiedId === p.id}
-                  onCopy={() => copyPrompt(p)}
-                  onPreview={() => setPreviewing(p)}
-                  onEdit={() => setEditing(p)}
-                  onDelete={() => deletePrompt(p)}
-                />
-              ))}
-              {userFiltered.length === 0 && (
-                <div className="col-span-full text-sm py-6 text-center" style={{ color: "var(--text-muted)" }}>
-                  You haven&apos;t created any custom prompts yet.
-                </div>
-              )}
-            </div>
-          </section>
-        </>
-      )}
-
-      {editing !== null && (
-        <PromptModal
-          prompt={editing === "new" ? null : editing}
-          onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); refresh(); }}
-        />
-      )}
-
-      {previewing && (
-        <PreviewModal prompt={previewing} onClose={() => setPreviewing(null)} />
-      )}
-    </div>
+    </>
   );
 }
 
@@ -277,74 +264,58 @@ function PromptCard({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  const tone = tagToneFor(p.category);
   return (
-    <div className="glass-card p-4 flex flex-col gap-3 h-full">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1">
-          <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{p.title}</h3>
-          <span className="badge badge-muted mt-1 inline-block" style={{ fontSize: "10px" }}>
-            {p.category}
-          </span>
+    <div className="prompt-card">
+      <div className="head">
+        <div>
+          <div className={`tag ${tone}`}>▸ {p.category.replace(/-/g, " ").toUpperCase()}</div>
+          <div className="title">{p.title}</div>
         </div>
+        <span className="menu" title="Options">⋯</span>
       </div>
-      <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-        {p.description}
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {p.requiredConnections.map((c) => (
-          <span key={c} className={`badge ${connectionBadgeClass(c)}`} style={{ fontSize: "10px" }}>
-            {c.toUpperCase()}
-          </span>
-        ))}
-      </div>
-      <div className="flex gap-2 mt-auto pt-2" style={{ borderTop: "1px solid var(--glass-border)" }}>
-        <button onClick={onCopy} className="btn-primary btn-primary-sm flex-1">
-          {copied ? "Copied!" : "Copy Prompt"}
-        </button>
-        <button onClick={onPreview} className="btn-ghost btn-ghost-sm">Preview</button>
-        {onEdit && <button onClick={onEdit} className="btn-ghost btn-ghost-sm">Edit</button>}
-        {onDelete && (
-          <button
-            onClick={onDelete}
-            className="btn-ghost btn-ghost-sm"
-            style={{ color: "var(--error)" }}
-          >
-            Delete
-          </button>
+      <div className="body">{p.description}</div>
+      <div className="meta">
+        {p.requiredConnections.length > 0 && (
+          <span>NEEDS {p.requiredConnections.map((c) => c.toUpperCase()).join(" + ")}</span>
         )}
+        {p.questions.length > 0 && (
+          <>
+            <span>·</span>
+            <span>{p.questions.length} QUESTION{p.questions.length === 1 ? "" : "S"}</span>
+          </>
+        )}
+        {p.isUserOwned && (
+          <>
+            <span>·</span>
+            <span>CUSTOM</span>
+          </>
+        )}
+      </div>
+      <div className="actions">
+        <button type="button" className="primary" onClick={onCopy}>
+          {copied ? "✓ COPIED" : "▸ COPY"}
+        </button>
+        <button type="button" onClick={onPreview}>PREVIEW</button>
+        {onEdit && <button type="button" onClick={onEdit}>EDIT</button>}
+        {onDelete && <button type="button" onClick={onDelete}>DELETE</button>}
       </div>
     </div>
   );
 }
 
-function connectionBadgeClass(c: string): string {
-  if (c === "gsc") return "badge-accent";
-  if (c === "ga4") return "badge-info";
-  if (c === "gbp") return "badge-warning";
-  return "badge-muted";
-}
-
 function PreviewModal({ prompt: p, onClose }: { prompt: Prompt; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.6)" }}
+      className="prompt-modal-backdrop"
       onClick={onClose}
     >
-      <div
-        className="glass-panel max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--glass-border)" }}>
-          <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{p.title}</h2>
-          <button onClick={onClose} className="text-sm" style={{ color: "var(--text-muted)" }}>Close</button>
+      <div className="prompt-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="prompt-modal-head">
+          <h2>{p.title}</h2>
+          <button type="button" onClick={onClose} className="btn">CLOSE</button>
         </div>
-        <pre
-          className="text-xs font-mono p-4 overflow-auto whitespace-pre-wrap"
-          style={{ color: "var(--text-secondary)", flex: 1 }}
-        >
-          {p.body}
-        </pre>
+        <pre className="prompt-modal-body">{p.body}</pre>
       </div>
     </div>
   );
@@ -420,91 +391,385 @@ function PromptModal({
     }));
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.6)" }}
-      onClick={onClose}
-    >
+    <div className="prompt-modal-backdrop" onClick={onClose}>
       <form
         onSubmit={save}
-        className="glass-panel max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="prompt-modal prompt-modal-edit"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--glass-border)" }}>
-          <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-            {prompt ? "Edit Prompt" : "New Prompt"}
-          </h2>
-          <button type="button" onClick={onClose} className="text-sm" style={{ color: "var(--text-muted)" }}>Close</button>
+        <div className="prompt-modal-head">
+          <h2>{prompt ? "EDIT PROMPT" : "NEW PROMPT"}</h2>
+          <button type="button" onClick={onClose} className="btn">CLOSE</button>
         </div>
-        <div className="p-4 space-y-4 overflow-y-auto" style={{ flex: 1 }}>
+        <div className="prompt-modal-fields">
           <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Title</label>
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="glass-input text-sm w-full" required maxLength={200} />
+            <label className="input-label">TITLE</label>
+            <input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="input-field"
+              required
+              maxLength={200}
+            />
           </div>
           <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Description</label>
-            <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="glass-input text-sm w-full" required maxLength={500} />
+            <label className="input-label">DESCRIPTION</label>
+            <input
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="input-field"
+              required
+              maxLength={500}
+            />
           </div>
-          <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Category</label>
-            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="glass-select text-sm w-full">
-              {CATEGORIES.filter((c) => c.id !== "all").map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Required Connections</label>
-            <div className="flex flex-wrap gap-2">
-              {CONNECTIONS.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => toggleConnection(c.id)}
-                  className={`badge ${form.requiredConnections.includes(c.id) ? "badge-success" : "badge-muted"} cursor-pointer`}
-                  style={{ padding: "4px 10px", fontSize: "12px" }}
-                >
-                  {c.label}
-                </button>
-              ))}
+          <div className="prompt-modal-row">
+            <div>
+              <label className="input-label">CATEGORY</label>
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                className="input-field"
+              >
+                {CATEGORIES.filter((c) => c.id !== "all").map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="input-label">REQUIRED CONNECTIONS</label>
+              <div className="prompt-modal-pills">
+                {CONNECTIONS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => toggleConnection(c.id)}
+                    className={`filter${form.requiredConnections.includes(c.id) ? " active" : ""}`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs" style={{ color: "var(--text-muted)" }}>Clarifying Questions</label>
-              <button type="button" onClick={addQuestion} className="text-xs" style={{ color: "var(--accent-light)" }}>+ Add</button>
+            <div className="prompt-modal-row-head">
+              <label className="input-label">CLARIFYING QUESTIONS</label>
+              <button type="button" onClick={addQuestion} className="prompt-modal-link">+ ADD</button>
             </div>
-            <div className="space-y-2">
+            <div className="prompt-modal-questions">
               {form.questions.map((q, i) => (
-                <div key={i} className="flex gap-2">
-                  <input value={q} onChange={(e) => updateQuestion(i, e.target.value)} className="glass-input text-sm flex-1" placeholder={`Question ${i + 1}`} />
+                <div key={i}>
+                  <input
+                    value={q}
+                    onChange={(e) => updateQuestion(i, e.target.value)}
+                    className="input-field"
+                    placeholder={`Question ${i + 1}`}
+                  />
                   {form.questions.length > 1 && (
-                    <button type="button" onClick={() => removeQuestion(i)} className="btn-ghost btn-ghost-sm" style={{ color: "var(--error)" }}>×</button>
+                    <button
+                      type="button"
+                      onClick={() => removeQuestion(i)}
+                      className="btn btn-danger"
+                    >
+                      ×
+                    </button>
                   )}
                 </div>
               ))}
             </div>
           </div>
           <div>
-            <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Prompt Body (use {`{{brand.primaryColor}}`} etc. for brand placeholders)</label>
+            <label className="input-label">PROMPT BODY (use {`{{brand.primaryColor}}`} for brand placeholders)</label>
             <textarea
               value={form.body}
               onChange={(e) => setForm({ ...form, body: e.target.value })}
-              className="glass-input text-xs font-mono w-full"
+              className="input-field prompt-modal-body-input"
               rows={12}
               required
               maxLength={20000}
             />
           </div>
-          {error && <p className="text-sm" style={{ color: "var(--error)" }}>{error}</p>}
+          {error && <p className="prompt-error">{error}</p>}
         </div>
-        <div className="p-4 flex justify-end gap-2" style={{ borderTop: "1px solid var(--glass-border)" }}>
-          <button type="button" onClick={onClose} className="btn-ghost btn-ghost-sm">Cancel</button>
-          <button type="submit" disabled={saving} className="btn-primary btn-primary-sm">
-            {saving ? "Saving..." : prompt ? "Save Changes" : "Create Prompt"}
+        <div className="prompt-modal-foot">
+          <button type="button" onClick={onClose} className="btn">CANCEL</button>
+          <button type="submit" disabled={saving} className="btn btn-primary">
+            {saving ? "SAVING..." : prompt ? "SAVE CHANGES" : "CREATE PROMPT"}
           </button>
         </div>
       </form>
     </div>
   );
 }
+
+const PROMPT_CSS = `
+.prompt-notice {
+  background: var(--surface-1);
+  border: 1px solid var(--rule-strong);
+  border-left: 3px solid var(--amber);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+}
+.prompt-notice-title {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.prompt-notice-desc {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+.filter-bar {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--rule-strong);
+  margin-bottom: 18px;
+  font-size: 12px;
+}
+.filter-bar .filter {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-family: var(--body);
+  transition: all .15s;
+}
+.filter-bar .filter:hover { border-color: var(--teal); color: var(--teal); }
+.filter-bar .filter.active { background: var(--teal); color: var(--bg); border-color: var(--teal); font-weight: 500; }
+.filter-bar .search {
+  flex: 1; max-width: 280px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 7px 12px;
+  font-family: var(--body);
+  font-size: 12px;
+  outline: none;
+}
+.filter-bar .search:focus { border-color: var(--teal); }
+
+.new-prompt-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 18px;
+}
+.new-prompt-count {
+  font-size: 11px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ink-3);
+  font-family: var(--mono);
+}
+.prompt-loading, .prompt-empty {
+  padding: 56px 24px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 13px;
+  background: var(--surface-1);
+  border: 1px dashed var(--rule-strong);
+}
+.prompt-error {
+  padding: 12px 16px;
+  background: var(--surface-1);
+  border: 1px solid rgba(255,107,74,0.4);
+  color: var(--vermilion);
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+
+.prompt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.prompt-card {
+  padding: 22px;
+  background: var(--surface-1);
+  border: 1px solid var(--rule-strong);
+  display: flex; flex-direction: column; gap: 12px;
+  transition: border-color .15s;
+}
+.prompt-card:hover { border-color: var(--teal); }
+.prompt-card .head {
+  display: flex; justify-content: space-between; align-items: start; gap: 12px;
+}
+.prompt-card .tag {
+  font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--vermilion);
+  margin-bottom: 6px;
+}
+.prompt-card .tag.green { color: var(--green); }
+.prompt-card .tag.amber { color: var(--amber); }
+.prompt-card .tag.magenta { color: var(--magenta); }
+.prompt-card .title {
+  font-family: var(--display);
+  font-weight: 700; font-size: 17px;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.prompt-card .menu {
+  color: var(--ink-3); font-size: 18px;
+  cursor: pointer; padding: 0 6px;
+  transition: color .15s;
+}
+.prompt-card .menu:hover { color: var(--ink); }
+.prompt-card .body {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-2);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  padding: 11px 12px;
+  max-height: 90px;
+  overflow: hidden;
+  position: relative;
+  line-height: 1.55;
+}
+.prompt-card .body::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 24px;
+  background: linear-gradient(transparent, var(--bg));
+  pointer-events: none;
+}
+.prompt-card .meta {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.prompt-card .actions {
+  display: flex; gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  flex-wrap: wrap;
+}
+.prompt-card .actions button {
+  padding: 7px 12px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-family: var(--body);
+  font-size: 10.5px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s;
+}
+.prompt-card .actions button:hover { border-color: var(--teal); color: var(--teal); }
+.prompt-card .actions button.primary {
+  background: var(--teal); color: var(--bg); border-color: var(--teal); font-weight: 600;
+}
+.prompt-card .actions button.primary:hover {
+  background: var(--vermilion); border-color: var(--vermilion); color: var(--ink);
+}
+
+/* Modal */
+.prompt-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.prompt-modal {
+  background: var(--surface-1);
+  border: 1px solid var(--rule-strong);
+  max-width: 760px;
+  width: 100%;
+  max-height: 86vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.prompt-modal-edit { max-width: 720px; }
+.prompt-modal-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface-2);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.prompt-modal-head h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.prompt-modal-body {
+  padding: 18px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  overflow: auto;
+  flex: 1;
+}
+.prompt-modal-fields {
+  padding: 18px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+  flex: 1;
+}
+.prompt-modal-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+}
+.prompt-modal-row-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px;
+}
+.prompt-modal-link {
+  background: none; border: none;
+  color: var(--teal);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.prompt-modal-link:hover { color: var(--vermilion); }
+.prompt-modal-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.prompt-modal-pills .filter {
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-family: var(--body);
+}
+.prompt-modal-pills .filter.active { background: var(--teal); color: var(--bg); border-color: var(--teal); }
+.prompt-modal-questions {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.prompt-modal-questions > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+.prompt-modal-body-input {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.prompt-modal-foot {
+  padding: 14px 18px;
+  border-top: 1px solid var(--rule);
+  background: var(--surface-2);
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+
+@media (max-width: 980px) {
+  .prompt-grid { grid-template-columns: 1fr; }
+  .prompt-modal-row { grid-template-columns: 1fr; }
+}
+`;

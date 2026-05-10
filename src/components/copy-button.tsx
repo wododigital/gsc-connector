@@ -16,7 +16,7 @@ export function CopyButton({ text, label = "Copy" }: CopyButtonProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for environments where clipboard API is unavailable
+      // Fallback for environments where the clipboard API is unavailable.
       const textArea = document.createElement("textarea");
       textArea.value = text;
       textArea.style.position = "fixed";
@@ -33,11 +33,12 @@ export function CopyButton({ text, label = "Copy" }: CopyButtonProps) {
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
-      className="btn-ghost btn-ghost-sm shrink-0"
+      className={`copy-btn${copied ? " copied" : ""}`}
       aria-label={copied ? "Copied to clipboard" : `Copy ${label}`}
     >
-      {copied ? "Copied!" : label}
+      {copied ? "COPIED ✓" : `${label.toUpperCase()} ↗`}
     </button>
   );
 }

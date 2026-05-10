@@ -30,18 +30,12 @@ export function ConnectionActions({
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <a
-        href="/api/gsc/connect"
-        className="btn-ghost btn-ghost-sm"
-      >
-        Reconnect
+    <div className="flex items-center gap-2">
+      <a href="/api/gsc/connect" className="btn">
+        Reconnect ↺
       </a>
       {(hasGsc || hasAnalyticsScope) && (
-        <button
-          onClick={handleDisconnect}
-          className="btn-ghost btn-ghost-sm"
-        >
+        <button onClick={handleDisconnect} className="btn btn-danger">
           Disconnect
         </button>
       )}

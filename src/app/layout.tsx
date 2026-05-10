@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "./globals-glass.css";
 
 export const metadata: Metadata = {
-  title: "OMG Bridge - Google Search Console and Analytics for AI",
+  title: "OMG / Bridge - Talk to your data, in any AI",
   description:
-    "Connect Google Search Console, Analytics, and Business Profile to Claude, ChatGPT, and Cursor via MCP",
+    "Connect Google Analytics, Search Console and Business Profile to ChatGPT, Claude or Gemini in 90 seconds. Ask anything. Get the answer in plain English.",
 };
 
 export default function RootLayout({
@@ -15,10 +14,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen antialiased">
-        <div className="app-background" />
-        {children}
-      </body>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Inter+Tight:wght@300..700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        />
+      </head>
+      <body className="min-h-screen antialiased">{children}</body>
     </html>
   );
 }

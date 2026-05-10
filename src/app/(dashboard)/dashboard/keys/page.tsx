@@ -33,7 +33,7 @@ export default async function ApiKeysPage() {
 
   const rawKeys = await getApiKeys(session.id);
 
-  // Serialize dates for the client component
+  // Serialize dates so the client component receives plain strings.
   const keys = rawKeys.map((key) => ({
     id: key.id,
     name: key.name,
@@ -44,33 +44,23 @@ export default async function ApiKeysPage() {
   }));
 
   return (
-    <div className="space-y-8">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-100">API Keys</h1>
-        <p className="text-zinc-400 text-sm mt-1">
-          API keys are used to authenticate Claude Desktop and Cursor with your MCP endpoint.
-          Each key is shown only once at creation.
-        </p>
-      </div>
-
-      {/* Security note */}
-      <div className="flex items-start gap-3 p-4 rounded-lg bg-zinc-900 border border-zinc-700">
-        <span className="text-yellow-500 text-base mt-0.5">!</span>
-        <div className="text-sm text-zinc-400 space-y-1">
-          <p className="font-medium text-zinc-300">Security note</p>
-          <p>
-            API keys are hashed before storage. The full key is only shown once at creation.
-            If you lose a key, revoke it and create a new one.
-          </p>
-          <p>
-            Never share your API key or commit it to version control.
+    <>
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">
+            <span className="num">04</span>
+            <span>·</span>
+            <span>API KEYS · STATIC AUTH</span>
+          </div>
+          <h1>API <span className="accent">keys.</span></h1>
+          <p className="lede">
+            Static keys for tools that don&apos;t support OAuth (Cursor, Claude Desktop config files).
+            Each key has the same scopes as your account. Rotate often.
           </p>
         </div>
       </div>
 
-      {/* Client component for interactive key management */}
       <ApiKeysClient initialKeys={keys} />
-    </div>
+    </>
   );
 }
