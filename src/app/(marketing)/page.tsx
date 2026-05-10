@@ -561,6 +561,22 @@ export default function MarketingHomePage() {
           <div className="featured-grid">
             <article className="feat tall">
               <div className="tag">▣ FEATURED</div>
+              <div className="card-anim card-anim-chat" aria-hidden="true">
+                <span className="cb cb-1">
+                  <span className="cb-dots">
+                    <i /><i /><i />
+                  </span>
+                </span>
+                <span className="cb cb-2">
+                  <span className="cb-line w70" />
+                  <span className="cb-line w50" />
+                </span>
+                <span className="cb cb-3">
+                  <span className="cb-dots">
+                    <i /><i /><i />
+                  </span>
+                </span>
+              </div>
               <h4>The conversation your team was already having.</h4>
               <p>
                 Slack threads asking &quot;wait, why did organic dip last
@@ -579,6 +595,25 @@ export default function MarketingHomePage() {
             </article>
             <article className="feat">
               <div className="tag">+ INSIGHT</div>
+              <div className="card-anim card-anim-send" aria-hidden="true">
+                <span className="doc">
+                  <span className="doc-line w70" />
+                  <span className="doc-line w50" />
+                  <span className="doc-line w60" />
+                </span>
+                <span className="plane">
+                  <svg viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M1 8 L15 1 L11 15 L8 9 Z"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinejoin="round"
+                      fill="rgba(217,75,47,0.12)"
+                    />
+                  </svg>
+                </span>
+                <span className="trail" />
+              </div>
               <h4>Branded reports. Sent on schedule.</h4>
               <p>
                 Auto-generated weekly HTML reports in your colors and font.
@@ -588,6 +623,16 @@ export default function MarketingHomePage() {
             </article>
             <article className="feat">
               <div className="tag">+ AUTOMATION</div>
+              <div className="card-anim card-anim-stack" aria-hidden="true">
+                <span className="stk s1" />
+                <span className="stk s2" />
+                <span className="stk s3" />
+                <span className="bolt">
+                  <svg viewBox="0 0 12 16" fill="currentColor">
+                    <path d="M7 0 L0 9 L5 9 L4 16 L12 6 L7 6 Z" />
+                  </svg>
+                </span>
+              </div>
               <h4>Prompt library. One-click reports.</h4>
               <p>
                 Save SEO audits, conversion checks and rank-tracking prompts.
@@ -1197,8 +1242,9 @@ export default function MarketingHomePage() {
           letter-spacing: -0.025em;
           text-transform: uppercase;
           margin-bottom: 16px;
+          padding-right: 96px;
         }
-        .feat.tall h4 { font-size: 32px; }
+        .feat.tall h4 { font-size: 32px; padding-right: 110px; }
         .feat p { font-size: 13px; line-height: 1.65; color: var(--ink-2); }
         .feat ul { list-style: none; margin-top: 22px; padding: 0; }
         .feat ul li {
@@ -1213,6 +1259,243 @@ export default function MarketingHomePage() {
           content: "+";
           color: var(--teal-bright);
           font-weight: 600;
+        }
+
+        /* ── card animations (featured-grid) ──────────────── */
+        .feat { position: relative; overflow: hidden; }
+        .card-anim {
+          position: absolute;
+          top: 32px;
+          right: 32px;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .feat.tall .card-anim { right: 36px; top: 34px; }
+
+        /* card 1 — chat bubbles (FEATURED, teal) */
+        .card-anim-chat {
+          width: 78px;
+          height: 70px;
+        }
+        .card-anim-chat .cb {
+          position: absolute;
+          padding: 6px 8px;
+          border: 1.5px solid var(--teal-bright);
+          background: rgba(0, 181, 181, 0.08);
+          border-radius: 8px;
+          opacity: 0;
+          transform: translateY(6px);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .card-anim-chat .cb-1 {
+          top: 0;
+          left: 0;
+          border-bottom-left-radius: 2px;
+          animation: cbPop 4.2s ease-in-out infinite;
+        }
+        .card-anim-chat .cb-2 {
+          top: 26px;
+          right: 0;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 3px;
+          padding: 6px 8px;
+          border-color: var(--teal);
+          background: rgba(0, 181, 181, 0.12);
+          border-bottom-right-radius: 2px;
+          animation: cbPop 4.2s ease-in-out infinite 1.2s;
+        }
+        .card-anim-chat .cb-3 {
+          top: 54px;
+          left: 6px;
+          border-bottom-left-radius: 2px;
+          animation: cbPop 4.2s ease-in-out infinite 2.4s;
+        }
+        .card-anim-chat .cb-dots {
+          display: inline-flex;
+          gap: 3px;
+        }
+        .card-anim-chat .cb-dots i {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: var(--teal-bright);
+          opacity: 0.5;
+          animation: thinkPulse 1.4s ease-in-out infinite;
+        }
+        .card-anim-chat .cb-dots i:nth-child(2) { animation-delay: 0.18s; }
+        .card-anim-chat .cb-dots i:nth-child(3) { animation-delay: 0.36s; }
+        .card-anim-chat .cb-line {
+          height: 2px;
+          background: var(--teal-bright);
+          opacity: 0.7;
+          border-radius: 1px;
+          display: block;
+        }
+        .card-anim-chat .cb-line.w70 { width: 28px; }
+        .card-anim-chat .cb-line.w50 { width: 18px; }
+        @keyframes cbPop {
+          0%, 100% { opacity: 0; transform: translateY(6px); }
+          12%, 78% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* card 2 — paper plane sending report (INSIGHT, vermilion) */
+        .card-anim-send {
+          width: 80px;
+          height: 56px;
+          color: var(--vermilion);
+        }
+        .card-anim-send .doc {
+          position: absolute;
+          top: 6px;
+          left: 0;
+          width: 28px;
+          height: 36px;
+          border: 1.5px solid var(--vermilion);
+          background: rgba(217, 75, 47, 0.06);
+          padding: 6px 4px 0;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .card-anim-send .doc::after {
+          content: "";
+          position: absolute;
+          top: -1.5px;
+          right: -1.5px;
+          width: 8px;
+          height: 8px;
+          background: var(--bg);
+          border-left: 1.5px solid var(--vermilion);
+          border-bottom: 1.5px solid var(--vermilion);
+        }
+        .card-anim-send .doc-line {
+          height: 2px;
+          background: var(--vermilion);
+          opacity: 0.7;
+          border-radius: 1px;
+        }
+        .card-anim-send .doc-line.w70 { width: 70%; }
+        .card-anim-send .doc-line.w60 { width: 60%; }
+        .card-anim-send .doc-line.w50 { width: 50%; }
+        .card-anim-send .plane {
+          position: absolute;
+          top: 16px;
+          left: 32px;
+          width: 18px;
+          height: 18px;
+          color: var(--vermilion);
+          animation: planeFly 2.8s ease-in-out infinite;
+        }
+        .card-anim-send .plane svg {
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+        .card-anim-send .trail {
+          position: absolute;
+          top: 24px;
+          left: 32px;
+          width: 38px;
+          height: 1.5px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            var(--vermilion) 30%,
+            transparent
+          );
+          opacity: 0;
+          animation: trailMove 2.8s ease-in-out infinite;
+        }
+        @keyframes planeFly {
+          0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+          15% { opacity: 1; }
+          50% { transform: translate(22px, -10px) rotate(-8deg); opacity: 1; }
+          85% { transform: translate(44px, -18px) rotate(-12deg); opacity: 0; }
+          100% { transform: translate(44px, -18px) rotate(-12deg); opacity: 0; }
+        }
+        @keyframes trailMove {
+          0%, 100% { opacity: 0; transform: scaleX(0.3); transform-origin: left; }
+          25%, 70% { opacity: 0.8; transform: scaleX(1); transform-origin: left; }
+        }
+
+        /* card 3 — stacked prompt cards + bolt (AUTOMATION, vermilion) */
+        .card-anim-stack {
+          width: 60px;
+          height: 60px;
+          color: var(--vermilion);
+        }
+        .card-anim-stack .stk {
+          position: absolute;
+          width: 36px;
+          height: 26px;
+          border: 1.5px solid var(--vermilion);
+          background: rgba(217, 75, 47, 0.06);
+          left: 4px;
+        }
+        .card-anim-stack .stk::before,
+        .card-anim-stack .stk::after {
+          content: "";
+          position: absolute;
+          left: 5px;
+          right: 5px;
+          height: 1.5px;
+          background: var(--vermilion);
+          opacity: 0.7;
+        }
+        .card-anim-stack .stk::before { top: 7px; }
+        .card-anim-stack .stk::after { top: 13px; right: 14px; }
+        .card-anim-stack .s1 {
+          top: 24px;
+          animation: stkCycle 3.6s ease-in-out infinite;
+        }
+        .card-anim-stack .s2 {
+          top: 24px;
+          animation: stkCycle 3.6s ease-in-out infinite 1.2s;
+        }
+        .card-anim-stack .s3 {
+          top: 24px;
+          animation: stkCycle 3.6s ease-in-out infinite 2.4s;
+        }
+        .card-anim-stack .bolt {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 14px;
+          height: 18px;
+          color: var(--vermilion);
+          filter: drop-shadow(0 0 6px var(--vermilion-glow));
+          animation: boltFlash 1.6s ease-in-out infinite;
+        }
+        .card-anim-stack .bolt svg {
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+        @keyframes stkCycle {
+          0% { transform: translateY(8px) scale(0.94); opacity: 0; }
+          14% { opacity: 0.55; }
+          33% { transform: translateY(0) scale(1); opacity: 1; }
+          66% { transform: translateY(-8px) scale(1); opacity: 0.7; }
+          85% { transform: translateY(-16px) scale(0.94); opacity: 0; }
+          100% { transform: translateY(-16px) scale(0.94); opacity: 0; }
+        }
+        @keyframes boltFlash {
+          0%, 100% { opacity: 0.45; transform: scale(0.92); }
+          50% { opacity: 1; transform: scale(1.08); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .card-anim-chat .cb,
+          .card-anim-chat .cb-dots i,
+          .card-anim-send .plane,
+          .card-anim-send .trail,
+          .card-anim-stack .stk,
+          .card-anim-stack .bolt {
+            animation: none;
+          }
+          .card-anim-chat .cb { opacity: 1; transform: none; }
         }
 
         /* ── poster ───────────────────────────────────────── */
@@ -1516,6 +1799,53 @@ export default function MarketingHomePage() {
           .hero-text { order: 2; }
           .hero-chat { order: 1; }
           .section .section-body { padding: 40px 20px 56px; }
+
+          /* compact chat for tablet/mobile */
+          .chat-app {
+            min-height: 0;
+          }
+          .chat-chrome {
+            padding: 10px 12px;
+            gap: 10px;
+          }
+          .chat-chrome .model { font-size: 11.5px; }
+          .chat-chrome .status { font-size: 9px; letter-spacing: 0.14em; }
+          .chat-thread {
+            padding: 14px;
+            gap: 12px;
+            min-height: 0;
+          }
+          .chat-msg.user .msg-content,
+          .chat-msg.ai .msg-content {
+            font-size: 12.5px;
+            line-height: 1.55;
+          }
+          .chat-msg.user .msg-content { padding: 8px 11px; }
+          .chat-msg.ai .msg-avatar { width: 24px; height: 24px; }
+          .chat-msg.ai .msg-avatar svg { width: 13px; height: 13px; }
+          .chat-msg.ai .chat-table { font-size: 11.5px; margin-top: 8px; }
+          .chat-msg.ai .chat-table td { padding: 5px 0; }
+          .chat-msg.ai .meta {
+            margin-top: 10px;
+            gap: 12px;
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            flex-wrap: wrap;
+          }
+          .chat-input { padding: 10px 12px; gap: 8px; }
+          .chat-input input { padding: 8px 11px; font-size: 12px; }
+          .chat-input .send { padding: 8px 11px; font-size: 11px; }
+
+          /* card animations - shrink and reposition */
+          .card-anim,
+          .feat.tall .card-anim {
+            top: 20px;
+            right: 20px;
+            transform: scale(0.78);
+            transform-origin: top right;
+          }
+          .feat h4 { padding-right: 78px; }
+          .feat.tall h4 { padding-right: 88px; }
 
           .ai-bar { grid-template-columns: 1fr 1fr; }
           .ai-logo { border-bottom: 1px solid var(--rule); }
