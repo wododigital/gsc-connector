@@ -280,7 +280,7 @@ body::before {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr auto;
   align-items: stretch;
-  background: rgba(10,16,24,0.92);
+  background: var(--topbar-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--teal);
