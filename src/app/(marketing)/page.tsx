@@ -194,7 +194,9 @@ function ChatApp() {
       await sleep(140);
       if (aiTimeRef.current) aiTimeRef.current.textContent = s.time;
 
-      await sleep(3000);
+      // Hold the rendered response on screen. Total per-session ≈ 4s
+      // (280 + 650 + 800 + 140 + 260 + 140 + 1230 + 500).
+      await sleep(1230);
       if (cancelled) return;
 
       userWrapRef.current?.classList.remove("visible");
