@@ -120,8 +120,8 @@ export function PromptLibraryClient() {
   };
 
   const toggleActive = async (p: Prompt) => {
-    const res = await fetch(`/api/prompts/${p.id}`, {
-      method: "PUT",
+    const res = await fetch(`/api/prompts/${p.id}/active`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !p.isActive }),
     });
@@ -225,7 +225,7 @@ export function PromptLibraryClient() {
                 onPreview={() => setPreviewing(p)}
                 onEdit={p.isUserOwned ? () => setEditing(p) : undefined}
                 onDelete={p.isUserOwned ? () => deletePrompt(p) : undefined}
-                onToggleActive={p.isUserOwned ? () => toggleActive(p) : undefined}
+                onToggleActive={() => toggleActive(p)}
               />
             ))}
           </div>
@@ -269,7 +269,7 @@ function PromptCard({
   onToggleActive?: () => void;
 }) {
   const tone = tagToneFor(p.category);
-  const inactive = p.isUserOwned && !p.isActive;
+  const inactive = !p.isActive;
   return (
     <div className={`prompt-card${inactive ? " inactive" : ""}`}>
       <div className="head">
@@ -279,10 +279,8 @@ function PromptCard({
         </div>
         {inactive ? (
           <span className="prompt-state-pill inactive" title="Hidden from AI assistants">INACTIVE</span>
-        ) : p.isUserOwned ? (
-          <span className="prompt-state-pill active" title="Available to AI assistants">ACTIVE</span>
         ) : (
-          <span className="menu" title="Options">⋯</span>
+          <span className="prompt-state-pill active" title="Available to AI assistants">ACTIVE</span>
         )}
       </div>
       <div className="body">{p.description}</div>

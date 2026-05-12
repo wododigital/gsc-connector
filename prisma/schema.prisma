@@ -36,6 +36,7 @@ model User {
   couponRedemptions CouponRedemption[]
   tickets           SupportTicket[]
   userPrompts       UserPrompt[]
+  promptTemplateStates UserPromptTemplateState[]
   brandProfile      BrandProfile?
 
   @@map("users")
@@ -379,8 +380,32 @@ model PromptTemplate {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
+  userStates UserPromptTemplateState[]
+
   @@index([isActive, sortOrder])
   @@map("prompt_templates")
+}
+
+// ============================================================
+// Per-user activation state for admin (system) prompt templates.
+// Lets each user hide a global template from their own prompt
+// library and from their AI assistant without affecting anyone
+// else, and without ever deleting the underlying admin prompt.
+// ============================================================
+model UserPromptTemplateState {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  promptTemplateId String   @map("prompt_template_id")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promptTemplate PromptTemplate @relation(fields: [promptTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, promptTemplateId])
+  @@index([userId, isActive])
+  @@map("user_prompt_template_states")
 }
 
 // ============================================================

@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest) {
   }
 
   try {
-    const [systemPrompts, userPrompts, brand] = await Promise.all([
+    const [systemPrompts, userPrompts, brand, systemStates] = await Promise.all([
       db.promptTemplate.findMany({
         where: { isActive: true },
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -49,7 +49,14 @@ export async function GET(_req: NextRequest) {
         orderBy: { createdAt: "desc" },
       }),
       db.brandProfile.findUnique({ where: { userId: session.id } }),
+      db.userPromptTemplateState.findMany({ where: { userId: session.id } }),
     ]);
+
+    // Lookup so each system prompt can report its per-user active state.
+    // Default true when the user has never explicitly toggled it.
+    const stateById = new Map(
+      systemStates.map((s) => [s.promptTemplateId, s.isActive] as const)
+    );
 
     return NextResponse.json({
       system: systemPrompts.map((p) => ({
@@ -63,7 +70,7 @@ export async function GET(_req: NextRequest) {
         body: buildClipboardPrompt(p.body, brand),
         rawBody: p.body,
         isUserOwned: false,
-        isActive: true,
+        isActive: stateById.get(p.id) ?? true,
       })),
       user: userPrompts.map((p) => ({
         id: p.id,

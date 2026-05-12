@@ -30,19 +30,30 @@ export function registerGetReportTemplateTool(server: McpServer, user: UserConte
     async ({ template_id }) => {
       const startTime = Date.now();
       try {
-        const [systemPrompt, userPrompt, brand] = await Promise.all([
+        const [systemPrompt, userPrompt, brand, systemState] = await Promise.all([
           db.promptTemplate.findUnique({ where: { id: template_id } }),
           db.userPrompt.findUnique({ where: { id: template_id } }),
           db.brandProfile.findUnique({ where: { userId: user.userId } }),
+          db.userPromptTemplateState.findUnique({
+            where: {
+              userId_promptTemplateId: {
+                userId: user.userId,
+                promptTemplateId: template_id,
+              },
+            },
+          }),
         ]);
 
         // Reject if template doesn't exist, is a user prompt belonging to someone
-        // else, or is an inactive user prompt the owner has paused.
+        // else, is an inactive user prompt the owner has paused, or is a system
+        // prompt that this user has deactivated for themselves.
         const tpl = systemPrompt && systemPrompt.isActive ? systemPrompt : userPrompt;
         const isUserOwnedByOther = userPrompt && userPrompt.userId !== user.userId;
         const isInactiveUserPrompt =
           userPrompt && userPrompt.userId === user.userId && !userPrompt.isActive;
-        if (!tpl || isUserOwnedByOther || isInactiveUserPrompt) {
+        const isUserDeactivatedSystemPrompt =
+          systemPrompt && systemState && !systemState.isActive;
+        if (!tpl || isUserOwnedByOther || isInactiveUserPrompt || isUserDeactivatedSystemPrompt) {
           throw new Error(`Template ${template_id} not found`);
         }
 

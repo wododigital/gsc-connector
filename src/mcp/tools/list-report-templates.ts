@@ -37,7 +37,7 @@ export function registerListReportTemplatesTool(server: McpServer, user: UserCon
     async ({ category, search }) => {
       const startTime = Date.now();
       try {
-        const [systemPrompts, userPrompts] = await Promise.all([
+        const [systemPrompts, userPrompts, deactivatedStates] = await Promise.all([
           db.promptTemplate.findMany({
             where: { isActive: true },
             orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -46,10 +46,18 @@ export function registerListReportTemplatesTool(server: McpServer, user: UserCon
             where: { userId: user.userId, isActive: true },
             orderBy: { createdAt: "desc" },
           }),
+          db.userPromptTemplateState.findMany({
+            where: { userId: user.userId, isActive: false },
+            select: { promptTemplateId: true },
+          }),
         ]);
 
+        // Skip admin prompts that this user has deactivated for themselves.
+        const userDeactivated = new Set(deactivatedStates.map((s) => s.promptTemplateId));
+        const activeSystemPrompts = systemPrompts.filter((p) => !userDeactivated.has(p.id));
+
         const merged = [
-          ...systemPrompts.map((p) => ({
+          ...activeSystemPrompts.map((p) => ({
             id: p.id,
             title: p.title,
             description: p.description,
