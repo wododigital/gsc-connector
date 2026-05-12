@@ -43,7 +43,7 @@ export function registerListReportTemplatesTool(server: McpServer, user: UserCon
             orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
           }),
           db.userPrompt.findMany({
-            where: { userId: user.userId },
+            where: { userId: user.userId, isActive: true },
             orderBy: { createdAt: "desc" },
           }),
         ]);

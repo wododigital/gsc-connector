@@ -83,7 +83,7 @@ export function GA4PropertyManager({ properties }: GA4PropertyManagerProps) {
                   </div>
                 </div>
                 {idx === 0 ? <span className="pill">PRIMARY</span> : <span />}
-                <span className="pill state">{exposed ? "EXPOSED" : "HIDDEN"}</span>
+                <span className="pill state">{exposed ? "ACTIVE" : "HIDDEN"}</span>
                 <span className="menu">⋯</span>
               </div>
             );
@@ -98,7 +98,7 @@ export function GA4PropertyManager({ properties }: GA4PropertyManagerProps) {
         {saved && <span className="pill success">SAVED</span>}
         {error && <span className="pill error">{error}</span>}
         <span className="prop-count">
-          {active.size} OF {properties.length} EXPOSED
+          {active.size} OF {properties.length} ACTIVE
         </span>
       </div>
     </div>

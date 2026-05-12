@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import db from "@/lib/db";
 import { CopyButton } from "@/components/copy-button";
 import { ConnectionActions } from "@/components/connection-actions";
-import { BrandStatusCard } from "@/components/brand-status-card";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -49,22 +48,6 @@ async function getCredentialInfo(userId: string) {
 async function getApiKeyCount(userId: string) {
   try { return await db.apiKey.count({ where: { userId, isActive: true } }); }
   catch { return 0; }
-}
-
-async function getBrandProfile(userId: string) {
-  try {
-    return await db.brandProfile.findUnique({
-      where: { userId },
-      select: {
-        companyName: true, logoUrl: true, logoUrlDark: true,
-        primaryColor: true, secondaryColor: true,
-        accentColor: true, accentColorDark: true,
-        fontFamily: true, reportTheme: true,
-        reportDos: true, reportDonts: true,
-        isApproved: true,
-      },
-    });
-  } catch { return null; }
 }
 
 async function getRecentLogs(userId: string) {
@@ -155,7 +138,6 @@ export default async function DashboardPage() {
     ga4Properties,
     credentialInfo,
     apiKeyCount,
-    brandProfile,
     recentLogs,
     usageStats,
     subscription,
@@ -164,7 +146,6 @@ export default async function DashboardPage() {
     getGA4Properties(session.id),
     getCredentialInfo(session.id),
     getApiKeyCount(session.id),
-    getBrandProfile(session.id),
     getRecentLogs(session.id),
     getUsageStats(session.id),
     db.userSubscription
@@ -241,7 +222,7 @@ export default async function DashboardPage() {
         <ServiceCard
           name="GSC"
           connected={hasGscConnected}
-          metaLabel="SITES EXPOSED"
+          metaLabel="SITES ACTIVE"
           metaValue={`${properties.filter((p) => p.isActive).length} of ${properties.length || "0"}`}
           subLabel={hasCredential ? "STATUS" : "SETUP TIME"}
           subValue={hasCredential ? "Live" : "~ 30 seconds"}
@@ -250,7 +231,7 @@ export default async function DashboardPage() {
         <ServiceCard
           name="GA4"
           connected={hasAnalyticsScope && ga4Properties.length > 0}
-          metaLabel="PROPERTIES EXPOSED"
+          metaLabel="PROPERTIES ACTIVE"
           metaValue={`${ga4Properties.filter((p) => p.isActive).length} of ${ga4Properties.length || "0"}`}
           subLabel={hasAnalyticsScope ? "STATUS" : "SETUP TIME"}
           subValue={hasAnalyticsScope ? "Live" : "~ 30 seconds"}
@@ -390,13 +371,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Brand profile status */}
-      <div className="section-header">
-        <h2>Brand Profile</h2>
-        <div className="right"><a href="/dashboard/branding">EDIT BRAND →</a></div>
-      </div>
-      <BrandStatusCard profile={brandProfile} />
-
       {/* Setup instructions */}
       <div className="section-header">
         <h2>Connect Your AI</h2>
@@ -478,7 +452,7 @@ function PropertyPreviewCard({
                   )}
                 </div>
                 <span className={`pill${row.isActive ? " info" : ""}`} style={{ fontSize: 9 }}>
-                  {row.isActive ? "EXPOSED" : "HIDDEN"}
+                  {row.isActive ? "ACTIVE" : "HIDDEN"}
                 </span>
               </div>
             ))}
@@ -551,13 +525,13 @@ function SetupInstructions() {
           <span className="right">+</span>
         </summary>
         <div className="body">
-          <p>Claude.ai connects via OAuth - no API key required.</p>
+          <p>Claude.ai connects via OAuth, so there is no API key to paste. Available on Pro, Max, Team, and Enterprise plans.</p>
           <ol>
-            <li>Go to Claude.ai Settings</li>
-            <li>Click Integrations in the sidebar</li>
-            <li>Click Add integration</li>
-            <li>Paste the endpoint URL: <code>{MCP_ENDPOINT}</code></li>
-            <li>Authorize when prompted</li>
+            <li>Open Claude.ai, click your profile icon (bottom-left), then Settings</li>
+            <li>Open the Connectors tab</li>
+            <li>Scroll to the bottom and click Add custom connector</li>
+            <li>Set Name to <code>OMG Bridge</code> and Remote MCP server URL to <code>{MCP_ENDPOINT}</code></li>
+            <li>Click Add, then Connect, then approve the OAuth scopes</li>
           </ol>
         </div>
       </details>
@@ -570,13 +544,37 @@ function SetupInstructions() {
         </summary>
         <div className="body">
           <p>
-            Create an API key first from the <a href="/dashboard/keys" style={{ color: "var(--teal)" }}>API Keys</a> page,
-            then add this to your <code>claude_desktop_config.json</code>:
+            Create an API key first from the <a href="/dashboard/keys" style={{ color: "var(--teal)" }}>API Keys</a> page.
+            Then in Claude Desktop open Settings, click the Developer tab and click Edit Config to open <code>claude_desktop_config.json</code>.
+            Add the <code>omg-connector</code> block under <code>mcpServers</code>:
           </p>
           <pre>{CLAUDE_DESKTOP_CONFIG}</pre>
           <p style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)" }}>
-            Replace YOUR_API_KEY with the key from the API Keys page. macOS/Linux config file:
-            <code style={{ marginLeft: 6 }}>~/Library/Application Support/Claude/claude_desktop_config.json</code>
+            Replace YOUR_API_KEY with the key you generated. Save the file and fully quit / relaunch Claude Desktop. Config locations:
+            <br />
+            macOS: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>
+            <br />
+            Windows: <code>{`%APPDATA%\\Claude\\claude_desktop_config.json`}</code>
+            <br />
+            Linux: <code>~/.config/Claude/claude_desktop_config.json</code>
+          </p>
+        </div>
+      </details>
+
+      {/* Claude Code CLI */}
+      <details className="setup-card">
+        <summary>
+          <span>CLAUDE CODE (CLI) · REQUIRES API KEY</span>
+          <span className="right">+</span>
+        </summary>
+        <div className="body">
+          <p>
+            Create an API key from the <a href="/dashboard/keys" style={{ color: "var(--teal)" }}>API Keys</a> page, then run:
+          </p>
+          <pre>{`claude mcp add --transport http omg-bridge ${MCP_ENDPOINT} \\
+  --header "Authorization: Bearer YOUR_API_KEY"`}</pre>
+          <p style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)" }}>
+            Use <code>--scope user</code> to install across every project, or <code>--scope project</code> to commit a <code>.mcp.json</code> file shared with your team. Verify with <code>claude mcp list</code>.
           </p>
         </div>
       </details>
@@ -589,16 +587,26 @@ function SetupInstructions() {
         </summary>
         <div className="body">
           <p>
-            Create an API key from the <a href="/dashboard/keys" style={{ color: "var(--teal)" }}>API Keys</a> page, then:
+            Create an API key from the <a href="/dashboard/keys" style={{ color: "var(--teal)" }}>API Keys</a> page. Then in Cursor:
           </p>
           <ol>
-            <li>Open Cursor Settings (Cmd+,)</li>
-            <li>Go to Features tab, then MCP</li>
-            <li>Click Add new MCP server</li>
-            <li>Set type to <code>sse</code> or <code>http</code></li>
-            <li>Set URL to <code>{MCP_ENDPOINT}</code></li>
-            <li>Add header: <code>Authorization: Bearer YOUR_API_KEY</code></li>
+            <li>Open the Command Palette and run <code>Cursor Settings</code> (or press <code>Cmd+Shift+J</code>)</li>
+            <li>Open the MCP &amp; Integrations tab and click New MCP Server</li>
+            <li>Cursor opens <code>~/.cursor/mcp.json</code>. Add this entry under <code>mcpServers</code>:</li>
           </ol>
+          <pre>{`{
+  "mcpServers": {
+    "omg-bridge": {
+      "url": "${MCP_ENDPOINT}",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}`}</pre>
+          <p style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)" }}>
+            Save the file and click the toggle next to OMG Bridge in the MCP panel to enable it. Tools will appear in Composer and the Agent tab.
+          </p>
         </div>
       </details>
 
@@ -609,14 +617,13 @@ function SetupInstructions() {
           <span className="right">+</span>
         </summary>
         <div className="body">
-          <p>ChatGPT connects via OAuth - no API key required.</p>
+          <p>ChatGPT connects via OAuth. Custom MCP connectors are available on ChatGPT Plus, Pro, Business and Enterprise.</p>
           <ol>
-            <li>Go to chatgpt.com and sign in</li>
-            <li>Click your profile icon, then Settings</li>
-            <li>Go to the Connectors section</li>
-            <li>Click Add connector</li>
-            <li>Paste the endpoint URL: <code>{MCP_ENDPOINT}</code></li>
-            <li>Follow the OAuth authorization flow</li>
+            <li>Sign in at chatgpt.com and open Settings from the profile menu</li>
+            <li>Open the Connectors tab, scroll down and click Advanced settings</li>
+            <li>Enable Developer mode if you have not already</li>
+            <li>Back on Connectors click Create, paste <code>{MCP_ENDPOINT}</code> as the MCP server URL, set Authentication to OAuth</li>
+            <li>Save, then click Connect and approve the OMG Bridge consent screen</li>
           </ol>
         </div>
       </details>

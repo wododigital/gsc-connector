@@ -63,6 +63,7 @@ export async function GET(_req: NextRequest) {
         body: buildClipboardPrompt(p.body, brand),
         rawBody: p.body,
         isUserOwned: false,
+        isActive: true,
       })),
       user: userPrompts.map((p) => ({
         id: p.id,
@@ -75,6 +76,7 @@ export async function GET(_req: NextRequest) {
         body: buildClipboardPrompt(p.body, brand),
         rawBody: p.body,
         isUserOwned: true,
+        isActive: p.isActive,
       })),
       hasBrandProfile: Boolean(brand?.isApproved),
       hasReportRules: Boolean(brand?.reportDos?.trim() || brand?.reportDonts?.trim()),

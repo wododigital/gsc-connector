@@ -214,7 +214,7 @@ export default async function DashboardLayout({
               label="API Keys"
               badge={apiKeyCount > 0 ? apiKeyCount : null}
             />
-            <SidebarLink href="/dashboard/branding" icon={Icons.branding} label="Branding" />
+            {/* Branding link hidden — feature kept on disk for later restoration */}
 
             <SidebarSection label="ACCOUNT" defaultOpen>
               <SidebarLink href="/dashboard/logs" icon={Icons.usage} label="Usage Logs" />

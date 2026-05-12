@@ -396,12 +396,14 @@ model UserPrompt {
   requiredConnections Json     @default("[]") @map("required_connections")
   questions           Json     @default("[]")
   semanticTags        Json     @default("[]") @map("semantic_tags")
+  isActive            Boolean  @default(true) @map("is_active")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([userId, isActive])
   @@map("user_prompts")
 }
 

@@ -36,10 +36,13 @@ export function registerGetReportTemplateTool(server: McpServer, user: UserConte
           db.brandProfile.findUnique({ where: { userId: user.userId } }),
         ]);
 
-        // Reject if template doesn't exist OR is a user prompt belonging to someone else.
+        // Reject if template doesn't exist, is a user prompt belonging to someone
+        // else, or is an inactive user prompt the owner has paused.
         const tpl = systemPrompt && systemPrompt.isActive ? systemPrompt : userPrompt;
         const isUserOwnedByOther = userPrompt && userPrompt.userId !== user.userId;
-        if (!tpl || isUserOwnedByOther) {
+        const isInactiveUserPrompt =
+          userPrompt && userPrompt.userId === user.userId && !userPrompt.isActive;
+        if (!tpl || isUserOwnedByOther || isInactiveUserPrompt) {
           throw new Error(`Template ${template_id} not found`);
         }
 

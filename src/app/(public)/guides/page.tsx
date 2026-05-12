@@ -25,14 +25,16 @@ const guides: Guide[] = [
         text: "Sign in at bridge.theomg.ai and connect your Google account from the dashboard.",
       },
       {
-        text: "In Claude.ai, go to Settings → Integrations → Add custom integration.",
-      },
-      { text: "Enter your MCP endpoint URL from the dashboard." },
-      {
-        text: "Claude will redirect you to OMG Bridge to authorize access. Pick which properties to share.",
+        text: "In Claude.ai, click your profile icon (bottom-left of the sidebar), then Settings.",
       },
       {
-        text: "After authorizing, Claude will have access to all 30 GSC, GA4, and GBP tools.",
+        text: "Open the Connectors tab, scroll to the bottom and click Add custom connector. (Available on Pro, Max, Team and Enterprise plans.)",
+      },
+      {
+        text: "Set Name to OMG Bridge and Remote MCP server URL to your endpoint from the dashboard. Click Add.",
+      },
+      {
+        text: "Click Connect, then approve the OAuth scopes. Pick which properties you want to share when prompted.",
       },
     ],
   },
@@ -46,24 +48,54 @@ const guides: Guide[] = [
         text: "From your OMG Bridge dashboard, go to API Keys and create a new key. Copy it. It is shown only once.",
       },
       {
-        text: "Open your Claude Desktop config file at ~/Library/Application Support/Claude/claude_desktop_config.json.",
+        text: "Open Claude Desktop, then Settings → Developer → Edit Config. This opens claude_desktop_config.json in your editor.",
       },
       {
         text: "Add this block under mcpServers:",
-        code: `"omg-connector": {
-  "url": "https://bridge.theomg.ai/api/mcp",
-  "headers": {
-    "Authorization": "Bearer YOUR_API_KEY"
+        code: `{
+  "mcpServers": {
+    "omg-bridge": {
+      "url": "https://bridge.theomg.ai/api/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
   }
 }`,
       },
       {
-        text: "Restart Claude Desktop. The OMG Bridge tools will appear in Claude's tool list.",
+        text: "Save the file. Fully quit Claude Desktop (Cmd+Q on macOS) and relaunch. The OMG Bridge tools appear in Claude's tool list under the slider icon.",
+      },
+      {
+        text: "Config file locations — macOS: ~/Library/Application Support/Claude/claude_desktop_config.json. Windows: %APPDATA%\\Claude\\claude_desktop_config.json. Linux: ~/.config/Claude/claude_desktop_config.json.",
       },
     ],
   },
   {
     number: "03",
+    title: "Claude Code (CLI)",
+    badge: "API KEY",
+    badgeTone: "muted",
+    steps: [
+      {
+        text: "Create an API key from your OMG Bridge dashboard under API Keys.",
+      },
+      {
+        text: "Run the following command in any terminal (uses HTTP transport):",
+        code: `claude mcp add --transport http omg-bridge \\
+  https://bridge.theomg.ai/api/mcp \\
+  --header "Authorization: Bearer YOUR_API_KEY"`,
+      },
+      {
+        text: "Add --scope user to install for every project, or --scope project to write a shared .mcp.json next to your code.",
+      },
+      {
+        text: "Verify with: claude mcp list. The OMG Bridge tools will be available in your next claude session.",
+      },
+    ],
+  },
+  {
+    number: "04",
     title: "Cursor",
     badge: "API KEY",
     badgeTone: "muted",
@@ -72,45 +104,64 @@ const guides: Guide[] = [
         text: "Create an API key from your OMG Bridge dashboard under API Keys.",
       },
       {
-        text: "In Cursor, go to Settings → MCP and click Add MCP Server.",
+        text: "In Cursor open the Command Palette and run Cursor Settings (or press Cmd+Shift+J on macOS, Ctrl+Shift+J on Windows/Linux).",
       },
       {
-        text: "Set the URL to your MCP endpoint and add Authorization: Bearer YOUR_API_KEY as a header.",
+        text: "Open the MCP & Integrations tab and click New MCP Server. Cursor will open ~/.cursor/mcp.json in the editor.",
       },
       {
-        text: "Save and reload. Cursor's agent will now have access to all GSC, GA4, and GBP tools.",
-      },
-    ],
-  },
-  {
-    number: "04",
-    title: "ChatGPT",
-    badge: "OAUTH",
-    badgeTone: "teal",
-    steps: [
-      {
-        text: "Sign in at chatgpt.com and open Settings → Connectors.",
-      },
-      {
-        text: "Click Add connector and paste your MCP endpoint URL.",
+        text: "Add OMG Bridge under mcpServers in that file:",
+        code: `{
+  "mcpServers": {
+    "omg-bridge": {
+      "url": "https://bridge.theomg.ai/api/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}`,
       },
       {
-        text: "Follow the OAuth authorization flow to grant access to your GSC, GA4, and GBP properties.",
+        text: "Save the file and flip the toggle next to OMG Bridge in the MCP panel. Tools become available inside Composer and the Agent tab.",
       },
     ],
   },
   {
     number: "05",
+    title: "ChatGPT",
+    badge: "OAUTH",
+    badgeTone: "teal",
+    steps: [
+      {
+        text: "Sign in at chatgpt.com. Custom MCP connectors are available on Plus, Pro, Business and Enterprise.",
+      },
+      {
+        text: "Open Settings from the profile menu and click the Connectors tab.",
+      },
+      {
+        text: "Scroll down to Advanced settings and enable Developer mode if it is not already on. Back on the Connectors tab click Create.",
+      },
+      {
+        text: "Paste your MCP endpoint URL from the OMG Bridge dashboard, set Authentication to OAuth, and click Save.",
+      },
+      {
+        text: "Click Connect, sign in to OMG Bridge if prompted, and approve the requested properties.",
+      },
+    ],
+  },
+  {
+    number: "06",
     title: "Managing Properties",
     badge: "DASHBOARD",
     badgeTone: "muted",
     steps: [
       {
-        text: "Toggle GSC properties on or off using the checkboxes in the GSC section of the dashboard.",
+        text: "Toggle GSC properties active or hidden using the switches on the Properties page in the dashboard.",
       },
-      { text: "Toggle GA4 properties on or off in the GA4 section." },
+      { text: "Toggle GA4 properties active or hidden in the same place." },
       {
-        text: "If you want to grant access to a new property, connect Google again to refresh the property list.",
+        text: "To grant access to a new property, click Reconnect to refresh the list from Google.",
       },
       {
         text: "When using Claude.ai or ChatGPT OAuth, the consent page also lets you choose which properties to share per session.",

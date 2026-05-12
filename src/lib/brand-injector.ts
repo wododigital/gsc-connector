@@ -64,8 +64,11 @@ export interface BrandProfileLike {
 }
 
 const APP_URL = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
-const DEFAULT_LOGO_LIGHT = "/omg-bridge-logo-light.svg";
-const DEFAULT_LOGO_DARK = "/omg-bridge-logo-dark.svg";
+// Defaults point at assets that actually exist in /public so the fallback
+// never resolves to a 404. Reports render the user's uploaded logo first;
+// these only kick in when no upload has happened at all.
+const DEFAULT_LOGO_LIGHT = "/omg-logo-light.webp";
+const DEFAULT_LOGO_DARK = "/omg-logo-light.webp";
 
 const LIGHT_THEME_COLORS = {
   bgColor: "#FFFFFF",
@@ -131,16 +134,24 @@ function absolutize(rel: string): string {
  * Best-effort logo URL resolver.
  *   - data:... and http(s)://...   -> passed through unchanged
  *   - /uploads/... or /OMG ....svg -> embedded as a base64 data URI
- *   - if the file isn't readable, falls back to a properly-encoded
- *     APP_URL-prefixed absolute URL (still better than a bare relative path)
+ *   - if the user-supplied file is missing on disk -> empty string (we never
+ *     silently substitute the default in that case, so reports don't pull a
+ *     stale OMG default after the user has set their own logo)
+ *   - if no rawInput at all -> fall back to the platform default
  */
 function resolveLogoSrc(rawInput: string | null | undefined, fallback: string): string {
   const raw = rawInput?.trim();
   if (raw) {
     if (raw.startsWith("data:") || /^https?:\/\//i.test(raw)) return raw;
     if (raw.startsWith("/")) {
-      return readPublicAsDataUri(raw) ?? absolutize(raw);
+      const dataUri = readPublicAsDataUri(raw);
+      if (dataUri) return dataUri;
+      // The user uploaded a logo but the file isn't on disk (cleared cache,
+      // ephemeral host, etc). Return empty so the report omits the image
+      // instead of swapping in an unrelated default.
+      return "";
     }
+    return "";
   }
   return readPublicAsDataUri(fallback) ?? absolutize(fallback);
 }

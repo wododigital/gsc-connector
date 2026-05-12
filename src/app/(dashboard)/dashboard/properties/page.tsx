@@ -178,7 +178,7 @@ export default async function PropertiesPage() {
             What your AI <span className="accent">can see.</span>
           </h1>
           <p className="lede">
-            Toggle which Google properties are exposed to your AI assistants.
+            Toggle which Google properties are active for your AI assistants.
             Hidden properties stay private. Changes take effect within 30 seconds.
           </p>
         </div>

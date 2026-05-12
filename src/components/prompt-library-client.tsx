@@ -13,6 +13,7 @@ interface Prompt {
   body: string;       // brand-injected, ready for clipboard
   rawBody: string;    // raw template (used for editing)
   isUserOwned: boolean;
+  isActive: boolean;
 }
 
 interface ApiResponse {
@@ -117,6 +118,15 @@ export function PromptLibraryClient() {
     if (res.ok) refresh();
   };
 
+  const toggleActive = async (p: Prompt) => {
+    const res = await fetch(`/api/prompts/${p.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !p.isActive }),
+    });
+    if (res.ok) refresh();
+  };
+
   const toggleConnection = (id: string) => {
     setActiveConnections((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
@@ -127,29 +137,7 @@ export function PromptLibraryClient() {
     <>
       <style>{PROMPT_CSS}</style>
       <div>
-        {/* Brand setup notices */}
-        {data && !data.hasBrandProfile && (
-          <div className="prompt-notice">
-            <div>
-              <p className="prompt-notice-title">Reports will use OMG Bridge default branding</p>
-              <p className="prompt-notice-desc">
-                Set up your brand profile to white-label generated reports with your logo and colors.
-              </p>
-            </div>
-            <a href="/dashboard/branding" className="btn">SET UP BRANDING</a>
-          </div>
-        )}
-        {data && !data.hasReportRules && (
-          <div className="prompt-notice">
-            <div>
-              <p className="prompt-notice-title">Add Report Rules to enforce your style</p>
-              <p className="prompt-notice-desc">
-                Optional do&apos;s and don&apos;ts get injected into every prompt so the AI follows your conventions.
-              </p>
-            </div>
-            <a href="/dashboard/branding#report-rules" className="btn">UPDATE RULES</a>
-          </div>
-        )}
+        <CustomizeReportPanel />
 
         {/* Filter bar */}
         <div className="filter-bar">
@@ -228,6 +216,7 @@ export function PromptLibraryClient() {
                 onPreview={() => setPreviewing(p)}
                 onEdit={p.isUserOwned ? () => setEditing(p) : undefined}
                 onDelete={p.isUserOwned ? () => deletePrompt(p) : undefined}
+                onToggleActive={p.isUserOwned ? () => toggleActive(p) : undefined}
               />
             ))}
           </div>
@@ -256,6 +245,7 @@ function PromptCard({
   onPreview,
   onEdit,
   onDelete,
+  onToggleActive,
 }: {
   prompt: Prompt;
   copied: boolean;
@@ -263,16 +253,24 @@ function PromptCard({
   onPreview: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onToggleActive?: () => void;
 }) {
   const tone = tagToneFor(p.category);
+  const inactive = p.isUserOwned && !p.isActive;
   return (
-    <div className="prompt-card">
+    <div className={`prompt-card${inactive ? " inactive" : ""}`}>
       <div className="head">
         <div>
           <div className={`tag ${tone}`}>▸ {p.category.replace(/-/g, " ").toUpperCase()}</div>
           <div className="title">{p.title}</div>
         </div>
-        <span className="menu" title="Options">⋯</span>
+        {inactive ? (
+          <span className="prompt-state-pill inactive" title="Hidden from AI assistants">INACTIVE</span>
+        ) : p.isUserOwned ? (
+          <span className="prompt-state-pill active" title="Available to AI assistants">ACTIVE</span>
+        ) : (
+          <span className="menu" title="Options">⋯</span>
+        )}
       </div>
       <div className="body">{p.description}</div>
       <div className="meta">
@@ -298,9 +296,282 @@ function PromptCard({
         </button>
         <button type="button" onClick={onPreview}>PREVIEW</button>
         {onEdit && <button type="button" onClick={onEdit}>EDIT</button>}
+        {onToggleActive && (
+          <button type="button" onClick={onToggleActive}>
+            {p.isActive ? "DEACTIVATE" : "ACTIVATE"}
+          </button>
+        )}
         {onDelete && <button type="button" onClick={onDelete}>DELETE</button>}
       </div>
     </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* Customize Report panel                                                     */
+/* Lets the user set logo, website, theme and accent color without leaving    */
+/* the prompts page. Persists via /api/branding + /api/branding/logo.         */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+interface ReportConfig {
+  logoUrl: string | null;
+  website: string;
+  reportTheme: "light" | "dark";
+  accentColor: string;
+}
+
+const DEFAULT_ACCENT = "#00B3B3";
+
+function CustomizeReportPanel() {
+  const [config, setConfig] = useState<ReportConfig>({
+    logoUrl: null,
+    website: "",
+    reportTheme: "light",
+    accentColor: DEFAULT_ACCENT,
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [logoBroken, setLogoBroken] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/branding");
+        if (!res.ok) return;
+        const json = (await res.json()) as { profile: {
+          logoUrl: string | null;
+          website: string | null;
+          reportTheme: string | null;
+          accentColor: string | null;
+        } | null };
+        if (json.profile) {
+          setConfig({
+            logoUrl: json.profile.logoUrl,
+            website: json.profile.website ?? "",
+            reportTheme: json.profile.reportTheme === "dark" ? "dark" : "light",
+            accentColor: json.profile.accentColor || DEFAULT_ACCENT,
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const uploadLogo = async (file: File) => {
+    setError("");
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("logo", file);
+      form.append("variant", "light");
+      const res = await fetch("/api/branding/logo", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Upload failed");
+        return;
+      }
+      setConfig((c) => ({ ...c, logoUrl: data.url }));
+      setLogoBroken(false);
+    } catch {
+      setError("Upload failed - try again");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch("/api/branding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          logoUrl: config.logoUrl,
+          website: config.website || null,
+          reportTheme: config.reportTheme,
+          accentColor: config.accentColor,
+          // Mirror the same accent for dark mode so single-color setup just works.
+          accentColorDark: config.accentColor,
+          // Auto-approve so reports immediately pick up these values.
+          isApproved: true,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Save failed");
+        return;
+      }
+      setSavedAt(Date.now());
+      setTimeout(() => setSavedAt(null), 2400);
+    } catch {
+      setError("Save failed - try again");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const previewBg = config.reportTheme === "dark" ? "#0F172A" : "#FFFFFF";
+  const previewText = config.reportTheme === "dark" ? "#F8FAFC" : "#1A1A2E";
+
+  return (
+    <section className="customize-report">
+      <header className="customize-report-head">
+        <div>
+          <div className="eyebrow">CUSTOMIZE REPORTS</div>
+          <p className="customize-report-sub">
+            Set the logo, theme and accent that AI assistants apply to generated
+            reports. Header, accent icons and footer use this accent.
+          </p>
+        </div>
+        {savedAt && <span className="prompt-state-pill active">SAVED</span>}
+      </header>
+
+      <div className="customize-report-grid">
+        <div className="customize-report-fields">
+          <div className="customize-row">
+            <label className="input-label">LOGO</label>
+            <div className="customize-logo-row">
+              <label className="customize-upload-btn">
+                {uploading ? "UPLOADING..." : config.logoUrl ? "REPLACE LOGO" : "UPLOAD LOGO"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif"
+                  hidden
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadLogo(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {config.logoUrl && (
+                <button
+                  type="button"
+                  className="customize-clear"
+                  onClick={() => setConfig((c) => ({ ...c, logoUrl: null }))}
+                >
+                  REMOVE
+                </button>
+              )}
+              <span className="customize-hint">PNG / JPG / SVG · 2MB max</span>
+            </div>
+          </div>
+
+          <div className="customize-row">
+            <label className="input-label">WEBSITE</label>
+            <input
+              type="url"
+              className="input-field"
+              placeholder="https://yourbrand.com"
+              value={config.website}
+              onChange={(e) => setConfig((c) => ({ ...c, website: e.target.value }))}
+              maxLength={300}
+            />
+          </div>
+
+          <div className="customize-row-grid">
+            <div>
+              <label className="input-label">THEME</label>
+              <div className="customize-theme-row">
+                <button
+                  type="button"
+                  className={`customize-theme${config.reportTheme === "light" ? " active" : ""}`}
+                  onClick={() => setConfig((c) => ({ ...c, reportTheme: "light" }))}
+                >
+                  ☀ LIGHT
+                </button>
+                <button
+                  type="button"
+                  className={`customize-theme${config.reportTheme === "dark" ? " active" : ""}`}
+                  onClick={() => setConfig((c) => ({ ...c, reportTheme: "dark" }))}
+                >
+                  ☾ DARK
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="input-label">ACCENT</label>
+              <div className="customize-color-row">
+                <input
+                  type="color"
+                  className="customize-color-input"
+                  value={config.accentColor}
+                  onChange={(e) =>
+                    setConfig((c) => ({ ...c, accentColor: e.target.value.toUpperCase() }))
+                  }
+                />
+                <input
+                  type="text"
+                  className="input-field"
+                  value={config.accentColor}
+                  onChange={(e) =>
+                    setConfig((c) => ({ ...c, accentColor: e.target.value.toUpperCase() }))
+                  }
+                  maxLength={7}
+                />
+              </div>
+            </div>
+          </div>
+
+          {error && <p className="prompt-error" style={{ marginBottom: 0 }}>{error}</p>}
+
+          <div className="customize-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={saving || loading}
+              onClick={save}
+            >
+              {saving ? "SAVING..." : "SAVE REPORT STYLE"}
+            </button>
+          </div>
+        </div>
+
+        <div className="customize-preview" style={{ background: previewBg, color: previewText }}>
+          <div className="customize-preview-head" style={{ borderColor: config.accentColor }}>
+            <div className="customize-preview-logo">
+              {config.logoUrl && !logoBroken ? (
+                <img
+                  src={config.logoUrl}
+                  alt="Logo preview"
+                  onError={() => setLogoBroken(true)}
+                  style={{ maxHeight: 38, maxWidth: 180, objectFit: "contain" }}
+                />
+              ) : (
+                <span style={{ opacity: 0.55, fontSize: 10, letterSpacing: "0.16em" }}>
+                  NO LOGO
+                </span>
+              )}
+            </div>
+            <span
+              className="customize-preview-accent"
+              style={{ background: config.accentColor }}
+              aria-hidden
+            />
+          </div>
+          <div className="customize-preview-body">
+            <div className="customize-preview-title" style={{ color: config.accentColor }}>
+              SAMPLE REPORT
+            </div>
+            <div className="customize-preview-line" />
+            <div className="customize-preview-line short" />
+            <div className="customize-preview-line" />
+          </div>
+          <div className="customize-preview-foot" style={{ borderColor: config.accentColor }}>
+            <span style={{ color: config.accentColor, fontSize: 9, letterSpacing: "0.18em" }}>
+              {config.website || "yourbrand.com"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -768,8 +1039,177 @@ const PROMPT_CSS = `
   display: flex; justify-content: flex-end; gap: 10px;
 }
 
+/* Customize Report panel */
+.customize-report {
+  background: var(--surface-1);
+  border: 1px solid var(--rule-strong);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.customize-report-head {
+  display: flex; justify-content: space-between; align-items: start; gap: 16px;
+  margin-bottom: 16px;
+}
+.customize-report-head .eyebrow {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.customize-report-sub {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  margin-top: 4px;
+  max-width: 520px;
+  line-height: 1.55;
+}
+.customize-report-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+.customize-report-fields {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.customize-row { display: flex; flex-direction: column; gap: 6px; }
+.customize-row-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+.customize-logo-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.customize-upload-btn {
+  padding: 8px 14px;
+  border: 1px dashed var(--rule-strong);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s;
+}
+.customize-upload-btn:hover { border-color: var(--teal); color: var(--teal); }
+.customize-clear {
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-3);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.customize-clear:hover { border-color: var(--vermilion); color: var(--vermilion); }
+.customize-hint {
+  font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-3);
+  font-family: var(--mono);
+}
+.customize-theme-row { display: flex; gap: 8px; }
+.customize-theme {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s;
+}
+.customize-theme:hover { border-color: var(--teal); color: var(--teal); }
+.customize-theme.active {
+  background: var(--teal); color: var(--bg); border-color: var(--teal); font-weight: 600;
+}
+.customize-color-row {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.customize-color-input {
+  width: 44px; height: 36px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  padding: 2px;
+  cursor: pointer;
+}
+.customize-actions { display: flex; gap: 10px; padding-top: 4px; }
+
+.customize-preview {
+  border: 1px solid var(--rule-strong);
+  display: flex; flex-direction: column;
+  min-height: 220px;
+  overflow: hidden;
+}
+.customize-preview-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px;
+  border-bottom: 2px solid var(--teal);
+}
+.customize-preview-logo {
+  flex: 1;
+  display: flex; align-items: center;
+  min-height: 38px;
+}
+.customize-preview-accent {
+  width: 22px; height: 22px;
+}
+.customize-preview-body {
+  flex: 1;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.customize-preview-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.customize-preview-line {
+  height: 6px;
+  background: currentColor;
+  opacity: 0.16;
+  width: 100%;
+}
+.customize-preview-line.short { width: 60%; }
+.customize-preview-foot {
+  padding: 10px 16px;
+  border-top: 2px solid var(--teal);
+  text-align: right;
+}
+
+/* Inactive prompt card + state pill */
+.prompt-card.inactive { opacity: 0.55; }
+.prompt-card.inactive:hover { opacity: 0.85; }
+.prompt-state-pill {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--rule);
+  color: var(--ink-3);
+  white-space: nowrap;
+  font-family: var(--mono);
+}
+.prompt-state-pill.active {
+  color: var(--teal); border-color: var(--teal);
+}
+.prompt-state-pill.inactive {
+  color: var(--ink-3); border-color: var(--rule);
+  background: var(--surface-2);
+}
+
 @media (max-width: 980px) {
   .prompt-grid { grid-template-columns: 1fr; }
   .prompt-modal-row { grid-template-columns: 1fr; }
+  .customize-report-grid { grid-template-columns: 1fr; }
+  .customize-row-grid { grid-template-columns: 1fr; }
 }
 `;

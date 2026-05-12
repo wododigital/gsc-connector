@@ -52,6 +52,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       body.requiredConnections !== undefined
         ? sanitizeConnections(body.requiredConnections)
         : (existing.requiredConnections as unknown as string[]);
+    const isActive = typeof body.isActive === "boolean" ? body.isActive : existing.isActive;
 
     if (!title || title.length > 200) {
       return NextResponse.json({ error: "Title is required (max 200 chars)" }, { status: 400 });
@@ -78,6 +79,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         requiredConnections,
         questions,
         semanticTags,
+        isActive,
       },
     });
 

@@ -6,7 +6,6 @@ import Link from "next/link";
 import { PropertyManager } from "@/components/property-manager";
 import { GA4PropertyManager } from "@/components/ga4-property-manager";
 import { CopyButton } from "@/components/copy-button";
-import { BrandingClient } from "@/components/branding-client";
 
 interface GscProperty {
   id: string;
@@ -23,24 +22,6 @@ interface Ga4Property {
   isActive: boolean;
 }
 
-interface BrandProfile {
-  id: string;
-  companyName: string | null;
-  website: string | null;
-  description: string | null;
-  logoUrl: string | null;
-  logoUrlDark: string | null;
-  primaryColor: string | null;
-  secondaryColor: string | null;
-  accentColor: string | null;
-  accentColorDark: string | null;
-  fontFamily: string | null;
-  reportTheme: string | null;
-  reportDos: string | null;
-  reportDonts: string | null;
-  isApproved: boolean;
-}
-
 interface Props {
   sessionEmail: string;
   sessionName: string | null;
@@ -48,18 +29,16 @@ interface Props {
   hasAnalyticsScope: boolean;
   gscProperties: GscProperty[];
   ga4Properties: Ga4Property[];
-  brandProfile: BrandProfile | null;
   mcpEndpoint: string;
 }
 
 const STEP_NAMES: Record<number, string> = {
   1: "Choose data sources",
   2: "Pick properties",
-  3: "Brand setup",
-  4: "Get endpoint",
+  3: "Get endpoint",
 };
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
 
 export function OnboardingClient(props: Props) {
   const [step, setStep] = useState(1);
@@ -125,8 +104,6 @@ export function OnboardingClient(props: Props) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
-
-  const skipBrand = () => goToStep(4);
 
   const progressPct = (step / TOTAL_STEPS) * 100;
 
@@ -266,8 +243,7 @@ export function OnboardingClient(props: Props) {
             hasAnalyticsScope={props.hasAnalyticsScope}
           />
         )}
-        {step === 3 && <BrandStep brandProfile={props.brandProfile} />}
-        {step === 4 && (
+        {step === 3 && (
           <EndpointStep
             mcpEndpoint={props.mcpEndpoint}
             error={error}
@@ -297,14 +273,9 @@ export function OnboardingClient(props: Props) {
               ← Back
             </button>
           )}
-          {step === 3 && (
-            <button onClick={skipBrand} className="btn btn-ghost">
-              Skip for now
-            </button>
-          )}
         </div>
         <div className="flex items-center gap-2.5">
-          {step < 4 && (
+          {step < 3 && (
             <button
               onClick={() => goToStep(step + 1)}
               className="btn btn-primary"
@@ -317,7 +288,7 @@ export function OnboardingClient(props: Props) {
               Continue →
             </button>
           )}
-          {step === 4 && (
+          {step === 3 && (
             <button onClick={finish} disabled={completing} className="btn btn-primary">
               {completing ? "Finishing..." : "Go to Dashboard →"}
             </button>
@@ -746,56 +717,9 @@ function PropertiesStep({
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/* STEP 3 — Brand setup                                                      */
+/* (Brand setup step removed — kept hidden for later restoration)            */
 /* ────────────────────────────────────────────────────────────────────────── */
-
-function BrandStep({ brandProfile }: { brandProfile: BrandProfile | null }) {
-  return (
-    <>
-      <h2
-        className="font-display"
-        style={{
-          fontWeight: 700,
-          fontSize: "clamp(28px, 3.4vw, 42px)",
-          lineHeight: 1.05,
-          letterSpacing: "-0.035em",
-          textTransform: "uppercase",
-          marginBottom: 14,
-        }}
-      >
-        Make every report{" "}
-        <span
-          style={{
-            textDecoration: "underline",
-            textDecorationColor: "var(--teal)",
-            textDecorationThickness: 3,
-            textUnderlineOffset: 5,
-          }}
-        >
-          yours.
-        </span>
-      </h2>
-      <p
-        className="text-ink-2"
-        style={{ fontSize: 15, lineHeight: 1.65, maxWidth: 620, marginBottom: 40 }}
-      >
-        Upload a logo and pick a color. AI-generated reports will use these
-        automatically. You can skip this and configure it later from the
-        dashboard.
-      </p>
-
-      {/* BrandingClient owns the form, file upload, color extraction, preview
-          and persistence to /api/branding. We pass it through unchanged so
-          Agent C's restyle of that component lands without conflict. */}
-      <div style={{ marginBottom: 40 }}>
-        <BrandingClient initial={brandProfile} embedded />
-      </div>
-    </>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/* STEP 4 — Endpoint                                                         */
+/* STEP 3 — Endpoint                                                         */
 /* ────────────────────────────────────────────────────────────────────────── */
 
 function EndpointStep({

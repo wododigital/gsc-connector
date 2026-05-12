@@ -20,9 +20,6 @@ export default async function PromptsPage() {
             Reusable prompts ready to drop into any AI assistant. Run them on demand or schedule them.
           </p>
         </div>
-        <div className="actions">
-          <a className="btn" href="/dashboard/branding">BRAND THESE ↗</a>
-        </div>
       </div>
       <PromptLibraryClient />
     </>

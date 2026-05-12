@@ -19,7 +19,7 @@ export default async function OnboardingPage() {
   });
   if (user?.onboardingCompleted) redirect("/dashboard");
 
-  const [credential, gscProperties, ga4Properties, brandProfile] = await Promise.all([
+  const [credential, gscProperties, ga4Properties] = await Promise.all([
     db.googleCredential.findFirst({
       where: { userId: session.id },
       select: { scopes: true },
@@ -35,7 +35,6 @@ export default async function OnboardingPage() {
       orderBy: { createdAt: "asc" },
       select: { id: true, propertyId: true, displayName: true, accountName: true, isActive: true },
     }),
-    db.brandProfile.findUnique({ where: { userId: session.id } }),
   ]);
 
   const mcpEndpoint = `${process.env.APP_URL || "http://localhost:3000"}/api/mcp`;
@@ -48,7 +47,6 @@ export default async function OnboardingPage() {
       hasAnalyticsScope={Boolean(credential?.scopes.includes("analytics.readonly"))}
       gscProperties={gscProperties}
       ga4Properties={ga4Properties}
-      brandProfile={brandProfile}
       mcpEndpoint={mcpEndpoint}
     />
   );
