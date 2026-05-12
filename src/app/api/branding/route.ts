@@ -32,16 +32,20 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const reportTheme = body.reportTheme === "dark" ? "dark" : "light";
+    // Logo fields are accepted up to ~3MB so a base64 data URI for a 2MB
+    // uploaded image (2MB binary -> ~2.7MB base64) fits with headroom.
     const data = {
       companyName: clean(body.companyName, 200) ?? null,
       website: clean(body.website, 300) ?? null,
       description: clean(body.description, 2000) ?? null,
-      logoUrl: clean(body.logoUrl, 500) ?? null,
-      logoUrlDark: clean(body.logoUrlDark, 500) ?? null,
+      logoUrl: clean(body.logoUrl, 4_000_000) ?? null,
+      logoUrlDark: clean(body.logoUrlDark, 4_000_000) ?? null,
       primaryColor: cleanHex(body.primaryColor) ?? null,
       secondaryColor: cleanHex(body.secondaryColor) ?? null,
       accentColor: cleanHex(body.accentColor) ?? null,
       accentColorDark: cleanHex(body.accentColorDark) ?? null,
+      lightBgColor: cleanHex(body.lightBgColor) ?? null,
+      darkBgColor: cleanHex(body.darkBgColor) ?? null,
       fontFamily: clean(body.fontFamily, 80) ?? "Inter",
       reportTheme,
       reportDos: clean(body.reportDos, 4000) ?? null,

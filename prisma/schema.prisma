@@ -416,12 +416,14 @@ model BrandProfile {
   companyName    String?  @map("company_name")
   website        String?
   description    String?  @db.Text
-  logoUrl        String?  @map("logo_url") // Light-bg variant (used on light reports)
-  logoUrlDark    String?  @map("logo_url_dark") // Optional dark-bg variant (used on dark reports)
+  logoUrl        String?  @db.Text @map("logo_url") // Light-bg logo - stored as base64 data URI
+  logoUrlDark    String?  @db.Text @map("logo_url_dark") // Dark-bg logo - stored as base64 data URI
   primaryColor   String?  @map("primary_color")
   secondaryColor String?  @map("secondary_color")
   accentColor    String?  @map("accent_color") // Light-theme accent (extracted from light logo)
   accentColorDark String? @map("accent_color_dark") // Dark-theme accent (extracted from dark logo)
+  lightBgColor   String?  @map("light_bg_color") // Optional custom background for light-theme reports
+  darkBgColor    String?  @map("dark_bg_color")  // Optional custom background for dark-theme reports
   fontFamily     String?  @default("Inter") @map("font_family")
   reportTheme    String   @default("light") @map("report_theme") // "light" | "dark" - drives generated report color scheme
   reportDos      String?  @db.Text @map("report_dos") // Optional rules: things the AI must do in every generated report

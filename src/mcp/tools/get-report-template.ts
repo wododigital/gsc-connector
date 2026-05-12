@@ -46,8 +46,49 @@ export function registerGetReportTemplateTool(server: McpServer, user: UserConte
           throw new Error(`Template ${template_id} not found`);
         }
 
-        const injectedBody = injectBrandProfile(tpl.body, brand);
         const brandValues = resolveBrandValues(brand);
+
+        // Hard preamble that the AI must follow before generating anything.
+        // No defaults are allowed: property, date range and output format must
+        // come from the user explicitly. Without all three answered, the AI
+        // is instructed to stop and ask, not to proceed with assumptions.
+        const STOP_PREAMBLE = [
+          "## STOP. READ THIS BEFORE GENERATING.",
+          "",
+          "You MUST collect answers to ALL of the following BEFORE you produce the report.",
+          "Do NOT use defaults. Do NOT guess. If any answer is missing, ask for it and wait.",
+          "",
+          "1. **Output format** - choose ONE:",
+          "   - `webpage` -> self-contained interactive HTML artifact (charts, tables, brand styles inline)",
+          "   - `pdf`     -> print-ready HTML styled for letter/A4 with @media print rules; user will Save as PDF",
+          "   - `excel`   -> structured workbook content. Output a fenced ```csv block for each sheet, plus a one-line header naming the sheet. No charts.",
+          "2. **Property / site** - the GSC site, GA4 property or GBP location to query. Never assume.",
+          "3. **Date range** - explicit start and end dates (or a named range like \"last 28 days\"). Never assume.",
+          "",
+          "If the user has not explicitly provided all three, STOP and ask for the missing pieces.",
+          "Only after all three are answered may you proceed with the prompt below.",
+          "",
+          "---",
+          "",
+        ].join("\n");
+
+        const injectedBody = STOP_PREAMBLE + injectBrandProfile(tpl.body, brand);
+
+        // Format-specific guidance the AI should apply once the user picks a format.
+        const formatGuidance = {
+          webpage:
+            "Render a single self-contained HTML artifact. Inline all CSS using the brand values " +
+            "(background = brand.bgColor, text = brand.textColor, accent in header and footer only). " +
+            "Include interactive elements where they add insight (tabs, sortable tables, simple SVG charts).",
+          pdf:
+            "Render print-ready HTML using the brand values. Add an @media print block that sets page " +
+            "size to A4 with 18mm margins, hides any interactive UI, and forces accent colors with " +
+            "-webkit-print-color-adjust: exact. Tell the user to use the browser Print dialog -> Save as PDF.",
+          excel:
+            "Output one fenced ```csv block per sheet. Above each block put a single line `# Sheet: <name>`. " +
+            "Use the user's accent color in the recommendations section as commentary, not styling. No charts, " +
+            "no HTML. The user will paste each block into a separate sheet.",
+        };
 
         logToolCall({
           userId: user.userId,
@@ -72,15 +113,35 @@ export function registerGetReportTemplateTool(server: McpServer, user: UserConte
                     category: tpl.category,
                     required_connections: tpl.requiredConnections,
                     questions: tpl.questions,
+                    mandatory_questions: [
+                      {
+                        key: "output_format",
+                        prompt: "Which output format do you want: webpage, pdf, or excel?",
+                        accepts: ["webpage", "pdf", "excel"],
+                      },
+                      {
+                        key: "property",
+                        prompt: "Which property / site / location should I query?",
+                      },
+                      {
+                        key: "date_range",
+                        prompt: "What date range should I use (explicit start and end, or a named range like 'last 28 days')?",
+                      },
+                    ],
                     brand_profile: {
                       ...brandValues,
                       is_user_brand: Boolean(brand?.isApproved),
                     },
+                    format_guidance: formatGuidance,
                     prompt: injectedBody,
                     instructions:
-                      "Read the 'prompt' field carefully. It tells you what clarifying questions to ask " +
-                      "the user before generating the report. Ask those questions, wait for answers, then " +
-                      "generate the report as a self-contained HTML file using the brand profile included in this response.",
+                      "STRICT EXECUTION RULES:\n" +
+                      "1. Do not generate the report yet. First confirm all three answers in `mandatory_questions`: output_format, property, and date_range. If any is missing, ask the user and wait.\n" +
+                      "2. Never substitute defaults for the mandatory questions. If the user says 'whatever' or 'you decide', ask again with options.\n" +
+                      "3. Also ask the template's own clarifying `questions` if they have not been answered.\n" +
+                      "4. Once the user picks an output_format, apply the matching entry from `format_guidance` to control how the final output is rendered.\n" +
+                      "5. Use the `brand_profile` values (colors, logo, website) for visual styling. Only the accent color should appear in the header, accent icons and footer; do not let it dominate the body.\n" +
+                      "6. The `prompt` field contains a STOP preamble at the top - obey it verbatim before anything else.",
                   },
                 },
                 null,

@@ -118,7 +118,7 @@ export default async function DashboardLayout({
   const planLabel = subscription?.plan.name?.toUpperCase() ?? "FREE";
 
   // Counts for sidebar badges. All wrapped so failures fall back to 0.
-  const [promptCount, propertyCount, apiKeyCount] = await Promise.all([
+  const [promptCount, propertyCount] = await Promise.all([
     db.userPrompt
       .count({ where: { userId: session.id } })
       .catch(() => 0),
@@ -126,7 +126,6 @@ export default async function DashboardLayout({
       db.gscProperty.count({ where: { userId: session.id, isActive: true } }).catch(() => 0),
       db.ga4Property.count({ where: { userId: session.id, isActive: true } }).catch(() => 0),
     ]).then(([a, b]) => a + b),
-    db.apiKey.count({ where: { userId: session.id, isActive: true } }).catch(() => 0),
   ]);
 
   const isAdmin = session.email === process.env.ADMIN_EMAIL;
@@ -208,12 +207,7 @@ export default async function DashboardLayout({
               label="Properties"
               badge={propertyCount > 0 ? propertyCount : null}
             />
-            <SidebarLink
-              href="/dashboard/keys"
-              icon={Icons.apikeys}
-              label="API Keys"
-              badge={apiKeyCount > 0 ? apiKeyCount : null}
-            />
+            {/* API Keys link hidden — page kept on disk; reachable via direct URL from install instructions */}
             {/* Branding link hidden — feature kept on disk for later restoration */}
 
             <SidebarSection label="ACCOUNT" defaultOpen>

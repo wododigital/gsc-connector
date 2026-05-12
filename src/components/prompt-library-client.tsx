@@ -55,6 +55,7 @@ export function PromptLibraryClient() {
   const [activeConnections, setActiveConnections] = useState<string[]>([]);
   const [editing, setEditing] = useState<Prompt | "new" | null>(null);
   const [previewing, setPreviewing] = useState<Prompt | null>(null);
+  const [customizing, setCustomizing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -137,8 +138,6 @@ export function PromptLibraryClient() {
     <>
       <style>{PROMPT_CSS}</style>
       <div>
-        <CustomizeReportPanel />
-
         {/* Filter bar */}
         <div className="filter-bar">
           <input
@@ -192,13 +191,23 @@ export function PromptLibraryClient() {
           <span className="new-prompt-count">
             {filtered.length} OF {all.length} PROMPTS
           </span>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setEditing("new")}
-          >
-            + NEW PROMPT
-          </button>
+          <div className="new-prompt-actions">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setCustomizing(true)}
+              title="Logo, theme, colors that every generated report inherits"
+            >
+              ⚙ CUSTOMIZE REPORTS
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setEditing("new")}
+            >
+              + NEW PROMPT
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -232,6 +241,10 @@ export function PromptLibraryClient() {
 
         {previewing && (
           <PreviewModal prompt={previewing} onClose={() => setPreviewing(null)} />
+        )}
+
+        {customizing && (
+          <CustomizeReportModal onClose={() => setCustomizing(false)} />
         )}
       </div>
     </>
@@ -308,9 +321,10 @@ function PromptCard({
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/* Customize Report panel                                                     */
-/* Lets the user set logo, website, theme and accent color without leaving    */
-/* the prompts page. Persists via /api/branding + /api/branding/logo.         */
+/* Customize Report modal                                                     */
+/* Lets the user set logo, website, theme, background and accent color without */
+/* leaving the prompts page. Persists via /api/branding + /api/branding/logo. */
+/* Opened from the CUSTOMIZE REPORTS button in the new-prompt-bar.            */
 /* ────────────────────────────────────────────────────────────────────────── */
 
 interface ReportConfig {
@@ -318,22 +332,27 @@ interface ReportConfig {
   website: string;
   reportTheme: "light" | "dark";
   accentColor: string;
+  lightBgColor: string;
+  darkBgColor: string;
 }
 
 const DEFAULT_ACCENT = "#00B3B3";
+const DEFAULT_LIGHT_BG = "#FFFFFF";
+const DEFAULT_DARK_BG = "#0F172A";
 
-function CustomizeReportPanel() {
+function CustomizeReportModal({ onClose }: { onClose: () => void }) {
   const [config, setConfig] = useState<ReportConfig>({
     logoUrl: null,
     website: "",
     reportTheme: "light",
     accentColor: DEFAULT_ACCENT,
+    lightBgColor: DEFAULT_LIGHT_BG,
+    darkBgColor: DEFAULT_DARK_BG,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [logoBroken, setLogoBroken] = useState(false);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -346,6 +365,8 @@ function CustomizeReportPanel() {
           website: string | null;
           reportTheme: string | null;
           accentColor: string | null;
+          lightBgColor: string | null;
+          darkBgColor: string | null;
         } | null };
         if (json.profile) {
           setConfig({
@@ -353,6 +374,8 @@ function CustomizeReportPanel() {
             website: json.profile.website ?? "",
             reportTheme: json.profile.reportTheme === "dark" ? "dark" : "light",
             accentColor: json.profile.accentColor || DEFAULT_ACCENT,
+            lightBgColor: json.profile.lightBgColor || DEFAULT_LIGHT_BG,
+            darkBgColor: json.profile.darkBgColor || DEFAULT_DARK_BG,
           });
         }
       } finally {
@@ -397,6 +420,8 @@ function CustomizeReportPanel() {
           accentColor: config.accentColor,
           // Mirror the same accent for dark mode so single-color setup just works.
           accentColorDark: config.accentColor,
+          lightBgColor: config.lightBgColor,
+          darkBgColor: config.darkBgColor,
           // Auto-approve so reports immediately pick up these values.
           isApproved: true,
         }),
@@ -406,8 +431,7 @@ function CustomizeReportPanel() {
         setError(data.error ?? "Save failed");
         return;
       }
-      setSavedAt(Date.now());
-      setTimeout(() => setSavedAt(null), 2400);
+      onClose();
     } catch {
       setError("Save failed - try again");
     } finally {
@@ -415,24 +439,28 @@ function CustomizeReportPanel() {
     }
   };
 
-  const previewBg = config.reportTheme === "dark" ? "#0F172A" : "#FFFFFF";
+  const activeBg =
+    config.reportTheme === "dark" ? config.darkBgColor : config.lightBgColor;
   const previewText = config.reportTheme === "dark" ? "#F8FAFC" : "#1A1A2E";
 
   return (
-    <section className="customize-report">
-      <header className="customize-report-head">
-        <div>
-          <div className="eyebrow">CUSTOMIZE REPORTS</div>
-          <p className="customize-report-sub">
-            Set the logo, theme and accent that AI assistants apply to generated
-            reports. Header, accent icons and footer use this accent.
-          </p>
+    <div className="prompt-modal-backdrop" onClick={onClose}>
+      <div
+        className="prompt-modal prompt-modal-customize"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="prompt-modal-head">
+          <h2>CUSTOMIZE REPORTS</h2>
+          <button type="button" onClick={onClose} className="btn">CLOSE</button>
         </div>
-        {savedAt && <span className="prompt-state-pill active">SAVED</span>}
-      </header>
 
-      <div className="customize-report-grid">
-        <div className="customize-report-fields">
+        <div className="prompt-modal-fields">
+          <p className="customize-report-sub">
+            These values flow into every report your AI generates (webpage,
+            PDF or Excel). The accent is used in the header, accent icons and
+            footer only.
+          </p>
+
           <div className="customize-row">
             <label className="input-label">LOGO</label>
             <div className="customize-logo-row">
@@ -454,7 +482,10 @@ function CustomizeReportPanel() {
                 <button
                   type="button"
                   className="customize-clear"
-                  onClick={() => setConfig((c) => ({ ...c, logoUrl: null }))}
+                  onClick={() => {
+                    setConfig((c) => ({ ...c, logoUrl: null }));
+                    setLogoBroken(false);
+                  }}
                 >
                   REMOVE
                 </button>
@@ -475,24 +506,59 @@ function CustomizeReportPanel() {
             />
           </div>
 
+          <div className="customize-row">
+            <label className="input-label">THEME</label>
+            <div className="customize-theme-row">
+              <button
+                type="button"
+                className={`customize-theme${config.reportTheme === "light" ? " active" : ""}`}
+                onClick={() => setConfig((c) => ({ ...c, reportTheme: "light" }))}
+              >
+                ☀ LIGHT
+              </button>
+              <button
+                type="button"
+                className={`customize-theme${config.reportTheme === "dark" ? " active" : ""}`}
+                onClick={() => setConfig((c) => ({ ...c, reportTheme: "dark" }))}
+              >
+                ☾ DARK
+              </button>
+            </div>
+          </div>
+
           <div className="customize-row-grid">
             <div>
-              <label className="input-label">THEME</label>
-              <div className="customize-theme-row">
-                <button
-                  type="button"
-                  className={`customize-theme${config.reportTheme === "light" ? " active" : ""}`}
-                  onClick={() => setConfig((c) => ({ ...c, reportTheme: "light" }))}
-                >
-                  ☀ LIGHT
-                </button>
-                <button
-                  type="button"
-                  className={`customize-theme${config.reportTheme === "dark" ? " active" : ""}`}
-                  onClick={() => setConfig((c) => ({ ...c, reportTheme: "dark" }))}
-                >
-                  ☾ DARK
-                </button>
+              <label className="input-label">
+                BACKGROUND ({config.reportTheme.toUpperCase()})
+              </label>
+              <div className="customize-color-row">
+                <input
+                  type="color"
+                  className="customize-color-input"
+                  value={activeBg}
+                  onChange={(e) => {
+                    const v = e.target.value.toUpperCase();
+                    setConfig((c) =>
+                      c.reportTheme === "dark"
+                        ? { ...c, darkBgColor: v }
+                        : { ...c, lightBgColor: v }
+                    );
+                  }}
+                />
+                <input
+                  type="text"
+                  className="input-field"
+                  value={activeBg}
+                  onChange={(e) => {
+                    const v = e.target.value.toUpperCase();
+                    setConfig((c) =>
+                      c.reportTheme === "dark"
+                        ? { ...c, darkBgColor: v }
+                        : { ...c, lightBgColor: v }
+                    );
+                  }}
+                  maxLength={7}
+                />
               </div>
             </div>
 
@@ -520,58 +586,78 @@ function CustomizeReportPanel() {
             </div>
           </div>
 
-          {error && <p className="prompt-error" style={{ marginBottom: 0 }}>{error}</p>}
-
-          <div className="customize-actions">
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={saving || loading}
-              onClick={save}
+          <div className="customize-preview-wrap">
+            <span className="input-label">PREVIEW</span>
+            <div
+              className="customize-preview"
+              style={{ background: activeBg, color: previewText }}
             >
-              {saving ? "SAVING..." : "SAVE REPORT STYLE"}
-            </button>
+              <div
+                className="customize-preview-head"
+                style={{ borderColor: config.accentColor }}
+              >
+                <div className="customize-preview-logo">
+                  {config.logoUrl && !logoBroken ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={config.logoUrl}
+                      alt="Logo preview"
+                      onError={() => setLogoBroken(true)}
+                      style={{ maxHeight: 38, maxWidth: 180, objectFit: "contain" }}
+                    />
+                  ) : (
+                    <span style={{ opacity: 0.55, fontSize: 10, letterSpacing: "0.16em" }}>
+                      NO LOGO
+                    </span>
+                  )}
+                </div>
+                <span
+                  className="customize-preview-accent"
+                  style={{ background: config.accentColor }}
+                  aria-hidden
+                />
+              </div>
+              <div className="customize-preview-body">
+                <div className="customize-preview-title" style={{ color: config.accentColor }}>
+                  SAMPLE REPORT
+                </div>
+                <div className="customize-preview-line" />
+                <div className="customize-preview-line short" />
+                <div className="customize-preview-line" />
+              </div>
+              <div
+                className="customize-preview-foot"
+                style={{ borderColor: config.accentColor }}
+              >
+                <span
+                  style={{
+                    color: config.accentColor,
+                    fontSize: 9,
+                    letterSpacing: "0.18em",
+                  }}
+                >
+                  {config.website || "yourbrand.com"}
+                </span>
+              </div>
+            </div>
           </div>
+
+          {error && <p className="prompt-error" style={{ marginBottom: 0 }}>{error}</p>}
         </div>
 
-        <div className="customize-preview" style={{ background: previewBg, color: previewText }}>
-          <div className="customize-preview-head" style={{ borderColor: config.accentColor }}>
-            <div className="customize-preview-logo">
-              {config.logoUrl && !logoBroken ? (
-                <img
-                  src={config.logoUrl}
-                  alt="Logo preview"
-                  onError={() => setLogoBroken(true)}
-                  style={{ maxHeight: 38, maxWidth: 180, objectFit: "contain" }}
-                />
-              ) : (
-                <span style={{ opacity: 0.55, fontSize: 10, letterSpacing: "0.16em" }}>
-                  NO LOGO
-                </span>
-              )}
-            </div>
-            <span
-              className="customize-preview-accent"
-              style={{ background: config.accentColor }}
-              aria-hidden
-            />
-          </div>
-          <div className="customize-preview-body">
-            <div className="customize-preview-title" style={{ color: config.accentColor }}>
-              SAMPLE REPORT
-            </div>
-            <div className="customize-preview-line" />
-            <div className="customize-preview-line short" />
-            <div className="customize-preview-line" />
-          </div>
-          <div className="customize-preview-foot" style={{ borderColor: config.accentColor }}>
-            <span style={{ color: config.accentColor, fontSize: 9, letterSpacing: "0.18em" }}>
-              {config.website || "yourbrand.com"}
-            </span>
-          </div>
+        <div className="prompt-modal-foot">
+          <button type="button" onClick={onClose} className="btn">CANCEL</button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={saving || loading}
+            onClick={save}
+          >
+            {saving ? "SAVING..." : "SAVE REPORT STYLE"}
+          </button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -1039,40 +1125,16 @@ const PROMPT_CSS = `
   display: flex; justify-content: flex-end; gap: 10px;
 }
 
-/* Customize Report panel */
-.customize-report {
-  background: var(--surface-1);
-  border: 1px solid var(--rule-strong);
-  padding: 18px 20px;
-  margin-bottom: 18px;
-}
-.customize-report-head {
-  display: flex; justify-content: space-between; align-items: start; gap: 16px;
-  margin-bottom: 16px;
-}
-.customize-report-head .eyebrow {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: -0.01em;
-  text-transform: uppercase;
-  color: var(--ink);
-}
+/* New-prompt-bar action grouping (Customize + New Prompt) */
+.new-prompt-actions { display: flex; gap: 10px; align-items: center; }
+
+/* Customize Report modal (reuses .prompt-modal-* scaffolding) */
+.prompt-modal-customize { max-width: 640px; }
 .customize-report-sub {
   font-size: 11.5px;
   color: var(--ink-3);
-  margin-top: 4px;
-  max-width: 520px;
   line-height: 1.55;
-}
-.customize-report-grid {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 18px;
-  align-items: start;
-}
-.customize-report-fields {
-  display: flex; flex-direction: column; gap: 14px;
+  margin: 0;
 }
 .customize-row { display: flex; flex-direction: column; gap: 6px; }
 .customize-row-grid {
@@ -1139,8 +1201,9 @@ const PROMPT_CSS = `
   padding: 2px;
   cursor: pointer;
 }
-.customize-actions { display: flex; gap: 10px; padding-top: 4px; }
-
+.customize-preview-wrap {
+  display: flex; flex-direction: column; gap: 8px;
+}
 .customize-preview {
   border: 1px solid var(--rule-strong);
   display: flex; flex-direction: column;
@@ -1209,7 +1272,6 @@ const PROMPT_CSS = `
 @media (max-width: 980px) {
   .prompt-grid { grid-template-columns: 1fr; }
   .prompt-modal-row { grid-template-columns: 1fr; }
-  .customize-report-grid { grid-template-columns: 1fr; }
   .customize-row-grid { grid-template-columns: 1fr; }
 }
 `;

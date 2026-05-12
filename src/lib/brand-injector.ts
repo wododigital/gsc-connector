@@ -54,6 +54,8 @@ export interface BrandProfileLike {
   secondaryColor?: string | null;
   accentColor?: string | null;
   accentColorDark?: string | null;
+  lightBgColor?: string | null;
+  darkBgColor?: string | null;
   fontFamily?: string | null;
   website?: string | null;
   description?: string | null;
@@ -237,8 +239,17 @@ function composeGuidelines(dos: string[], donts: string[]): string {
 export function resolveBrandValues(brand: BrandProfileLike | null | undefined): BrandValues {
   const useUserBrand = Boolean(brand?.isApproved);
   const theme = normalizeTheme(useUserBrand ? brand?.reportTheme : "light");
-  const themeColors = theme === "dark" ? DARK_THEME_COLORS : LIGHT_THEME_COLORS;
+  const baseThemeColors = theme === "dark" ? DARK_THEME_COLORS : LIGHT_THEME_COLORS;
   const slotDefaults = THEME_COLOR_DEFAULTS[theme];
+
+  // Honour custom background colors when the user has set them for the active
+  // theme. Falls back to the platform theme defaults otherwise.
+  const customBg = useUserBrand
+    ? (theme === "dark" ? brand?.darkBgColor?.trim() : brand?.lightBgColor?.trim())
+    : undefined;
+  const themeColors = customBg
+    ? { ...baseThemeColors, bgColor: customBg }
+    : baseThemeColors;
 
   const lightLogoInput = useUserBrand ? brand?.logoUrl : null;
   const darkLogoInput = useUserBrand ? brand?.logoUrlDark : null;
@@ -317,7 +328,9 @@ export function injectBrandProfile(body: string, brand: BrandProfileLike | null 
 
 /**
  * Build the clipboard-ready prompt: brand-injected body with the standard
- * "paste this into your AI assistant" header prepended.
+ * "paste this into your AI assistant" header prepended, plus the same STOP
+ * preamble that the MCP get_report_template tool emits, so direct-paste flows
+ * enforce the mandatory questions just like MCP-driven flows.
  */
 export function buildClipboardPrompt(body: string, brand: BrandProfileLike | null | undefined): string {
   const injected = injectBrandProfile(body, brand);
@@ -325,5 +338,18 @@ export function buildClipboardPrompt(body: string, brand: BrandProfileLike | nul
     "# OMG Bridge Report Prompt\n\n" +
     "Paste this into your AI assistant (Claude, ChatGPT, Cursor) with your OMG Bridge MCP connection active.\n\n" +
     "---\n\n";
-  return header + injected;
+  const stopPreamble =
+    "## STOP. READ THIS BEFORE GENERATING.\n\n" +
+    "You MUST collect answers to ALL of the following BEFORE you produce the report.\n" +
+    "Do NOT use defaults. Do NOT guess. If any answer is missing, ask for it and wait.\n\n" +
+    "1. **Output format** - choose ONE:\n" +
+    "   - `webpage` -> self-contained interactive HTML artifact (charts, tables, brand styles inline)\n" +
+    "   - `pdf`     -> print-ready HTML styled for letter/A4 with @media print rules; user will Save as PDF\n" +
+    "   - `excel`   -> structured workbook content. Output a fenced ```csv block per sheet, prefixed by `# Sheet: <name>`. No charts.\n" +
+    "2. **Property / site** - the GSC site, GA4 property or GBP location to query. Never assume.\n" +
+    "3. **Date range** - explicit start and end dates (or a named range like \"last 28 days\"). Never assume.\n\n" +
+    "If the user has not explicitly provided all three, STOP and ask for the missing pieces.\n" +
+    "Only after all three are answered may you proceed with the prompt below.\n\n" +
+    "---\n\n";
+  return header + stopPreamble + injected;
 }
