@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin-auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   SidebarLink,
@@ -87,7 +88,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const session = await getSession();
-  if (!session || session.email !== process.env.ADMIN_EMAIL) {
+  if (!session || !isAdminEmail(session.email)) {
     redirect("/dashboard");
   }
 

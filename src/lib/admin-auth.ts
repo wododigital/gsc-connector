@@ -1,18 +1,29 @@
 /**
  * Admin authentication helpers for API routes.
- * Admin = user whose email matches ADMIN_EMAIL env var.
+ * Admin = user whose email matches one of the addresses in ADMIN_EMAIL
+ * (comma-separated list, case-insensitive).
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 
+export function getAdminEmails(): string[] {
+  return (process.env.ADMIN_EMAIL ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return getAdminEmails().includes(email.toLowerCase());
+}
+
 /**
- * Returns true if the current session user is the admin.
+ * Returns true if the current session user is an admin.
  */
 export async function isAdmin(): Promise<boolean> {
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) return false;
   const session = await getSession();
-  return session?.email === adminEmail;
+  return isAdminEmail(session?.email);
 }
 
 /**
@@ -27,13 +38,12 @@ export async function requireAdmin(
   _req: NextRequest
 ): Promise<{ id: string; email: string } | NextResponse> {
   const session = await getSession();
-  const adminEmail = process.env.ADMIN_EMAIL;
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!adminEmail || session.email !== adminEmail) {
+  if (!isAdminEmail(session.email)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

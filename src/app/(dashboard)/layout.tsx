@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin-auth";
 import { redirect } from "next/navigation";
 import {
   SidebarLink,
@@ -128,7 +129,7 @@ export default async function DashboardLayout({
     ]).then(([a, b]) => a + b),
   ]);
 
-  const isAdmin = session.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(session.email);
   const userInitials = initialsFor(session.email);
 
   return (
