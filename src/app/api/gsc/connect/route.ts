@@ -43,6 +43,10 @@ export async function GET(req: NextRequest) {
       redirectUri: gscCallbackUri,
       state,
       accessType: "offline", // ensures we get a refresh_token
+      // Pre-select the user's existing OMG account email so they cannot
+      // accidentally connect a different Google account. The callback also
+      // hard-rejects mismatches.
+      loginHint: session.email,
     });
 
     const response = NextResponse.redirect(googleAuthUrl);

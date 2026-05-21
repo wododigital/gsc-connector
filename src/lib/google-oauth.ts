@@ -9,6 +9,7 @@ export function buildGoogleAuthUrl(params: {
   redirectUri: string;
   state: string;
   accessType?: string;
+  loginHint?: string;
 }): string {
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID!);
@@ -19,6 +20,11 @@ export function buildGoogleAuthUrl(params: {
   url.searchParams.set("access_type", params.accessType ?? "offline");
   // Force consent to ensure we always receive a refresh token
   url.searchParams.set("prompt", "consent");
+  // Pre-select the right Google account so users can't accidentally
+  // connect a different one than the email tied to their OMG account.
+  if (params.loginHint) {
+    url.searchParams.set("login_hint", params.loginHint);
+  }
   return url.toString();
 }
 

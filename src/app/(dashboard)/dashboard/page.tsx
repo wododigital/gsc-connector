@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import db from "@/lib/db";
 import { CopyButton } from "@/components/copy-button";
 import { ConnectionActions } from "@/components/connection-actions";
+import { ConnectAi } from "@/components/connect-ai";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -45,9 +46,17 @@ async function getCredentialInfo(userId: string) {
   } catch { return { hasCredential: false, hasAnalyticsScope: false }; }
 }
 
-async function getApiKeyCount(userId: string) {
-  try { return await db.apiKey.count({ where: { userId, isActive: true } }); }
-  catch { return 0; }
+async function getActiveKeySummary(userId: string) {
+  try {
+    const key = await db.apiKey.findFirst({
+      where: { userId, isActive: true },
+      orderBy: { createdAt: "desc" },
+      select: { keyPrefix: true },
+    });
+    return { hasActiveKey: Boolean(key), activeKeyPrefix: key?.keyPrefix ?? null };
+  } catch {
+    return { hasActiveKey: false, activeKeyPrefix: null };
+  }
 }
 
 async function getRecentLogs(userId: string) {
@@ -77,11 +86,6 @@ async function getUsageStats(userId: string) {
 }
 
 const MCP_ENDPOINT = `${process.env.APP_URL || "http://localhost:3000"}/api/mcp`;
-
-const CLAUDE_DESKTOP_CONFIG = JSON.stringify(
-  { mcpServers: { "omg-connector": { url: MCP_ENDPOINT, headers: { Authorization: "Bearer YOUR_API_KEY" } } } },
-  null, 2
-);
 
 /* ────────────────────────────────────────────────────────────
  * Inline AI brand SVGs for the data-table FROM column.
@@ -129,15 +133,25 @@ function userFirstName(email: string): string {
   return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
-export default async function DashboardPage() {
+type DashboardSearchParams = Promise<{ error?: string; attempted?: string }>;
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: DashboardSearchParams;
+}) {
   const session = await getSession();
   if (!session) redirect("/auth/login");
+
+  const params = (await searchParams) ?? {};
+  const errorCode = typeof params.error === "string" ? params.error : null;
+  const attemptedEmail = typeof params.attempted === "string" ? params.attempted : null;
 
   const [
     properties,
     ga4Properties,
     credentialInfo,
-    apiKeyCount,
+    keySummary,
     recentLogs,
     usageStats,
     subscription,
@@ -145,13 +159,14 @@ export default async function DashboardPage() {
     getProperties(session.id),
     getGA4Properties(session.id),
     getCredentialInfo(session.id),
-    getApiKeyCount(session.id),
+    getActiveKeySummary(session.id),
     getRecentLogs(session.id),
     getUsageStats(session.id),
     db.userSubscription
       .findUnique({ where: { userId: session.id }, include: { plan: true } })
       .catch(() => null),
   ]);
+  const { hasActiveKey, activeKeyPrefix } = keySummary;
 
   const hasGscConnected = properties.some((p) => p.isActive);
   const { hasCredential, hasAnalyticsScope } = credentialInfo;
@@ -160,7 +175,7 @@ export default async function DashboardPage() {
 
   const planName = (subscription?.plan.name ?? "free").toUpperCase();
   const callsUsed = subscription?.callsUsed ?? 0;
-  const callsLimit = subscription?.plan.monthlyCalls ?? 200;
+  const callsLimit = subscription?.plan.monthlyCalls ?? 100;
   const periodEnd = subscription?.periodEnd
     ? new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(subscription.periodEnd)
     : null;
@@ -169,6 +184,58 @@ export default async function DashboardPage() {
 
   return (
     <>
+      {errorCode === "wrong_google_account" && (
+        <div className="connect-error-banner" role="alert">
+          <div className="info">
+            <div className="eyebrow">CONNECTION REJECTED</div>
+            <p>
+              You signed in to OMG Bridge as <strong>{session.email}</strong>, but tried to
+              connect{attemptedEmail ? (
+                <> the Google account <strong>{attemptedEmail}</strong></>
+              ) : (
+                <> a different Google account</>
+              )}. Each OMG account is locked to a single Google identity. To use a different
+              Google account, sign out and create a new OMG account with that email.
+            </p>
+          </div>
+          <a href="/dashboard" className="dismiss" aria-label="Dismiss">×</a>
+          <style>{`
+            .connect-error-banner {
+              display: flex; align-items: start; gap: 16px;
+              padding: 14px 18px;
+              background: var(--surface-1);
+              border: 1px solid var(--vermilion);
+              border-left-width: 3px;
+              margin: 24px 0 0;
+            }
+            .connect-error-banner .info { flex: 1; min-width: 0; }
+            .connect-error-banner .eyebrow {
+              font-size: 10px; letter-spacing: 0.18em;
+              text-transform: uppercase; color: var(--vermilion);
+              margin-bottom: 6px;
+            }
+            .connect-error-banner p {
+              font-size: 13px; color: var(--ink-2); margin: 0; line-height: 1.55;
+            }
+            .connect-error-banner p strong { color: var(--ink); font-weight: 600; }
+            .connect-error-banner .dismiss {
+              flex-shrink: 0;
+              width: 26px; height: 26px;
+              display: grid; place-items: center;
+              border: 1px solid var(--rule);
+              color: var(--ink-3);
+              text-decoration: none;
+              font-size: 16px; line-height: 1;
+              transition: all .15s;
+            }
+            .connect-error-banner .dismiss:hover {
+              border-color: var(--vermilion);
+              color: var(--vermilion);
+            }
+          `}</style>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <h1>Welcome back, <span className="accent">{greeting}.</span></h1>
@@ -240,19 +307,21 @@ export default async function DashboardPage() {
         <ServiceCard
           name={"BUSINESS PROFILE"}
           connected={false}
-          metaLabel="LOCATIONS"
-          metaValue="0 connected"
-          subLabel="SETUP TIME"
-          subValue="~ 30 seconds"
+          comingSoon
+          metaLabel="SCOPE"
+          metaValue="Reviews, posts, insights"
+          subLabel="STATUS"
+          subValue="In development"
           ctaConnect="#"
         />
         <ServiceCard
           name={"GOOGLE ADS"}
           connected={false}
+          comingSoon
           metaLabel="SCOPE"
-          metaValue="Campaigns · spend · ROAS"
-          subLabel="SETUP TIME"
-          subValue="~ 30 seconds"
+          metaValue="Campaigns, spend, ROAS"
+          subLabel="STATUS"
+          subValue="In development"
           ctaConnect="#"
         />
       </div>
@@ -358,7 +427,7 @@ export default async function DashboardPage() {
       {/* MCP endpoint */}
       <div className="section-header">
         <h2>Your MCP Endpoint</h2>
-        <div className="right"><a href="/dashboard/keys">MANAGE KEYS →</a></div>
+        <div className="right"><a href="/dashboard/keys">MANAGE KEY →</a></div>
       </div>
       <div className="endpoint-card">
         <div className="ehead">
@@ -375,10 +444,14 @@ export default async function DashboardPage() {
       <div className="section-header">
         <h2>Connect Your AI</h2>
         <div className="right">
-          <span>{apiKeyCount} ACTIVE {apiKeyCount === 1 ? "KEY" : "KEYS"}</span>
+          <span>{hasActiveKey ? "API KEY ACTIVE" : "NO KEY YET"}</span>
         </div>
       </div>
-      <SetupInstructions />
+      <ConnectAi
+        mcpEndpoint={MCP_ENDPOINT}
+        hasActiveKey={hasActiveKey}
+        activeKeyPrefix={activeKeyPrefix}
+      />
     </>
   );
 }
@@ -476,7 +549,7 @@ function PropertyPreviewCard({
  * Service card
  * ──────────────────────────────────────────────────────────── */
 function ServiceCard({
-  name, connected, metaLabel, metaValue, subLabel, subValue, ctaConnect,
+  name, connected, metaLabel, metaValue, subLabel, subValue, ctaConnect, comingSoon,
 }: {
   name: string;
   connected: boolean;
@@ -485,12 +558,20 @@ function ServiceCard({
   subLabel: string;
   subValue: string;
   ctaConnect: string;
+  comingSoon?: boolean;
 }) {
+  const cardClass = comingSoon
+    ? "service-card coming-soon"
+    : connected
+    ? "service-card connected"
+    : "service-card";
+  const pillLabel = comingSoon ? "COMING SOON" : connected ? "CONNECTED" : "NOT CONNECTED";
+  const pillClass = comingSoon ? "pill soon" : "pill";
   return (
-    <div className={`service-card${connected ? " connected" : ""}`}>
+    <div className={cardClass}>
       <div className="head">
         <div className="name" dangerouslySetInnerHTML={{ __html: name.replace(/ /g, "<br/>") }} />
-        <div className="pill">{connected ? "CONNECTED" : "NOT CONNECTED"}</div>
+        <div className={pillClass}>{pillLabel}</div>
       </div>
       <div className="meta">
         <div className="label">{metaLabel}</div>
@@ -499,7 +580,9 @@ function ServiceCard({
         <div>{subValue}</div>
       </div>
       <div className="actions">
-        {connected ? (
+        {comingSoon ? (
+          <span className="soon-tag">We&rsquo;ll email you when it&rsquo;s live</span>
+        ) : connected ? (
           <>
             <a href="/dashboard" className="primary">CONFIGURE</a>
             <a href={ctaConnect}>RECONNECT</a>
@@ -508,125 +591,6 @@ function ServiceCard({
           <a href={ctaConnect} className="primary">+ CONNECT NOW</a>
         )}
       </div>
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────
- * Setup instructions (Claude.ai, Claude Desktop, Cursor, ChatGPT)
- * ──────────────────────────────────────────────────────────── */
-function SetupInstructions() {
-  return (
-    <div>
-      {/* Claude.ai */}
-      <details className="setup-card">
-        <summary>
-          <span>CLAUDE.AI · OAUTH (NO KEY NEEDED)</span>
-          <span className="right">+</span>
-        </summary>
-        <div className="body">
-          <p>Claude.ai connects via OAuth, so there is no API key to paste. Available on Pro, Max, Team, and Enterprise plans.</p>
-          <ol>
-            <li>Open Claude.ai, click your profile icon (bottom-left), then Settings</li>
-            <li>Open the Connectors tab</li>
-            <li>Scroll to the bottom and click Add custom connector</li>
-            <li>Set Name to <code>OMG Bridge</code> and Remote MCP server URL to <code>{MCP_ENDPOINT}</code></li>
-            <li>Click Add, then Connect, then approve the OAuth scopes</li>
-          </ol>
-        </div>
-      </details>
-
-      {/* Claude Desktop */}
-      <details className="setup-card">
-        <summary>
-          <span>CLAUDE DESKTOP · REQUIRES API KEY</span>
-          <span className="right">+</span>
-        </summary>
-        <div className="body">
-          <p>
-            Create an API key first from the <a href="/dashboard/keys" style={{ color: "var(--teal)" }}>API Keys</a> page.
-            Then in Claude Desktop open Settings, click the Developer tab and click Edit Config to open <code>claude_desktop_config.json</code>.
-            Add the <code>omg-connector</code> block under <code>mcpServers</code>:
-          </p>
-          <pre>{CLAUDE_DESKTOP_CONFIG}</pre>
-          <p style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)" }}>
-            Replace YOUR_API_KEY with the key you generated. Save the file and fully quit / relaunch Claude Desktop. Config locations:
-            <br />
-            macOS: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>
-            <br />
-            Windows: <code>{`%APPDATA%\\Claude\\claude_desktop_config.json`}</code>
-            <br />
-            Linux: <code>~/.config/Claude/claude_desktop_config.json</code>
-          </p>
-        </div>
-      </details>
-
-      {/* Claude Code CLI */}
-      <details className="setup-card">
-        <summary>
-          <span>CLAUDE CODE (CLI) · REQUIRES API KEY</span>
-          <span className="right">+</span>
-        </summary>
-        <div className="body">
-          <p>
-            Create an API key from the <a href="/dashboard/keys" style={{ color: "var(--teal)" }}>API Keys</a> page, then run:
-          </p>
-          <pre>{`claude mcp add --transport http omg-bridge ${MCP_ENDPOINT} \\
-  --header "Authorization: Bearer YOUR_API_KEY"`}</pre>
-          <p style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)" }}>
-            Use <code>--scope user</code> to install across every project, or <code>--scope project</code> to commit a <code>.mcp.json</code> file shared with your team. Verify with <code>claude mcp list</code>.
-          </p>
-        </div>
-      </details>
-
-      {/* Cursor */}
-      <details className="setup-card">
-        <summary>
-          <span>CURSOR · REQUIRES API KEY</span>
-          <span className="right">+</span>
-        </summary>
-        <div className="body">
-          <p>
-            Create an API key from the <a href="/dashboard/keys" style={{ color: "var(--teal)" }}>API Keys</a> page. Then in Cursor:
-          </p>
-          <ol>
-            <li>Open the Command Palette and run <code>Cursor Settings</code> (or press <code>Cmd+Shift+J</code>)</li>
-            <li>Open the MCP &amp; Integrations tab and click New MCP Server</li>
-            <li>Cursor opens <code>~/.cursor/mcp.json</code>. Add this entry under <code>mcpServers</code>:</li>
-          </ol>
-          <pre>{`{
-  "mcpServers": {
-    "omg-bridge": {
-      "url": "${MCP_ENDPOINT}",
-      "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
-      }
-    }
-  }
-}`}</pre>
-          <p style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)" }}>
-            Save the file and click the toggle next to OMG Bridge in the MCP panel to enable it. Tools will appear in Composer and the Agent tab.
-          </p>
-        </div>
-      </details>
-
-      {/* ChatGPT */}
-      <details className="setup-card">
-        <summary>
-          <span>CHATGPT · OAUTH (NO KEY NEEDED)</span>
-          <span className="right">+</span>
-        </summary>
-        <div className="body">
-          <p>ChatGPT connects via OAuth. Custom MCP connectors are available on ChatGPT Plus, Pro, Business and Enterprise.</p>
-          <ol>
-            <li>Sign in at chatgpt.com and open Settings from the profile menu</li>
-            <li>Open the Connectors tab, scroll down and click Advanced settings</li>
-            <li>Enable Developer mode if you have not already</li>
-            <li>Back on Connectors click Create, paste <code>{MCP_ENDPOINT}</code> as the MCP server URL, set Authentication to OAuth</li>
-            <li>Save, then click Connect and approve the OMG Bridge consent screen</li>
-          </ol>
-        </div>
-      </details>
     </div>
   );
 }

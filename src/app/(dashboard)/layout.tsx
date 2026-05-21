@@ -710,6 +710,25 @@ body.sidebar-collapsed .sidebar .section-children { max-height: none !important;
 .service-card .actions a:hover { color: var(--teal); }
 .service-card .actions a.primary { color: var(--teal); }
 
+/* coming-soon state - dim everything and replace CTA with quiet tag */
+.service-card.coming-soon {
+  border-style: dashed;
+  border-color: var(--rule-strong);
+  background: var(--surface-1);
+}
+.service-card.coming-soon .name,
+.service-card.coming-soon .meta { opacity: 0.65; }
+.service-card .pill.soon {
+  color: var(--amber);
+  border-color: rgba(244, 184, 96, 0.45);
+}
+.service-card .actions .soon-tag {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
 /* endpoint card (highlight) */
 .endpoint-card {
   background: var(--surface-1);

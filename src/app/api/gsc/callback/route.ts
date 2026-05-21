@@ -109,6 +109,20 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // Account lock: the connected Google account MUST match the OMG account.
+  // Users cannot connect a different Google account from the one they
+  // signed in with; if they need a different Google identity they should
+  // create a separate OMG account.
+  if (userInfo.email.toLowerCase() !== session.email.toLowerCase()) {
+    console.warn(
+      `[gsc/callback] Account mismatch: session=${session.email} google=${userInfo.email}`
+    );
+    const wrong = encodeURIComponent(userInfo.email);
+    return NextResponse.redirect(
+      new URL(`/dashboard?error=wrong_google_account&attempted=${wrong}`, config.app.url)
+    );
+  }
+
   // Calculate token expiry
   const tokenExpiry = new Date(Date.now() + tokens.expires_in * 1000);
 

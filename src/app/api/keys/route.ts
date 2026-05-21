@@ -68,13 +68,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Limit total keys per user to prevent abuse
-    const existingKeyCount = await db.apiKey.count({
+    // Each user is allowed one active API key. To rotate, revoke the
+    // existing key first (or use POST /api/keys/regenerate to do both in
+    // one shot).
+    const existingActive = await db.apiKey.findFirst({
       where: { userId: user.id, isActive: true },
+      select: { id: true },
     });
-    if (existingKeyCount >= 10) {
+    if (existingActive) {
       return NextResponse.json(
-        { error: "Maximum of 10 active API keys allowed. Revoke an existing key first." },
+        {
+          error:
+            "You already have an active API key. Revoke it before generating a new one, or use Regenerate.",
+        },
         { status: 400 }
       );
     }

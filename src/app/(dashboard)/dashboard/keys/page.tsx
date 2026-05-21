@@ -5,7 +5,7 @@ import { ApiKeysClient } from "@/components/api-keys-client";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "API Keys - OMG Bridge",
+  title: "API Key - OMG Bridge",
 };
 
 async function getApiKeys(userId: string) {
@@ -47,10 +47,10 @@ export default async function ApiKeysPage() {
     <>
       <div className="page-header">
         <div>
-          <h1>API <span className="accent">keys.</span></h1>
+          <h1>API <span className="accent">key.</span></h1>
           <p className="lede">
-            Static keys for tools that don&apos;t support OAuth (Cursor, Claude Desktop config files).
-            Each key has the same scopes as your account. Rotate often.
+            A single bearer token for AI tools that don&apos;t do OAuth (Claude Desktop, Claude Code,
+            Cursor, Gemini CLI). Regenerating revokes the old key in one step.
           </p>
         </div>
       </div>
