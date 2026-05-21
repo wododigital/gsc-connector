@@ -67,6 +67,13 @@ const Icons = {
       <circle cx="8" cy="11.5" r="0.5" fill="currentColor" />
     </svg>
   ),
+  proRequests: (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M2.5 4.5h11v8a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1z" />
+      <path d="M2.5 4.5L8 8.5l5.5-4" />
+      <path d="M5 2.5h6" />
+    </svg>
+  ),
   back: (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M9 3.5L4.5 8l4.5 4.5M4.5 8H14" />
@@ -152,6 +159,11 @@ export default async function AdminLayout({
             <div className="section-label">WORKSPACE</div>
             <SidebarLink href="/admin" exact icon={Icons.overview} label="Overview" />
             <SidebarLink href="/admin/users" icon={Icons.users} label="Users" />
+            <SidebarLink
+              href="/admin/pro-requests"
+              icon={Icons.proRequests}
+              label="Pro Requests"
+            />
             <SidebarLink href="/admin/activity" icon={Icons.activity} label="Activity" />
 
             <SidebarSection label="SUPPORT" defaultOpen>
@@ -175,8 +187,8 @@ export default async function AdminLayout({
           </nav>
 
           <div className="footer-mini">
-            <div>OMG · BRIDGE · ADMIN</div>
-            <div className="status">CONTROL ROOM ACTIVE</div>
+            <div>OMG · BRIDGE</div>
+            <div className="footer-role">Admin console</div>
           </div>
         </aside>
 
@@ -215,14 +227,14 @@ body::before {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr auto;
   align-items: stretch;
-  background: rgba(10,16,24,0.92);
+  background: var(--topbar-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--vermilion);
   font-family: var(--body);
   font-size: 11px;
   letter-spacing: 0.06em;
-  transition: grid-template-columns .25s ease;
+  transition: grid-template-columns .25s ease, background .25s ease;
 }
 .topbar .brand {
   display: flex; align-items: center; gap: 10px;
@@ -423,14 +435,9 @@ body.sidebar-collapsed .sidebar-toggle .label-text { display: none; }
   color: var(--ink-3);
   display: flex; flex-direction: column; gap: 4px;
 }
-.sidebar .footer-mini .status {
+.sidebar .footer-mini .footer-role {
   color: var(--vermilion);
-  display: flex; align-items: center; gap: 6px;
-}
-.sidebar .footer-mini .status::before {
-  content: ''; width: 6px; height: 6px; background: var(--vermilion);
-  box-shadow: 0 0 6px var(--vermilion); border-radius: 50%;
-  animation: pulse 2.4s ease-in-out infinite;
+  letter-spacing: 0.16em;
 }
 
 /* COLLAPSED state */

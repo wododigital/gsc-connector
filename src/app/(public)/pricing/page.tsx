@@ -1,10 +1,11 @@
-// TODO: STRIPE - update with real prices when billing is implemented
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PricingCta } from "@/components/pricing-cta";
 
 export const metadata: Metadata = {
   title: "Pricing - OMG Bridge",
-  description: "Simple, transparent pricing. Free to start, $199/year for unlimited.",
+  description:
+    "Start free with 100 tool calls. Request access to the $199/year unlimited plan.",
 };
 
 interface Plan {
@@ -15,9 +16,10 @@ interface Plan {
   description: string;
   features: string[];
   cta: string;
-  href: string;
+  href?: string;
   highlight: boolean;
   badge?: string;
+  action?: "enquire";
 }
 
 const plans: Plan[] = [
@@ -29,8 +31,8 @@ const plans: Plan[] = [
     description: "For individuals getting started.",
     features: [
       "1 Google account",
-      "200 tool calls/month",
-      "All 30 MCP tools",
+      "100 tool calls (one-time trial)",
+      "All MCP tools",
       "GSC + GA4 + GBP access",
       "Claude.ai, Desktop, Cursor support",
       "Community support",
@@ -48,14 +50,14 @@ const plans: Plan[] = [
     features: [
       "Unlimited Google accounts",
       "Unlimited tool calls",
-      "All 30 MCP tools",
+      "All MCP tools",
       "GSC + GA4 + GBP access",
       "All AI tool integrations",
       "Priority support",
       "Usage analytics",
     ],
-    cta: "Get Annual",
-    href: "/onboarding",
+    cta: "Request Access",
+    action: "enquire",
     highlight: true,
     badge: "BEST VALUE",
   },
@@ -63,7 +65,7 @@ const plans: Plan[] = [
 
 export default function PricingPage() {
   return (
-    <div className="page-shell">
+    <div className="page-shell" id="enquire-anchor">
       {/* HERO */}
       <section className="page-hero">
         <div className="page-hero-body">
@@ -76,8 +78,8 @@ export default function PricingPage() {
             <span className="accent">pricing.</span>
           </h1>
           <p className="lede">
-            Start free. One flat annual fee when you need unlimited. No seat
-            tax. No usage trap. Cancel anytime.
+            Start free with 100 tool calls. When you&rsquo;re ready for unlimited, request access
+            and our team will activate your subscription.
           </p>
         </div>
       </section>
@@ -106,22 +108,29 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href={plan.href}
-                  className={plan.highlight ? "btn btn-primary" : "btn"}
-                >
-                  {plan.cta} →
-                </Link>
+                {plan.action === "enquire" ? (
+                  <PricingCta
+                    label={plan.cta}
+                    source="pricing_page"
+                    className="btn btn-primary"
+                  />
+                ) : (
+                  <Link
+                    href={plan.href ?? "#"}
+                    className={plan.highlight ? "btn btn-primary" : "btn"}
+                  >
+                    {plan.cta} →
+                  </Link>
+                )}
               </article>
             ))}
           </div>
 
           <div className="plans-note">
             <div>
-              <span className="status-dot" /> ALL PLANS INCLUDE THE SAME 30 MCP
-              TOOLS
+              <span className="status-dot" /> ALL PLANS INCLUDE THE SAME MCP TOOL SUITE
             </div>
-            <div>CANCEL OR DOWNGRADE ANYTIME. NO CONTRACTS.</div>
+            <div>NO CONTRACTS. CANCEL ANYTIME ONCE ACTIVATED.</div>
           </div>
         </div>
       </section>

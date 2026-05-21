@@ -16,19 +16,22 @@ const UNLIMITED_CALLS = 999999;
 async function main() {
   console.log("Seeding plans...");
 
-  // Free: 200 tool calls / 1 Google account
+  // Free: 100 total tool calls / 1 Google account.
+  // Note: monthlyCalls is now a LIFETIME cap for the free plan; the
+  // usage layer skips the period reset for plan_free so it stays a one-shot
+  // trial quota rather than a monthly allowance.
   await db.plan.upsert({
     where: { id: "plan_free" },
     update: {
       name: "free",
       displayName: "Free",
-      monthlyCalls: 200,
+      monthlyCalls: 100,
       priceCents: 0,
       maxGoogleAccounts: 1,
       features: [
         "1 Google account",
-        "200 tool calls/month",
-        "All 30 MCP tools",
+        "100 tool calls total",
+        "All MCP tools",
         "GSC + GA4 + GBP access",
         "Community support",
       ],
@@ -39,13 +42,13 @@ async function main() {
       id: "plan_free",
       name: "free",
       displayName: "Free",
-      monthlyCalls: 200,
+      monthlyCalls: 100,
       priceCents: 0,
       maxGoogleAccounts: 1,
       features: [
         "1 Google account",
-        "200 tool calls/month",
-        "All 30 MCP tools",
+        "100 tool calls total",
+        "All MCP tools",
         "GSC + GA4 + GBP access",
         "Community support",
       ],
@@ -65,7 +68,7 @@ async function main() {
       features: [
         "Unlimited Google accounts",
         "Unlimited tool calls",
-        "All 30 MCP tools",
+        "All MCP tools",
         "GSC + GA4 + GBP access",
         "Priority support",
         "Usage analytics",
@@ -83,7 +86,7 @@ async function main() {
       features: [
         "Unlimited Google accounts",
         "Unlimited tool calls",
-        "All 30 MCP tools",
+        "All MCP tools",
         "GSC + GA4 + GBP access",
         "Priority support",
         "Usage analytics",

@@ -1,8 +1,13 @@
 /**
  * Usage tracking and plan enforcement.
  * Called before each MCP tool execution to check limits and increment counter.
+ *
+ * Plan_free has a LIFETIME cap (no period reset). When exhausted, the user
+ * is directed to /pricing#enquire which opens the Pro plan enquiry form.
  */
 import db from "./db.js";
+
+export const FREE_PLAN_ID = "plan_free";
 
 export interface UsageCheckResult {
   allowed: boolean;
@@ -29,7 +34,7 @@ export async function checkAndIncrementUsage(userId: string): Promise<UsageCheck
 
   if (!sub) {
     // Auto-provision free plan
-    const freePlan = await db.plan.findUnique({ where: { id: "plan_free" } });
+    const freePlan = await db.plan.findUnique({ where: { id: FREE_PLAN_ID } });
     if (!freePlan) {
       // Plans not seeded yet - allow the call but don't track
       return { allowed: true, callsUsed: 0, callsLimit: 100, callsRemaining: 100, planName: "free" };
@@ -37,15 +42,18 @@ export async function checkAndIncrementUsage(userId: string): Promise<UsageCheck
     sub = await db.userSubscription.create({
       data: {
         userId,
-        planId: "plan_free",
-        periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        planId: FREE_PLAN_ID,
+        // Lifetime cap - set periodEnd far in the future to satisfy the
+        // schema while preventing any reset logic from firing.
+        periodEnd: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000),
       },
       include: { plan: true },
     });
   }
 
-  // Reset period if expired
-  if (sub.periodEnd < new Date()) {
+  // Reset period if expired - but ONLY for paid plans. plan_free is a
+  // lifetime cap (one-shot trial quota), so we never roll the counter over.
+  if (sub.planId !== FREE_PLAN_ID && sub.periodEnd < new Date()) {
     sub = await db.userSubscription.update({
       where: { userId },
       data: {
@@ -61,13 +69,18 @@ export async function checkAndIncrementUsage(userId: string): Promise<UsageCheck
   const used = sub.callsUsed;
 
   if (used >= limit) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const reason =
+      sub.planId === FREE_PLAN_ID
+        ? `Free trial limit of ${limit} tool calls reached. Request access to the paid plan at ${appUrl}/pricing#enquire and our team will reach out to activate your subscription.`
+        : `Plan limit of ${limit} tool calls reached. Upgrade your plan at ${appUrl}/dashboard/billing`;
     return {
       allowed: false,
       callsUsed: used,
       callsLimit: limit,
       callsRemaining: 0,
       planName: sub.plan.name,
-      reason: `Monthly limit of ${limit} tool calls reached. Upgrade your plan at ${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/billing`,
+      reason,
     };
   }
 
@@ -104,15 +117,16 @@ export async function getUserUsage(userId: string) {
   }
 
   if (!sub) {
+    const farFuture = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
     return {
-      plan: "plan_free",
+      plan: "free",
       display_name: "Free",
       calls_used: 0,
       calls_limit: 100,
       calls_remaining: 100,
       percentage_used: 0,
       period_start: new Date().toISOString(),
-      period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      period_end: farFuture.toISOString(),
       status: "active",
       price_cents: 0,
       features: [],
@@ -146,11 +160,13 @@ export async function provisionFreePlan(userId: string): Promise<void> {
   const existing = await db.userSubscription.findUnique({ where: { userId } });
   if (existing) return;
 
+  // Free is a lifetime quota - set periodEnd far in the future so the
+  // schema's required Datetime stays satisfied without ever triggering a reset.
   await db.userSubscription.create({
     data: {
       userId,
-      planId: "plan_free",
-      periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      planId: FREE_PLAN_ID,
+      periodEnd: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000),
     },
   });
 }

@@ -26,18 +26,18 @@ model User {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
-  googleCredentials GoogleCredential[]
-  gscProperties     GscProperty[]
-  ga4Properties     Ga4Property[]
-  apiKeys           ApiKey[]
-  oauthTokens       OAuthToken[]
-  authCodes         OAuthAuthorizationCode[]
-  subscription      UserSubscription?
-  couponRedemptions CouponRedemption[]
-  tickets           SupportTicket[]
-  userPrompts       UserPrompt[]
+  googleCredentials    GoogleCredential[]
+  gscProperties        GscProperty[]
+  ga4Properties        Ga4Property[]
+  apiKeys              ApiKey[]
+  oauthTokens          OAuthToken[]
+  authCodes            OAuthAuthorizationCode[]
+  subscription         UserSubscription?
+  couponRedemptions    CouponRedemption[]
+  tickets              SupportTicket[]
+  userPrompts          UserPrompt[]
   promptTemplateStates UserPromptTemplateState[]
-  brandProfile      BrandProfile?
+  brandProfile         BrandProfile?
 
   @@map("users")
 }
@@ -433,29 +433,51 @@ model UserPrompt {
 }
 
 // ============================================================
+// Pro Plan Enquiries (captured from public pricing form;
+// reviewed in /admin/pro-requests)
+// ============================================================
+model ProRequest {
+  id          String    @id @default(uuid())
+  name        String
+  orgType     String    @map("org_type") // "startup_brand" | "enterprise" | "agency"
+  email       String
+  phone       String
+  source      String    @default("pricing_page")
+  status      String    @default("new") // "new" | "contacted" | "qualified" | "won" | "lost"
+  notes       String?   @db.Text
+  contactedAt DateTime? @map("contacted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@map("pro_requests")
+}
+
+// ============================================================
 // Brand Profiles (one per user, for white-label reports)
 // ============================================================
 model BrandProfile {
-  id             String   @id @default(uuid())
-  userId         String   @unique @map("user_id")
-  companyName    String?  @map("company_name")
-  website        String?
-  description    String?  @db.Text
-  logoUrl        String?  @db.Text @map("logo_url") // Light-bg logo - stored as base64 data URI
-  logoUrlDark    String?  @db.Text @map("logo_url_dark") // Dark-bg logo - stored as base64 data URI
-  primaryColor   String?  @map("primary_color")
-  secondaryColor String?  @map("secondary_color")
-  accentColor    String?  @map("accent_color") // Light-theme accent (extracted from light logo)
-  accentColorDark String? @map("accent_color_dark") // Dark-theme accent (extracted from dark logo)
-  lightBgColor   String?  @map("light_bg_color") // Optional custom background for light-theme reports
-  darkBgColor    String?  @map("dark_bg_color")  // Optional custom background for dark-theme reports
-  fontFamily     String?  @default("Inter") @map("font_family")
-  reportTheme    String   @default("light") @map("report_theme") // "light" | "dark" - drives generated report color scheme
-  reportDos      String?  @db.Text @map("report_dos") // Optional rules: things the AI must do in every generated report
-  reportDonts    String?  @db.Text @map("report_donts") // Optional rules: things the AI must avoid
-  isApproved     Boolean  @default(false) @map("is_approved")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  userId          String   @unique @map("user_id")
+  companyName     String?  @map("company_name")
+  website         String?
+  description     String?  @db.Text
+  logoUrl         String?  @map("logo_url") @db.Text // Light-bg logo - stored as base64 data URI
+  logoUrlDark     String?  @map("logo_url_dark") @db.Text // Dark-bg logo - stored as base64 data URI
+  primaryColor    String?  @map("primary_color")
+  secondaryColor  String?  @map("secondary_color")
+  accentColor     String?  @map("accent_color") // Light-theme accent (extracted from light logo)
+  accentColorDark String?  @map("accent_color_dark") // Dark-theme accent (extracted from dark logo)
+  lightBgColor    String?  @map("light_bg_color") // Optional custom background for light-theme reports
+  darkBgColor     String?  @map("dark_bg_color") // Optional custom background for dark-theme reports
+  fontFamily      String?  @default("Inter") @map("font_family")
+  reportTheme     String   @default("light") @map("report_theme") // "light" | "dark" - drives generated report color scheme
+  reportDos       String?  @map("report_dos") @db.Text // Optional rules: things the AI must do in every generated report
+  reportDonts     String?  @map("report_donts") @db.Text // Optional rules: things the AI must avoid
+  isApproved      Boolean  @default(false) @map("is_approved")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

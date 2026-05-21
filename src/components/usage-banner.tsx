@@ -24,13 +24,14 @@ function computeLevel(callsUsed: number, callsLimit: number, isFreeUser: boolean
 
 /**
  * Plan-aware usage banner — Swiss Dark Modernist treatment.
- * Free users see escalating prompts at 25%, 90%, and 100% of monthly quota.
- * Annual users never see this. Renders as a teal left rail inside .usage-banner.
+ * Free users see escalating prompts at 25%, 90%, and 100% of their lifetime
+ * trial quota. Annual users never see this. Renders as a teal left rail
+ * inside .usage-banner.
  */
 export function UsageBanner({ callsUsed, callsLimit, isFreeUser, periodEnd }: Props) {
   const level = computeLevel(callsUsed, callsLimit, isFreeUser);
   const storageKey = level
-    ? `${STORAGE_KEY_PREFIX}${level}-${periodEnd.slice(0, 10)}`
+    ? `${STORAGE_KEY_PREFIX}${level}-${callsLimit}`
     : "";
   const [dismissed, setDismissed] = useState(false);
 
@@ -41,13 +42,13 @@ export function UsageBanner({ callsUsed, callsLimit, isFreeUser, periodEnd }: Pr
       setDismissed(false);
     }
   }, [level, storageKey]);
+  void periodEnd; // free plan is a lifetime quota - no reset to advertise.
 
   if (!level) return null;
   if (level === "info" && dismissed) return null;
 
   const remaining = Math.max(0, callsLimit - callsUsed);
   const pct = Math.min(100, Math.round((callsUsed / callsLimit) * 100));
-  const periodResetDate = new Date(periodEnd).toLocaleDateString();
 
   // Per-level rail color and CTA tone.
   const rail =
@@ -72,25 +73,27 @@ export function UsageBanner({ callsUsed, callsLimit, isFreeUser, periodEnd }: Pr
               <strong>
                 {callsUsed.toLocaleString()} of {callsLimit.toLocaleString()}
               </strong>{" "}
-              queries used this period · {pct}% of your monthly quota.
+              free tool calls used · {pct}% of your trial.
             </>
           )}
           {level === "warn" && (
             <>
-              <strong>{remaining.toLocaleString()} queries</strong> remaining this period. Upgrade to
-              Annual for unlimited tool calls.
+              <strong>{remaining.toLocaleString()} free tool calls</strong> remaining. Request access to
+              the paid plan to keep going without interruption.
             </>
           )}
           {level === "blocked" && (
             <>
-              You&apos;ve reached your monthly limit of{" "}
-              <strong>{callsLimit.toLocaleString()} queries</strong>. Tool calls are paused until your
-              period resets on <strong>{periodResetDate}</strong>.
+              You&apos;ve used all{" "}
+              <strong>{callsLimit.toLocaleString()} free tool calls</strong> on your trial. Drop us an
+              enquiry to activate the paid plan and unlock unlimited usage.
             </>
           )}
         </div>
         <div className="banner-actions">
-          <a href="/dashboard/billing">UPGRADE PLAN →</a>
+          <a href="/pricing#enquire">
+            {level === "blocked" ? "REQUEST PRO ACCESS →" : "REQUEST ACCESS →"}
+          </a>
           {level === "info" && (
             <button onClick={dismiss} className="dismiss" aria-label="Dismiss">
               ×

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ProRequestForm } from "@/components/pro-request-form";
 
 interface UsageData {
   plan: string;
@@ -33,8 +34,8 @@ export default function BillingPage() {
   const [couponCode, setCouponCode] = useState("");
   const [couponMessage, setCouponMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [enquireOpen, setEnquireOpen] = useState(false);
 
-  const success = searchParams.get("success");
   const cancelled = searchParams.get("cancelled");
 
   useEffect(() => {
@@ -47,17 +48,6 @@ export default function BillingPage() {
       setLoading(false);
     });
   }, []);
-
-  const handleCheckout = async (planId: string) => {
-    const res = await fetch("/api/stripe/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan_id: planId }),
-    });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else alert(data.error ?? "Failed to start checkout");
-  };
 
   const handlePortal = async () => {
     const res = await fetch("/api/stripe/portal", { method: "POST" });
@@ -100,14 +90,9 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {success && (
-        <div className="billing-callout success">
-          Payment successful. Your plan has been upgraded.
-        </div>
-      )}
       {cancelled && (
         <div className="billing-callout warn">
-          Checkout was cancelled. No charges were made.
+          Enquiry not sent. You can request access again whenever you&apos;re ready.
         </div>
       )}
 
@@ -130,14 +115,21 @@ export default function BillingPage() {
                 )}
               </p>
             </div>
-            {usage.price_cents > 0 && (
+            {usage.price_cents > 0 ? (
               <button onClick={handlePortal} className="btn">MANAGE SUBSCRIPTION</button>
+            ) : (
+              <button
+                onClick={() => setEnquireOpen(true)}
+                className="btn btn-primary"
+              >
+                REQUEST PRO ACCESS →
+              </button>
             )}
           </div>
 
           <div className="billing-meter">
             <div className="billing-meter-row">
-              <span>TOOL CALLS USED THIS PERIOD</span>
+              <span>{usage.plan === "free" ? "FREE TRIAL TOOL CALLS USED" : "TOOL CALLS USED THIS PERIOD"}</span>
               <strong>
                 {usage.calls_limit >= 999999
                   ? `${usage.calls_used.toLocaleString()} / Unlimited`
@@ -160,7 +152,9 @@ export default function BillingPage() {
             )}
             <p className="billing-meter-note">
               {usage.calls_limit >= 999999
-                ? "Unlimited tool calls included with Annual."
+                ? "Unlimited tool calls included with the Pro plan."
+                : usage.plan === "free"
+                ? `${usage.calls_remaining.toLocaleString()} of your ${usage.calls_limit.toLocaleString()} free tool calls remaining. Request Pro access for unlimited usage.`
                 : `Resets on ${new Date(usage.period_end).toLocaleDateString()} - ${usage.calls_remaining.toLocaleString()} calls remaining`}
             </p>
           </div>
@@ -190,7 +184,11 @@ export default function BillingPage() {
                 )}
               </p>
               <p className="billing-plan-calls">
-                {isUnlimited ? "Unlimited tool calls" : `${plan.monthlyCalls.toLocaleString()} tool calls/month`}
+                {isUnlimited
+                  ? "Unlimited tool calls"
+                  : isFree
+                  ? `${plan.monthlyCalls.toLocaleString()} tool calls (one-time trial)`
+                  : `${plan.monthlyCalls.toLocaleString()} tool calls/month`}
               </p>
               <ul className="billing-plan-features">
                 {plan.features.map((f, i) => (
@@ -210,11 +208,11 @@ export default function BillingPage() {
                   </span>
                 ) : (
                   <button
-                    onClick={() => handleCheckout(plan.id)}
+                    onClick={() => setEnquireOpen(true)}
                     className={isUpgrade ? "btn btn-primary" : "btn"}
                     style={{ width: "100%", justifyContent: "center" }}
                   >
-                    {isUpgrade ? "UPGRADE" : "SWITCH PLAN"}
+                    {isUpgrade ? "REQUEST ACCESS →" : "SWITCH PLAN"}
                   </button>
                 )}
               </div>
@@ -222,6 +220,12 @@ export default function BillingPage() {
           );
         })}
       </div>
+
+      <ProRequestForm
+        open={enquireOpen}
+        source="dashboard_billing"
+        onClose={() => setEnquireOpen(false)}
+      />
 
       <div className="section-header">
         <h2>Coupon Code</h2>

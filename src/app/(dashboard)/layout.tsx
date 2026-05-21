@@ -112,7 +112,7 @@ export default async function DashboardLayout({
   });
   const isFreeUser = subscription?.plan.name === "free";
   const callsUsed = subscription?.callsUsed ?? 0;
-  const callsLimit = subscription?.plan.monthlyCalls ?? 200;
+  const callsLimit = subscription?.plan.monthlyCalls ?? 100;
   const periodEnd = (
     subscription?.periodEnd ?? new Date(Date.now() + 30 * 86400000)
   ).toISOString();
@@ -229,7 +229,6 @@ export default async function DashboardLayout({
 
           <div className="footer-mini">
             <div>OMG · BRIDGE</div>
-            <div className="status">ALL SYSTEMS NOMINAL</div>
           </div>
         </aside>
 
@@ -479,15 +478,6 @@ body.sidebar-collapsed .sidebar-toggle .label-text { display: none; }
   text-transform: uppercase;
   color: var(--ink-3);
   display: flex; flex-direction: column; gap: 4px;
-}
-.sidebar .footer-mini .status {
-  color: var(--teal);
-  display: flex; align-items: center; gap: 6px;
-}
-.sidebar .footer-mini .status::before {
-  content: ''; width: 6px; height: 6px; background: var(--teal);
-  box-shadow: 0 0 6px var(--teal); border-radius: 50%;
-  animation: pulse 2.4s ease-in-out infinite;
 }
 
 /* COLLAPSED state */

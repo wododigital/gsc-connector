@@ -3,14 +3,33 @@
 import { useEffect, useState } from "react";
 
 const SESSION_KEY = "omg-bridge-preloader-shown";
+const THEME_STORAGE_KEY = "omg-bridge-theme";
+const LOGO_DARK_ON_LIGHT = "/omg-logo-dark.png";   // dark text - for light backgrounds
+const LOGO_LIGHT_ON_DARK = "/omg-logo-light.webp"; // light text - for dark backgrounds
 const VISIBLE_MS = 2600;
 const FADE_MS = 400;
+
+function resolveLogoForCurrentTheme(): string {
+  if (typeof window === "undefined") return LOGO_LIGHT_ON_DARK;
+  const attr = document.documentElement.getAttribute("data-theme");
+  if (attr === "light") return LOGO_DARK_ON_LIGHT;
+  try {
+    if (window.localStorage.getItem(THEME_STORAGE_KEY) === "light") {
+      return LOGO_DARK_ON_LIGHT;
+    }
+  } catch {
+    // ignore
+  }
+  return LOGO_LIGHT_ON_DARK;
+}
 
 export function Preloader() {
   const [visible, setVisible] = useState(false);
   const [hiding, setHiding] = useState(false);
+  const [logoSrc, setLogoSrc] = useState(LOGO_LIGHT_ON_DARK);
 
   useEffect(() => {
+    setLogoSrc(resolveLogoForCurrentTheme());
     // After sign-out the API redirects to /?signed_out=1 — force the
     // preloader to replay and clean the param out of the URL.
     let forced = false;
@@ -68,7 +87,7 @@ export function Preloader() {
     >
       <div className="preloader-logo">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/omg-logo-light.webp" alt="" />
+        <img src={logoSrc} alt="" />
       </div>
       <style jsx>{`
         .preloader {
