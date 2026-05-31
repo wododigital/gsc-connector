@@ -36,6 +36,7 @@ export async function exchangeGoogleCode(
   refresh_token?: string;
   expires_in: number;
   id_token?: string;
+  scope?: string;
 }> {
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -59,6 +60,7 @@ export async function exchangeGoogleCode(
     refresh_token?: string;
     expires_in: number;
     id_token?: string;
+    scope?: string;
   }>;
 }
 

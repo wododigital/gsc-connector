@@ -41,9 +41,17 @@ async function getCredentialInfo(userId: string) {
       select: { scopes: true },
       orderBy: { updatedAt: "desc" },
     });
-    if (!credential) return { hasCredential: false, hasAnalyticsScope: false };
-    return { hasCredential: true, hasAnalyticsScope: credential.scopes.includes("analytics.readonly") };
-  } catch { return { hasCredential: false, hasAnalyticsScope: false }; }
+    if (!credential) {
+      return { hasCredential: false, hasAnalyticsScope: false, hasGbpScope: false };
+    }
+    return {
+      hasCredential: true,
+      hasAnalyticsScope: credential.scopes.includes("analytics.readonly"),
+      hasGbpScope: credential.scopes.includes("business.manage"),
+    };
+  } catch {
+    return { hasCredential: false, hasAnalyticsScope: false, hasGbpScope: false };
+  }
 }
 
 async function getActiveKeySummary(userId: string) {
@@ -169,7 +177,7 @@ export default async function DashboardPage({
   const { hasActiveKey, activeKeyPrefix } = keySummary;
 
   const hasGscConnected = properties.some((p) => p.isActive);
-  const { hasCredential, hasAnalyticsScope } = credentialInfo;
+  const { hasCredential, hasAnalyticsScope, hasGbpScope } = credentialInfo;
   const totalActiveProperties =
     properties.filter((p) => p.isActive).length + ga4Properties.filter((p) => p.isActive).length;
 
@@ -306,13 +314,12 @@ export default async function DashboardPage({
         />
         <ServiceCard
           name={"BUSINESS PROFILE"}
-          connected={false}
-          comingSoon
+          connected={hasGbpScope}
           metaLabel="SCOPE"
-          metaValue="Reviews, posts, insights"
-          subLabel="STATUS"
-          subValue="In development"
-          ctaConnect="#"
+          metaValue={hasGbpScope ? "Reviews, posts, insights" : "Not granted"}
+          subLabel={hasGbpScope ? "STATUS" : "SETUP TIME"}
+          subValue={hasGbpScope ? "Live" : "~ 30 seconds"}
+          ctaConnect="/api/gsc/connect"
         />
         <ServiceCard
           name={"GOOGLE ADS"}

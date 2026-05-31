@@ -28,6 +28,7 @@ const GSC_SCOPES = [
   "profile",
   "https://www.googleapis.com/auth/webmasters.readonly",
   "https://www.googleapis.com/auth/analytics.readonly",
+  "https://www.googleapis.com/auth/business.manage",
 ].join(" ");
 
 export async function GET(req: NextRequest) {
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
   const gscCallbackUri = `${config.app.url}/api/gsc/callback`;
   console.log(`[gsc/callback] Exchanging code - redirect_uri: ${gscCallbackUri}`);
 
-  let tokens: { access_token: string; refresh_token?: string; expires_in: number };
+  let tokens: { access_token: string; refresh_token?: string; expires_in: number; scope?: string };
   try {
     tokens = await exchangeGoogleCode(code, gscCallbackUri);
   } catch (err) {
@@ -130,6 +131,11 @@ export async function GET(req: NextRequest) {
   const accessTokenEncrypted = encrypt(tokens.access_token);
   const refreshTokenEncrypted = encrypt(tokens.refresh_token);
 
+  // Record the scopes Google actually granted (not just what we asked for).
+  // Falls back to the requested set so the downstream flow never sees an
+  // empty scopes column.
+  const grantedScopes = tokens.scope && tokens.scope.length > 0 ? tokens.scope : GSC_SCOPES;
+
   // Persist credential to DB
   let credentialId: string;
   try {
@@ -141,7 +147,7 @@ export async function GET(req: NextRequest) {
     if (existingCredential) {
       await db.googleCredential.update({
         where: { id: existingCredential.id },
-        data: { accessTokenEncrypted, refreshTokenEncrypted, tokenExpiry, scopes: GSC_SCOPES },
+        data: { accessTokenEncrypted, refreshTokenEncrypted, tokenExpiry, scopes: grantedScopes },
       });
       credentialId = existingCredential.id;
     } else {
@@ -152,7 +158,7 @@ export async function GET(req: NextRequest) {
           accessTokenEncrypted,
           refreshTokenEncrypted,
           tokenExpiry,
-          scopes: GSC_SCOPES,
+          scopes: grantedScopes,
         },
         select: { id: true },
       });
