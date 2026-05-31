@@ -155,11 +155,40 @@ export default async function PropertiesPage() {
     );
 
   const gbpPane = (
-    <EmptyServicePane
-      comingSoon
-      service="Business Profile"
-      copy="Reviews, calls, direction requests and post performance for any locations you manage. We are wiring this up next."
-    />
+    <div
+      style={{
+        padding: "64px",
+        textAlign: "center",
+        background: "var(--surface-1)",
+        border: "1px dashed var(--rule-strong)",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--display)",
+          fontWeight: 700,
+          fontSize: 24,
+          textTransform: "uppercase",
+          letterSpacing: "-0.02em",
+          marginBottom: 8,
+        }}
+      >
+        Business Profile is live
+      </div>
+      <p
+        style={{
+          color: "var(--ink-2)",
+          fontSize: 13,
+          maxWidth: 460,
+          margin: "0 auto 24px",
+        }}
+      >
+        Reviews, calls, direction requests, search keywords and post performance for any locations you manage. Existing users need to reconnect Google once so we can add Business Profile access to your stored token. New scope: business.manage.
+      </p>
+      <a className="btn btn-primary" href="/api/gsc/connect">
+        Reconnect Google →
+      </a>
+    </div>
   );
 
   const adsPane = (

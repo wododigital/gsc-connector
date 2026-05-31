@@ -56,6 +56,17 @@ import {
   registerGaEventsTool,
 } from "./tools/ga4/index.js";
 
+// GBP (Google Business Profile) tool registration functions
+import {
+  registerGbpListLocationsTool,
+  registerGbpGetReviewsTool,
+  registerGbpGetPerformanceTool,
+  registerGbpSearchKeywordsTool,
+  registerGbpGetPostsTool,
+  registerGbpGetMediaTool,
+  registerGbpLocationOverviewTool,
+} from "./tools/gbp/index.js";
+
 // ----------------------------------------------------------------
 // User context type (populated by auth middleware)
 // ----------------------------------------------------------------
@@ -146,6 +157,15 @@ function createMcpServer(user: UserContext): McpServer {
   registerGaPagePerformanceTool(server, userCtx);
   registerGaUserJourneyTool(server, userCtx);
   registerGaEventsTool(server, userCtx);
+
+  // GBP tools (7 tools) - reviews, posts, performance, media, search keywords
+  registerGbpListLocationsTool(server, userCtx);
+  registerGbpLocationOverviewTool(server, userCtx);
+  registerGbpGetReviewsTool(server, userCtx);
+  registerGbpGetPerformanceTool(server, userCtx);
+  registerGbpSearchKeywordsTool(server, userCtx);
+  registerGbpGetPostsTool(server, userCtx);
+  registerGbpGetMediaTool(server, userCtx);
 
   return server;
 }
