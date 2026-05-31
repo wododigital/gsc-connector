@@ -191,18 +191,31 @@ export interface GbpMediaItem {
   };
 }
 
+export interface GbpDatedValue {
+  date: { year: number; month: number; day: number };
+  value?: string;
+}
+
 export interface GbpPerformanceData {
   multiDailyMetricTimeSeries?: Array<{
-    metric?: string;
-    dailySubEntityData?: Array<{
+    dailyMetricTimeSeries?: Array<{
+      dailyMetric?: string;
       timeSeries?: {
-        datedValues?: Array<{
-          date: string;
-          value?: string;
-        }>;
+        datedValues?: GbpDatedValue[];
       };
     }>;
   }>;
+}
+
+export interface GbpSearchKeywordsResponse {
+  searchKeywordsCounts?: Array<{
+    searchKeyword?: string;
+    insightsValue?: {
+      value?: string;
+      threshold?: string;
+    };
+  }>;
+  nextPageToken?: string;
 }
 
 // ----------------------------------------------------------------
@@ -271,8 +284,25 @@ export async function getGbpReviews(
   };
 }
 
+const DEFAULT_DAILY_METRICS = [
+  "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
+  "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
+  "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
+  "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
+  "BUSINESS_DIRECTION_REQUESTS",
+  "CALL_CLICKS",
+  "WEBSITE_CLICKS",
+] as const;
+
 /**
  * Get daily performance metrics for a location.
+ *
+ * NOTE: The Business Profile Performance API expects a GET (not POST) with
+ * query parameters, and the date-range field is `dailyRange` (with snake_case
+ * `start_date`/`end_date`) - not `timeRange`. Sending POST or `timeRange`
+ * silently routes to 404 / Location not found.
+ * Path is bare `locations/{id}` - no `accounts/...` prefix.
+ *
  * locationPath: "accounts/{accountId}/locations/{locationId}" or "locations/{locationId}"
  */
 export async function getGbpPerformance(
@@ -281,48 +311,44 @@ export async function getGbpPerformance(
   startDate: string,
   endDate: string
 ): Promise<GbpPerformanceData> {
-  // Performance API uses "locations/{locationId}" format
   const locPart = extractLocationsSegment(locationPath);
-  const url = `${PERF_BASE}/${locPart}:fetchMultiDailyMetricsTimeSeries`;
+  const url = new URL(`${PERF_BASE}/${locPart}:fetchMultiDailyMetricsTimeSeries`);
+  for (const metric of DEFAULT_DAILY_METRICS) {
+    url.searchParams.append("dailyMetrics", metric);
+  }
   const [sy, sm, sd] = startDate.split("-").map(Number);
   const [ey, em, ed] = endDate.split("-").map(Number);
-  const body = {
-    dailyMetrics: [
-      "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
-      "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
-      "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
-      "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
-      "BUSINESS_DIRECTION_REQUESTS",
-      "CALL_CLICKS",
-      "WEBSITE_CLICKS",
-    ],
-    timeRange: {
-      startDate: { year: sy, month: sm, day: sd },
-      endDate: { year: ey, month: em, day: ed },
-    },
-  };
-  const res = await gbpFetch(url, accessToken, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new GbpApiError(res.status, text);
-  }
-  return res.json() as Promise<GbpPerformanceData>;
+  url.searchParams.set("dailyRange.start_date.year", String(sy));
+  url.searchParams.set("dailyRange.start_date.month", String(sm));
+  url.searchParams.set("dailyRange.start_date.day", String(sd));
+  url.searchParams.set("dailyRange.end_date.year", String(ey));
+  url.searchParams.set("dailyRange.end_date.month", String(em));
+  url.searchParams.set("dailyRange.end_date.day", String(ed));
+  return gbpGet<GbpPerformanceData>(url.toString(), accessToken);
 }
 
 /**
  * Get monthly search keywords driving impressions.
+ *
+ * NOTE: monthlyRange.{startMonth,endMonth}.{year,month} are all REQUIRED.
+ * Omitting them yields a generic 400. Field names here are camelCase
+ * (different from `dailyRange` snake_case in fetchMultiDailyMetricsTimeSeries).
+ *
  * locationPath: "accounts/{accountId}/locations/{locationId}" or "locations/{locationId}"
  */
 export async function getGbpSearchKeywords(
   accessToken: string,
-  locationPath: string
-): Promise<Record<string, unknown>> {
+  locationPath: string,
+  startMonth: { year: number; month: number },
+  endMonth: { year: number; month: number }
+): Promise<GbpSearchKeywordsResponse> {
   const locPart = extractLocationsSegment(locationPath);
-  const url = `${PERF_BASE}/${locPart}/searchkeywords/impressions/monthly`;
-  return gbpGet<Record<string, unknown>>(url, accessToken);
+  const url = new URL(`${PERF_BASE}/${locPart}/searchkeywords/impressions/monthly`);
+  url.searchParams.set("monthlyRange.startMonth.year", String(startMonth.year));
+  url.searchParams.set("monthlyRange.startMonth.month", String(startMonth.month));
+  url.searchParams.set("monthlyRange.endMonth.year", String(endMonth.year));
+  url.searchParams.set("monthlyRange.endMonth.month", String(endMonth.month));
+  return gbpGet<GbpSearchKeywordsResponse>(url.toString(), accessToken);
 }
 
 /**

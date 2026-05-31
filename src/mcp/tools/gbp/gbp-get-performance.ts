@@ -56,25 +56,23 @@ export function registerGbpGetPerformanceTool(server: McpServer, user: UserConte
           params.start_date,
           params.end_date
         );
-        const metricResults: Array<{
-          metric?: string;
-          dailySubEntityData?: Array<{
-            timeSeries?: { datedValues?: Array<{ date: string; value?: string }> };
-          }>;
-        }> = raw.multiDailyMetricTimeSeries ?? [];
+        // Response shape (per v1 spec):
+        // multiDailyMetricTimeSeries[].dailyMetricTimeSeries[].{ dailyMetric, timeSeries.datedValues[].{ date, value } }
+        // Dates are objects { year, month, day }, values are int64 strings.
         const summary: Record<string, { total: number; daily: Array<{ date: string; value: number }> }> = {};
-        for (const entry of metricResults) {
-          const metricName = entry.metric ?? "unknown";
-          const values: Array<{ date: string; value: number }> = [];
-          let total = 0;
-          for (const sub of entry.dailySubEntityData ?? []) {
-            for (const dv of sub.timeSeries?.datedValues ?? []) {
+        for (const wrapper of raw.multiDailyMetricTimeSeries ?? []) {
+          for (const series of wrapper.dailyMetricTimeSeries ?? []) {
+            const metricName = series.dailyMetric ?? "unknown";
+            const values: Array<{ date: string; value: number }> = [];
+            let total = 0;
+            for (const dv of series.timeSeries?.datedValues ?? []) {
               const val = parseInt(dv.value ?? "0", 10);
-              values.push({ date: dv.date, value: val });
+              const isoDate = `${dv.date.year}-${String(dv.date.month).padStart(2, "0")}-${String(dv.date.day).padStart(2, "0")}`;
+              values.push({ date: isoDate, value: val });
               total += val;
             }
+            summary[metricName] = { total, daily: values };
           }
-          summary[metricName] = { total, daily: values };
         }
 
         logToolCall({

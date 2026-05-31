@@ -54,18 +54,19 @@ export function registerGbpLocationOverviewTool(server: McpServer, user: UserCon
 
         const perfTotals: Record<string, number> = {};
         if (perfRaw.status === "fulfilled") {
-          const metricResults = (perfRaw.value as any).multiDailyMetricTimeSeries ?? [];
-          for (const entry of metricResults as any[]) {
-            let total = 0;
-            for (const sub of (entry.dailySubEntityData ?? []) as any[]) {
-              for (const dv of (sub.timeSeries?.datedValues ?? []) as any[]) {
+          // multiDailyMetricTimeSeries[].dailyMetricTimeSeries[].{ dailyMetric, timeSeries.datedValues[] }
+          for (const wrapper of perfRaw.value.multiDailyMetricTimeSeries ?? []) {
+            for (const series of wrapper.dailyMetricTimeSeries ?? []) {
+              if (!series.dailyMetric) continue;
+              let total = 0;
+              for (const dv of series.timeSeries?.datedValues ?? []) {
                 total += parseInt(dv.value ?? "0", 10);
               }
+              const shortName = series.dailyMetric
+                .replace("BUSINESS_IMPRESSIONS_", "impressions_")
+                .toLowerCase();
+              perfTotals[shortName] = total;
             }
-            const shortName = (entry.metric as string)
-              .replace("BUSINESS_IMPRESSIONS_", "impressions_")
-              .toLowerCase();
-            perfTotals[shortName] = total;
           }
         }
 
