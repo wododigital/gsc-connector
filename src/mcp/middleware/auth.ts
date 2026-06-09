@@ -76,7 +76,7 @@ export async function validateAuth(
     if (!authHeader?.startsWith("Bearer ")) {
       res
         .status(401)
-        .setHeader("WWW-Authenticate", 'Bearer realm="gsc-connect"')
+        .setHeader("WWW-Authenticate", `Bearer realm="gsc-connect", resource_metadata="${process.env.APP_URL || "http://localhost:3000"}/.well-known/oauth-protected-resource"`)
         .json({ error: "Missing or invalid Authorization header" });
       return;
     }
@@ -85,7 +85,7 @@ export async function validateAuth(
     if (!token) {
       res
         .status(401)
-        .setHeader("WWW-Authenticate", 'Bearer realm="gsc-connect"')
+        .setHeader("WWW-Authenticate", `Bearer realm="gsc-connect", resource_metadata="${process.env.APP_URL || "http://localhost:3000"}/.well-known/oauth-protected-resource"`)
         .json({ error: "Bearer token is empty" });
       return;
     }
@@ -231,7 +231,7 @@ export async function validateAuth(
 
     res
       .status(401)
-      .setHeader("WWW-Authenticate", 'Bearer realm="gsc-connect"')
+      .setHeader("WWW-Authenticate", `Bearer realm="gsc-connect", resource_metadata="${process.env.APP_URL || "http://localhost:3000"}/.well-known/oauth-protected-resource"`)
       .json({ error: "Invalid or expired token" });
   } catch (error) {
     if (error instanceof AppError) {
