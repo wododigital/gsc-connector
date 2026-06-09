@@ -39,6 +39,17 @@ const nextConfig = {
         source: "/api/mcp/.well-known/oauth-authorization-server",
         destination: "/api/.well-known/oauth-authorization-server",
       },
+      // Multi-account connector aliases (/api/connect/<client>). Mirror the
+      // path-aware discovery so Claude resolves OAuth for each alias URL the
+      // same way it does for /api/mcp.
+      {
+        source: "/api/connect/:client/.well-known/oauth-authorization-server",
+        destination: "/api/.well-known/oauth-authorization-server",
+      },
+      {
+        source: "/api/connect/:client/.well-known/oauth-protected-resource",
+        destination: "/api/.well-known/oauth-protected-resource",
+      },
     ];
   },
 };
