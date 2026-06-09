@@ -92,8 +92,15 @@ export function registerGaRunReportTool(
           ? (() => {
               const desc = params.order_by.startsWith("-");
               const name = params.order_by.replace(/^-/, "");
-              // Heuristic: if it looks like a metric (no uppercase at start) use metric sort
-              return [{ metric: { metricName: name }, desc }];
+              // Sort by a dimension if the name is one of the requested
+              // dimensions; otherwise treat it as a metric. (GA4 rejects a
+              // dimension name placed in a MetricOrderBy and vice versa.)
+              const isDimension = params.dimensions.includes(name);
+              return [
+                isDimension
+                  ? { dimension: { dimensionName: name }, desc }
+                  : { metric: { metricName: name }, desc },
+              ];
             })()
           : undefined;
 
