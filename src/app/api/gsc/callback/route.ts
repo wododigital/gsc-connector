@@ -243,10 +243,21 @@ export async function GET(req: NextRequest) {
 
   console.log(`[gsc/callback] GSC connected successfully for user ${session.id}`);
 
-  // Honour the gsc_return_to cookie set by /api/gsc/connect so the onboarding
-  // wizard can pull users back to itself instead of bouncing through /dashboard.
+  // Honour the gsc_return_to cookie set by the connect routes so flows like
+  // the onboarding wizard and the OAuth consent page can pull users back to
+  // themselves instead of bouncing through /dashboard. Relative known
+  // prefixes only - never a full URL.
   const returnTo = req.cookies.get("gsc_return_to")?.value;
-  const safeReturn = returnTo === "/onboarding" ? "/onboarding?connected=true" : "/dashboard?connected=true";
+  let safeReturn = "/dashboard?connected=true";
+  if (returnTo === "/onboarding") {
+    safeReturn = "/onboarding?connected=true";
+  } else if (
+    returnTo &&
+    returnTo.startsWith("/oauth/consent") &&
+    !returnTo.startsWith("//")
+  ) {
+    safeReturn = returnTo;
+  }
   const response = NextResponse.redirect(new URL(safeReturn, config.app.url));
   response.cookies.set("gsc_oauth_state", "", { maxAge: 0, path: "/" });
   response.cookies.set("gsc_return_to", "", { maxAge: 0, path: "/" });

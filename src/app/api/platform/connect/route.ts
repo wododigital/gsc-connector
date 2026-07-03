@@ -34,7 +34,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const platform = new URL(req.url).searchParams.get("platform") ?? "";
+    const reqUrl = new URL(req.url);
+    const platform = reqUrl.searchParams.get("platform") ?? "";
     if (!isGatedPlatform(platform)) {
       return NextResponse.redirect(
         new URL("/dashboard?error=unknown_platform", config.app.url)
@@ -70,7 +71,15 @@ export async function GET(req: NextRequest) {
       maxAge: 300,
       path: "/",
     });
-    response.cookies.set("gsc_return_to", "/dashboard", {
+    // Optional relative return target (e.g. back to the OAuth consent page)
+    const returnToParam = reqUrl.searchParams.get("return_to");
+    const returnTarget =
+      returnToParam &&
+      (returnToParam.startsWith("/onboarding") || returnToParam.startsWith("/oauth/consent")) &&
+      !returnToParam.startsWith("//")
+        ? returnToParam
+        : "/dashboard";
+    response.cookies.set("gsc_return_to", returnTarget, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

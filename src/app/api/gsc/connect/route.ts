@@ -27,10 +27,21 @@ export async function GET(req: NextRequest) {
     const state = randomBytes(16).toString("hex");
     const gscCallbackUri = `${config.app.url}/api/gsc/callback`;
 
-    // Optional ?return=onboarding so the wizard can send users back to itself
-    // after the round-trip instead of routing through /dashboard.
+    // Optional return target so flows (onboarding wizard, OAuth consent page)
+    // can pull users back to themselves after the Google round-trip.
+    // Relative paths only, restricted to known prefixes - no open redirects.
     const url = new URL(req.url);
-    const returnTarget = url.searchParams.get("return") === "onboarding" ? "/onboarding" : "/dashboard";
+    const returnToParam = url.searchParams.get("return_to");
+    let returnTarget = "/dashboard";
+    if (url.searchParams.get("return") === "onboarding") {
+      returnTarget = "/onboarding";
+    } else if (
+      returnToParam &&
+      (returnToParam.startsWith("/onboarding") || returnToParam.startsWith("/oauth/consent")) &&
+      !returnToParam.startsWith("//")
+    ) {
+      returnTarget = returnToParam;
+    }
 
     const googleAuthUrl = buildGoogleAuthUrl({
       scopes: [

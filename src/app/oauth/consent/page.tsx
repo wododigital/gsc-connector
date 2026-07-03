@@ -2,6 +2,8 @@ import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { listGA4Properties } from "@/lib/ga4/api";
+import { getPlatformAccessMap } from "@/lib/platform-access";
+import Script from "next/script";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -32,6 +34,29 @@ async function getOAuthClient(clientId: string) {
     });
   } catch {
     return null;
+  }
+}
+
+async function getAccountLevelServices(userId: string) {
+  // GBP/GTM/Ads are account-level: no property selection needed. The MCP
+  // tools discover locations/containers/customer IDs at call time, so the
+  // consent page only reports whether the scope is granted (and offers an
+  // inline connect for what's missing).
+  try {
+    const [credentials, access] = await Promise.all([
+      db.googleCredential.findMany({ where: { userId }, select: { scopes: true } }),
+      getPlatformAccessMap(userId),
+    ]);
+    const allScopes = credentials.map((c) => c.scopes).join(" ");
+    return {
+      gbp: allScopes.includes("business.manage"),
+      gtm: allScopes.includes("tagmanager"),
+      ads: allScopes.includes("auth/adwords"),
+      gtmEntitled: access.gtm,
+      adsEntitled: access.google_ads,
+    };
+  } catch {
+    return { gbp: false, gtm: false, ads: false, gtmEntitled: false, adsEntitled: false };
   }
 }
 
@@ -243,11 +268,15 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
     );
   }
 
-  // Get user's GSC and GA4 properties
-  const [properties, ga4Properties] = await Promise.all([
+  // Get user's GSC and GA4 properties + account-level service status
+  const [properties, ga4Properties, services] = await Promise.all([
     getUserProperties(session.id),
     getUserGA4Properties(session.id),
+    getAccountLevelServices(session.id),
   ]);
+
+  // So inline connect flows can return here with all OAuth params intact
+  const consentReturnUrl = buildConsentUrl(params);
 
   if (properties.length === 0) {
     return (
@@ -267,7 +296,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
           }
         >
           <a
-            href="/api/gsc/connect"
+            href={`/api/gsc/connect?return_to=${encodeURIComponent(buildConsentUrl(params))}`}
             className="btn btn-primary"
             style={{ justifyContent: "center" }}
           >
@@ -336,11 +365,30 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
           </div>
 
           {/* GSC Property checkboxes */}
-          <div className="consent-section">
-            <div className="consent-section-label">Search Console Properties</div>
-            <p className="consent-section-hint">
-              Select which GSC properties to grant access to.
-            </p>
+          <div className="consent-section" data-prop-section>
+            <div className="consent-section-head">
+              <div>
+                <div className="consent-section-label">
+                  Search Console Properties
+                  <span className="count">{properties.length}</span>
+                </div>
+                <p className="consent-section-hint">
+                  Select which GSC properties to grant access to.
+                </p>
+              </div>
+              <div className="select-controls">
+                <button type="button" data-select="all">ALL</button>
+                <button type="button" data-select="none">NONE</button>
+              </div>
+            </div>
+            {properties.length > 6 && (
+              <input
+                type="search"
+                className="prop-filter"
+                placeholder="Filter properties..."
+                data-filter
+              />
+            )}
             <div className="prop-list">
               {properties.map((property, index) => (
                 <label key={property.id} className="prop-item">
@@ -365,11 +413,30 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 
           {/* GA4 Property section - only show if user has GA4 properties */}
           {ga4Properties.length > 0 && (
-            <div className="consent-section">
-              <div className="consent-section-label">Google Analytics 4 Properties</div>
-              <p className="consent-section-hint">
-                Optional. Select which GA4 properties to grant access to.
-              </p>
+            <div className="consent-section" data-prop-section>
+              <div className="consent-section-head">
+                <div>
+                  <div className="consent-section-label">
+                    Google Analytics 4 Properties
+                    <span className="count">{ga4Properties.length}</span>
+                  </div>
+                  <p className="consent-section-hint">
+                    Optional. Select which GA4 properties to grant access to.
+                  </p>
+                </div>
+                <div className="select-controls">
+                  <button type="button" data-select="all">ALL</button>
+                  <button type="button" data-select="none">NONE</button>
+                </div>
+              </div>
+              {ga4Properties.length > 6 && (
+                <input
+                  type="search"
+                  className="prop-filter"
+                  placeholder="Filter properties..."
+                  data-filter
+                />
+              )}
               <div className="prop-list">
                 {ga4Properties.map((property, index) => (
                   <label key={property.id} className="prop-item ga4">
@@ -395,6 +462,35 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
               </div>
             </div>
           )}
+
+          {/* Account-level services: nothing to select - status + inline connect */}
+          <div className="consent-section">
+            <div className="consent-section-label">Account-Level Services</div>
+            <p className="consent-section-hint">
+              These have no properties to pick - once connected, they are included automatically.
+            </p>
+            <div className="svc-list">
+              <ServiceRow
+                label="Business Profile"
+                connected={services.gbp}
+                connectHref={`/api/gsc/connect?return_to=${encodeURIComponent(consentReturnUrl)}`}
+              />
+              {services.gtmEntitled && (
+                <ServiceRow
+                  label="Tag Manager"
+                  connected={services.gtm}
+                  connectHref={`/api/platform/connect?platform=gtm&return_to=${encodeURIComponent(consentReturnUrl)}`}
+                />
+              )}
+              {services.adsEntitled && (
+                <ServiceRow
+                  label="Google Ads"
+                  connected={services.ads}
+                  connectHref={`/api/platform/connect?platform=google_ads&return_to=${encodeURIComponent(consentReturnUrl)}`}
+                />
+              )}
+            </div>
+          </div>
 
           {/* Action buttons */}
           <div className="consent-actions">
@@ -432,9 +528,65 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
           <a href="/privacy">Privacy Policy</a>.
         </span>
       </div>
+      {/* next/script survives hydration; a raw <script> injected via JSX
+          does not execute if React replaces the server HTML. */}
+      <Script id="consent-interactions" strategy="afterInteractive">
+        {CONSENT_JS}
+      </Script>
     </ConsentShell>
   );
 }
+
+function ServiceRow({
+  label,
+  connected,
+  connectHref,
+}: {
+  label: string;
+  connected: boolean;
+  connectHref: string;
+}) {
+  return (
+    <div className={`svc-row${connected ? " on" : ""}`}>
+      <span className="svc-dot" />
+      <span className="svc-name">{label}</span>
+      {connected ? (
+        <span className="svc-state">INCLUDED</span>
+      ) : (
+        <a href={connectHref} className="svc-connect">
+          + CONNECT
+        </a>
+      )}
+    </div>
+  );
+}
+
+// Vanilla JS for the (otherwise server-rendered) consent form:
+// per-section select all/none + text filter for long property lists.
+const CONSENT_JS = `
+document.querySelectorAll('[data-prop-section]').forEach(function (section) {
+  var boxes = function () {
+    return section.querySelectorAll('.prop-item:not([hidden]) input[type=checkbox]');
+  };
+  section.querySelectorAll('[data-select]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var check = btn.getAttribute('data-select') === 'all';
+      boxes().forEach(function (b) { b.checked = check; });
+    });
+  });
+  var filter = section.querySelector('[data-filter]');
+  if (filter) {
+    filter.addEventListener('input', function () {
+      var q = filter.value.toLowerCase();
+      section.querySelectorAll('.prop-item').forEach(function (item) {
+        var text = item.textContent.toLowerCase();
+        if (q && text.indexOf(q) === -1) { item.setAttribute('hidden', ''); }
+        else { item.removeAttribute('hidden'); }
+      });
+    });
+  }
+});
+`;
 
 /* ────────────────────────────────────────────────────────────
  * Layout primitives + scoped CSS for the consent flow.
@@ -444,7 +596,9 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 function ConsentShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="consent-page">
-      <style>{CONSENT_CSS}</style>
+      {/* dangerouslySetInnerHTML avoids the text-content hydration mismatch
+          a raw template-literal style tag triggers in the App Router */}
+      <style dangerouslySetInnerHTML={{ __html: CONSENT_CSS }} />
       <header className="consent-topbar">
         <a href="/" className="brand">
           <img src="/omg-logo-light.webp" alt="OMG / BRIDGE" />
@@ -574,7 +728,7 @@ const CONSENT_CSS = `
 
 .consent-card {
   width: 100%;
-  max-width: 520px;
+  max-width: 620px;
   background: var(--surface-1);
   border: 1px solid var(--rule-strong);
   padding: 44px 40px;
@@ -648,9 +802,79 @@ const CONSENT_CSS = `
   display: flex; flex-wrap: wrap; gap: 6px;
 }
 
+.consent-section-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.consent-section-label .count {
+  margin-left: 8px;
+  font-family: var(--mono);
+  color: var(--teal);
+}
+.select-controls { display: flex; gap: 6px; flex-shrink: 0; }
+.select-controls button {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  font-family: var(--body);
+  color: var(--ink-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.select-controls button:hover { color: var(--teal); border-color: var(--teal); }
+
+.prop-filter {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 9px 12px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.prop-filter:focus { outline: none; border-color: var(--teal); }
+
 .prop-list {
   display: flex; flex-direction: column; gap: 8px;
+  max-height: 236px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
 }
+.prop-list::-webkit-scrollbar { width: 6px; }
+.prop-list::-webkit-scrollbar-thumb { background: var(--rule-strong); }
+
+.svc-list { display: flex; flex-direction: column; gap: 6px; }
+.svc-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+}
+.svc-row .svc-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--rule-strong);
+  flex-shrink: 0;
+}
+.svc-row.on .svc-dot { background: var(--teal); box-shadow: 0 0 6px var(--teal); }
+.svc-row .svc-name { flex: 1; font-size: 13px; color: var(--ink); }
+.svc-row .svc-state {
+  font-size: 10px; letter-spacing: 0.14em;
+  color: var(--teal);
+  font-family: var(--mono);
+}
+.svc-row .svc-connect {
+  font-size: 10px; letter-spacing: 0.14em;
+  color: var(--vermilion);
+  text-decoration: none;
+  border: 1px solid var(--rule);
+  padding: 5px 10px;
+  transition: border-color .15s;
+}
+.svc-row .svc-connect:hover { border-color: var(--vermilion); }
 .prop-item {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 14px;
@@ -660,6 +884,7 @@ const CONSENT_CSS = `
   transition: border-color .18s, background .18s;
 }
 .prop-item:hover { border-color: var(--rule-strong); }
+.prop-item[hidden] { display: none; }
 .prop-item:has(:checked) {
   border-color: var(--teal);
   background: rgba(0, 181, 181, 0.06);
@@ -717,9 +942,11 @@ const CONSENT_CSS = `
 
 .consent-actions {
   margin-top: 28px;
-  padding-top: 22px;
+  padding: 22px 0 4px;
   border-top: 1px solid var(--rule);
   display: flex; gap: 10px;
+  position: sticky; bottom: 0;
+  background: var(--surface-1);
 }
 
 .consent-foot {
