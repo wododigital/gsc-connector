@@ -594,7 +594,7 @@ describe("POST /api/oauth/token", () => {
     expect(json.access_token).toBeDefined();
     expect(json.refresh_token).toBeDefined();
     expect(json.token_type).toBe("Bearer");
-    expect(json.expires_in).toBe(3600);
+    expect(json.expires_in).toBe(12 * 3600);
     expect(json.scope).toBe("gsc:read");
   });
 
@@ -646,7 +646,7 @@ describe("POST /api/oauth/token", () => {
     expect(json.error_description).toContain("PKCE");
   });
 
-  it("issues new tokens on refresh_token grant (token rotation)", async () => {
+  it("issues a new access token on refresh_token grant without rotating the refresh token", async () => {
     const refreshToken = randomBytes(32).toString("hex");
     const refreshTokenHash = createHash("sha256").update(refreshToken).digest("hex");
 
@@ -685,11 +685,16 @@ describe("POST /api/oauth/token", () => {
 
     const json = await res.json();
     expect(json.access_token).toBeDefined();
-    expect(json.refresh_token).toBeDefined();
-    // New tokens should differ from old refresh
-    expect(json.refresh_token).not.toBe(refreshToken);
+    // The refresh token is long-lived and NOT rotated: a client retrying a
+    // refresh (lost response, concurrent calls) must never hit invalid_grant.
+    expect(json.refresh_token).toBe(refreshToken);
     expect(json.token_type).toBe("Bearer");
-    expect(json.expires_in).toBe(3600);
+    expect(json.expires_in).toBe(12 * 3600);
+
+    // The stored refresh token hash must be left untouched
+    const updateArgs = mockDb.oAuthToken.update.mock.calls[0][0];
+    expect(updateArgs.data.refreshTokenHash).toBeUndefined();
+    expect(updateArgs.data.accessTokenHash).toBeDefined();
   });
 
   it("rejects invalid refresh_token", async () => {

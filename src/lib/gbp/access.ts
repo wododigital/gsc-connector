@@ -11,15 +11,27 @@ import { decrypt, encrypt } from "../encryption.js";
 import { AppError } from "../../types/index.js";
 
 export async function getGbpAccessToken(userId: string): Promise<string> {
-  const credential = await db.googleCredential.findFirst({
+  // Prefer the credential whose consent actually includes the GBP scope.
+  // Picking by recency alone flapped: a GSC-side refresh bumps updatedAt and
+  // can promote a credential whose refresh token lacks business.manage,
+  // which then mints scope-less access tokens and 403s every GBP call.
+  const credentials = await db.googleCredential.findMany({
     where: { userId },
     orderBy: { updatedAt: "desc" },
     select: {
+      id: true,
       accessTokenEncrypted: true,
       refreshTokenEncrypted: true,
       tokenExpiry: true,
+      scopes: true,
     },
   });
+
+  const credential =
+    credentials.find((c) => c.scopes.includes("business.manage")) ??
+    // Legacy rows may have an empty scopes column; fall back to recency so
+    // they keep working until the user reconnects.
+    credentials[0];
 
   if (!credential) {
     throw new AppError(
@@ -56,8 +68,11 @@ export async function getGbpAccessToken(userId: string): Promise<string> {
   }
 
   const data = (await res.json()) as { access_token: string; expires_in: number };
-  await db.googleCredential.updateMany({
-    where: { userId },
+  // Update ONLY the credential we refreshed. updateMany({ userId }) used to
+  // spray this token onto every credential row, corrupting rows whose
+  // refresh tokens carry different scopes.
+  await db.googleCredential.update({
+    where: { id: credential.id },
     data: {
       accessTokenEncrypted: encrypt(data.access_token),
       tokenExpiry: new Date(Date.now() + data.expires_in * 1000),

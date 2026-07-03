@@ -4,8 +4,18 @@
  *
  * Supports:
  * - grant_type=authorization_code (with PKCE verification)
- * - grant_type=refresh_token (with token rotation)
+ * - grant_type=refresh_token
+ *
+ * Refresh tokens are long-lived and NOT rotated. Rotation with immediate
+ * invalidation caused invalid_grant races (client retry after a lost
+ * response, concurrent refreshes) that made Claude.ai drop the connector.
+ * Tokens are stored as SHA-256 hashes and only ever travel over TLS;
+ * revocation is available via /api/oauth/revoke.
  */
+
+// 12 hours. Short TTLs buy nothing here (refresh is free and automatic) and
+// every refresh event is a chance for a client-side race, so keep them rare.
+const ACCESS_TOKEN_TTL_SECONDS = 12 * 3600;
 
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, createHash } from "crypto";
@@ -222,7 +232,7 @@ export async function POST(req: NextRequest) {
     const refreshToken = generateToken();
     const accessTokenHash = hashToken(accessToken);
     const refreshTokenHash = hashToken(refreshToken);
-    const expiresAt = new Date(Date.now() + 3600 * 1000); // 1 hour
+    const expiresAt = new Date(Date.now() + ACCESS_TOKEN_TTL_SECONDS * 1000);
 
     await db.oAuthToken.create({
       data: {
@@ -239,7 +249,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       access_token: accessToken,
       token_type: "Bearer",
-      expires_in: 3600,
+      expires_in: ACCESS_TOKEN_TTL_SECONDS,
       refresh_token: refreshToken,
       scope: authCode.scopes,
     });
@@ -289,19 +299,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate new tokens (token rotation)
+    // Issue a fresh access token; the refresh token stays the same.
+    // A retried or concurrent refresh therefore always succeeds - it just
+    // mints another access token instead of hitting invalid_grant.
     const newAccessToken = generateToken();
-    const newRefreshToken = generateToken();
     const newAccessTokenHash = hashToken(newAccessToken);
-    const newRefreshTokenHash = hashToken(newRefreshToken);
-    const newExpiresAt = new Date(Date.now() + 3600 * 1000);
+    const newExpiresAt = new Date(Date.now() + ACCESS_TOKEN_TTL_SECONDS * 1000);
 
-    // Replace existing token record with new one
     await db.oAuthToken.update({
       where: { id: existingToken.id },
       data: {
         accessTokenHash: newAccessTokenHash,
-        refreshTokenHash: newRefreshTokenHash,
         expiresAt: newExpiresAt,
       },
     });
@@ -309,8 +317,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       access_token: newAccessToken,
       token_type: "Bearer",
-      expires_in: 3600,
-      refresh_token: newRefreshToken,
+      expires_in: ACCESS_TOKEN_TTL_SECONDS,
+      refresh_token: refresh_token,
       scope: existingToken.scopes,
     });
   }

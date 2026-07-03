@@ -22,15 +22,24 @@ interface GA4Context {
  * Tries to refresh if the token is expired.
  */
 async function getAccessToken(userId: string): Promise<string> {
-  const credential = await db.googleCredential.findFirst({
+  // Prefer the credential whose consent includes the GA4 scope; recency
+  // alone can pick a credential whose refresh token lacks it (see the
+  // matching comment in src/lib/gbp/access.ts).
+  const credentials = await db.googleCredential.findMany({
     where: { userId },
     orderBy: { updatedAt: "desc" },
     select: {
+      id: true,
       accessTokenEncrypted: true,
       refreshTokenEncrypted: true,
       tokenExpiry: true,
+      scopes: true,
     },
   });
+
+  const credential =
+    credentials.find((c) => c.scopes.includes("analytics.readonly")) ??
+    credentials[0];
 
   if (!credential) {
     throw new AppError(
@@ -74,10 +83,11 @@ async function getAccessToken(userId: string): Promise<string> {
     expires_in: number;
   };
 
-  // Update the stored token
+  // Update ONLY the credential we refreshed (updateMany({ userId }) used to
+  // cross-write this token onto credential rows with different scopes).
   const { encrypt } = await import("../../../lib/encryption.js");
-  await db.googleCredential.updateMany({
-    where: { userId },
+  await db.googleCredential.update({
+    where: { id: credential.id },
     data: {
       accessTokenEncrypted: encrypt(data.access_token),
       tokenExpiry: new Date(Date.now() + data.expires_in * 1000),

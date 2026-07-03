@@ -22,15 +22,6 @@ import db from "@/lib/db";
 import { config } from "@/config/index";
 import type { SiteEntry } from "@/types/index";
 
-const GSC_SCOPES = [
-  "openid",
-  "email",
-  "profile",
-  "https://www.googleapis.com/auth/webmasters.readonly",
-  "https://www.googleapis.com/auth/analytics.readonly",
-  "https://www.googleapis.com/auth/business.manage",
-].join(" ");
-
 export async function GET(req: NextRequest) {
   // Must be logged in as a platform user
   const session = await getSession();
@@ -132,9 +123,20 @@ export async function GET(req: NextRequest) {
   const refreshTokenEncrypted = encrypt(tokens.refresh_token);
 
   // Record the scopes Google actually granted (not just what we asked for).
-  // Falls back to the requested set so the downstream flow never sees an
-  // empty scopes column.
-  const grantedScopes = tokens.scope && tokens.scope.length > 0 ? tokens.scope : GSC_SCOPES;
+  // If Google omits the scope echo we fall back to the BASIC scopes only -
+  // never analytics/business.manage. Over-claiming here made the dashboard
+  // show GBP as connected while every GBP API call 403ed.
+  const BASIC_FALLBACK_SCOPES =
+    "openid email profile https://www.googleapis.com/auth/webmasters.readonly";
+  let grantedScopes: string;
+  if (tokens.scope && tokens.scope.length > 0) {
+    grantedScopes = tokens.scope;
+  } else {
+    console.warn(
+      "[gsc/callback] Google did not echo granted scopes; recording basic scopes only"
+    );
+    grantedScopes = BASIC_FALLBACK_SCOPES;
+  }
 
   // Persist credential to DB
   let credentialId: string;
