@@ -12,6 +12,15 @@ import {
   type GbpAccount,
   type GbpLocation,
 } from "@/lib/gbp/api";
+import { getGtmAccessToken } from "@/lib/gtm/access";
+import {
+  listGtmAccounts,
+  listGtmContainers,
+  GtmApiError,
+  type GtmAccount,
+  type GtmContainer,
+} from "@/lib/gtm/api";
+import { getPlatformAccessMap } from "@/lib/platform-access";
 import { PropertiesTabs, type PropertyTabKey } from "./properties-tabs";
 import type { Metadata } from "next";
 
@@ -55,17 +64,20 @@ async function getGa4Properties(userId: string) {
 
 async function getCredentialScopes(userId: string) {
   try {
-    const credential = await db.googleCredential.findFirst({
+    // Union across ALL credential rows - the platform helpers pick the right
+    // credential per scope, so "granted" means any row carries it.
+    const credentials = await db.googleCredential.findMany({
       where: { userId },
       select: { scopes: true },
-      orderBy: { updatedAt: "desc" },
     });
+    const allScopes = credentials.map((c) => c.scopes).join(" ");
     return {
-      hasCredential: Boolean(credential),
-      hasGbpScope: credential?.scopes.includes("business.manage") ?? false,
+      hasCredential: credentials.length > 0,
+      hasGbpScope: allScopes.includes("business.manage"),
+      hasGtmScope: allScopes.includes("tagmanager"),
     };
   } catch {
-    return { hasCredential: false, hasGbpScope: false };
+    return { hasCredential: false, hasGbpScope: false, hasGtmScope: false };
   }
 }
 
@@ -107,6 +119,46 @@ async function getGbpData(
         : err instanceof Error
           ? err.message
           : "Failed to load Business Profile data";
+    return { state: "error", message };
+  }
+}
+
+type GtmAccountWithContainers = GtmAccount & { containers: GtmContainer[] };
+
+type GtmStatus =
+  | { state: "no_credential" }
+  | { state: "no_scope" }
+  | { state: "ok"; accounts: GtmAccountWithContainers[] }
+  | { state: "error"; message: string };
+
+async function getGtmData(
+  userId: string,
+  hasCredential: boolean,
+  hasGtmScope: boolean
+): Promise<GtmStatus> {
+  if (!hasCredential) return { state: "no_credential" };
+  if (!hasGtmScope) return { state: "no_scope" };
+  try {
+    const accessToken = await getGtmAccessToken(userId);
+    const accounts = await listGtmAccounts(accessToken);
+    const enriched: GtmAccountWithContainers[] = [];
+    for (const account of accounts) {
+      let containers: GtmContainer[] = [];
+      try {
+        containers = await listGtmContainers(accessToken, account.path);
+      } catch (cErr) {
+        console.warn(`[properties/gtm] Failed to list containers for ${account.path}:`, cErr);
+      }
+      enriched.push({ ...account, containers });
+    }
+    return { state: "ok", accounts: enriched };
+  } catch (err) {
+    const message =
+      err instanceof GtmApiError
+        ? err.userMessage(process.env.APP_URL || "")
+        : err instanceof Error
+          ? err.message
+          : "Failed to load Tag Manager data";
     return { state: "error", message };
   }
 }
@@ -301,6 +353,81 @@ function GbpAccountsPane({ accounts }: { accounts: GbpAccountWithLocations[] }) 
   );
 }
 
+function GtmAccountsPane({ accounts }: { accounts: GtmAccountWithContainers[] }) {
+  const totalContainers = accounts.reduce((s, a) => s + a.containers.length, 0);
+
+  if (accounts.length === 0) {
+    return (
+      <GbpReconnectPane
+        headline="No Tag Manager accounts"
+        copy="Your Google account is authorized for Tag Manager but has no accounts attached. Ask the container owner to add your Google account under GTM Admin > User Management, then come back here."
+      />
+    );
+  }
+
+  return (
+    <div style={{ background: "var(--surface-1)", border: "1px solid var(--rule-strong)" }}>
+      <div
+        style={{
+          padding: "14px 22px",
+          borderBottom: "1px solid var(--rule)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+          {accounts.length} account{accounts.length === 1 ? "" : "s"} · {totalContainers} container
+          {totalContainers === 1 ? "" : "s"}
+        </div>
+        <span className="pill info" style={{ fontSize: 10 }}>LIVE</span>
+      </div>
+
+      {accounts.map((account) => (
+        <div key={account.path} style={{ padding: "18px 22px", borderBottom: "1px solid var(--rule)" }}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{account.name}</div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>{account.path}</div>
+          </div>
+
+          {account.containers.length === 0 ? (
+            <p style={{ fontSize: 12, color: "var(--ink-3)", margin: 0 }}>
+              No containers under this account.
+            </p>
+          ) : (
+            <div>
+              {account.containers.map((container) => (
+                <div
+                  key={container.path}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto",
+                    gap: 12,
+                    alignItems: "center",
+                    padding: "10px 0",
+                    borderTop: "1px solid var(--rule)",
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: "var(--ink)", fontWeight: 500 }}>
+                      {container.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2, fontFamily: "var(--mono)" }}>
+                      {container.publicId}
+                      {container.usageContext?.length ? ` · ${container.usageContext.join(", ").toLowerCase()}` : ""}
+                    </div>
+                  </div>
+                  <span className="pill" style={{ fontSize: 9 }}>{container.publicId}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ────────────────────────────────────────────────────────────
  * Page
  * ──────────────────────────────────────────────────────────── */
@@ -308,27 +435,38 @@ export default async function PropertiesPage() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  const [gscProperties, ga4Properties, credentialScopes] = await Promise.all([
+  const [gscProperties, ga4Properties, credentialScopes, platformAccess] = await Promise.all([
     getGscProperties(session.id),
     getGa4Properties(session.id),
     getCredentialScopes(session.id),
+    getPlatformAccessMap(session.id).catch(() => ({ google_ads: false, gtm: false })),
   ]);
 
-  const gbpStatus = await getGbpData(
-    session.id,
-    credentialScopes.hasCredential,
-    credentialScopes.hasGbpScope
-  );
+  const [gbpStatus, gtmStatus] = await Promise.all([
+    getGbpData(session.id, credentialScopes.hasCredential, credentialScopes.hasGbpScope),
+    platformAccess.gtm
+      ? getGtmData(session.id, credentialScopes.hasCredential, credentialScopes.hasGtmScope)
+      : Promise.resolve(null),
+  ]);
 
   const gbpLocationCount =
     gbpStatus.state === "ok"
       ? gbpStatus.accounts.reduce((s, a) => s + a.locations.length, 0)
       : 0;
 
+  const gtmContainerCount =
+    gtmStatus?.state === "ok"
+      ? gtmStatus.accounts.reduce((s, a) => s + a.containers.length, 0)
+      : 0;
+
   const tabs: { key: PropertyTabKey; label: string; count: number }[] = [
     { key: "ga4", label: "GA4", count: ga4Properties.length },
     { key: "gsc", label: "Search Console", count: gscProperties.length },
     { key: "gbp", label: "Business Profile", count: gbpLocationCount },
+    // GTM is entitlement-gated: the tab simply doesn't exist for others
+    ...(platformAccess.gtm
+      ? [{ key: "gtm" as const, label: "Tag Manager", count: gtmContainerCount }]
+      : []),
     { key: "ads", label: "Ads", count: 0 },
   ];
 
@@ -388,6 +526,58 @@ export default async function PropertiesPage() {
     );
   }
 
+  let gtmPane: React.ReactNode = null;
+  if (platformAccess.gtm && gtmStatus) {
+    if (gtmStatus.state === "ok") {
+      gtmPane = <GtmAccountsPane accounts={gtmStatus.accounts} />;
+    } else if (gtmStatus.state === "no_scope") {
+      gtmPane = (
+        <div
+          style={{
+            padding: "64px",
+            textAlign: "center",
+            background: "var(--surface-1)",
+            border: "1px dashed var(--rule-strong)",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--display)",
+              fontWeight: 700,
+              fontSize: 24,
+              textTransform: "uppercase",
+              letterSpacing: "-0.02em",
+              marginBottom: 8,
+            }}
+          >
+            Tag Manager is ready
+          </div>
+          <p style={{ color: "var(--ink-2)", fontSize: 13, maxWidth: 460, margin: "0 auto 24px" }}>
+            Audit tags, triggers and variables in any container you manage. Connect once to add
+            Tag Manager access to your Google grant.
+          </p>
+          <a className="btn btn-primary" href="/api/platform/connect?platform=gtm">
+            Connect Tag Manager &rarr;
+          </a>
+        </div>
+      );
+    } else if (gtmStatus.state === "no_credential") {
+      gtmPane = (
+        <EmptyServicePane
+          service="Tag Manager"
+          copy="Connect a Google account first so we can read your Tag Manager accounts and containers."
+        />
+      );
+    } else {
+      gtmPane = (
+        <GbpReconnectPane
+          headline="Tag Manager load failed"
+          copy={gtmStatus.message}
+        />
+      );
+    }
+  }
+
   const adsPane = (
     <EmptyServicePane
       comingSoon
@@ -422,6 +612,7 @@ export default async function PropertiesPage() {
           ga4: ga4Pane,
           gsc: gscPane,
           gbp: gbpPane,
+          ...(platformAccess.gtm ? { gtm: gtmPane } : {}),
           ads: adsPane,
         }}
       />

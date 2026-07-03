@@ -13,7 +13,7 @@
 
 import { useState, type ReactNode } from "react";
 
-export type PropertyTabKey = "ga4" | "gsc" | "gbp" | "ads";
+export type PropertyTabKey = "ga4" | "gsc" | "gbp" | "gtm" | "ads";
 
 interface TabDef {
   key: PropertyTabKey;
@@ -24,7 +24,8 @@ interface TabDef {
 interface PropertiesTabsProps {
   tabs: TabDef[];
   initial?: PropertyTabKey;
-  panes: Record<PropertyTabKey, ReactNode>;
+  // Partial: gated tabs (gtm) are omitted entirely for non-entitled users
+  panes: Partial<Record<PropertyTabKey, ReactNode>>;
 }
 
 export function PropertiesTabs({ tabs, initial, panes }: PropertiesTabsProps) {

@@ -5,6 +5,10 @@ import { CopyButton } from "@/components/copy-button";
 import { ConnectionActions } from "@/components/connection-actions";
 import { ConnectAi } from "@/components/connect-ai";
 import { getPlatformAccessMap } from "@/lib/platform-access";
+import { getGbpAccessToken } from "@/lib/gbp/access";
+import { listGbpAccounts, listGbpLocations } from "@/lib/gbp/api";
+import { getGtmAccessToken } from "@/lib/gtm/access";
+import { listGtmAccounts, listGtmContainers } from "@/lib/gtm/api";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -105,6 +109,56 @@ async function getUsageStats(userId: string) {
   }
 }
 
+/* GBP locations and GTM containers live in Google, not our DB. The overview
+ * cards want counts, but fetching live on every dashboard view would burn
+ * quota (GTM defaults to ~15 req/min per project), so counts are cached
+ * in-process for 10 minutes per user. null = unknown (not connected or
+ * fetch failed) - cards fall back to descriptive text. */
+const liveCountCache = new Map<string, { value: number | null; expiresAt: number }>();
+const LIVE_COUNT_TTL_MS = 10 * 60 * 1000;
+
+async function cachedLiveCount(
+  key: string,
+  fetcher: () => Promise<number>
+): Promise<number | null> {
+  const hit = liveCountCache.get(key);
+  if (hit && hit.expiresAt > Date.now()) return hit.value;
+  let value: number | null = null;
+  try {
+    value = await fetcher();
+  } catch {
+    value = null;
+  }
+  liveCountCache.set(key, { value, expiresAt: Date.now() + LIVE_COUNT_TTL_MS });
+  return value;
+}
+
+async function getGbpLocationCount(userId: string, hasGbpScope: boolean) {
+  if (!hasGbpScope) return null;
+  return cachedLiveCount(`gbp:${userId}`, async () => {
+    const token = await getGbpAccessToken(userId);
+    const accounts = await listGbpAccounts(token);
+    let total = 0;
+    for (const account of accounts) {
+      total += (await listGbpLocations(token, account.name)).length;
+    }
+    return total;
+  });
+}
+
+async function getGtmContainerCount(userId: string, entitled: boolean, hasGtmScope: boolean) {
+  if (!entitled || !hasGtmScope) return null;
+  return cachedLiveCount(`gtm:${userId}`, async () => {
+    const token = await getGtmAccessToken(userId);
+    const accounts = await listGtmAccounts(token);
+    let total = 0;
+    for (const account of accounts) {
+      total += (await listGtmContainers(token, account.path)).length;
+    }
+    return total;
+  });
+}
+
 const MCP_ENDPOINT = `${process.env.APP_URL || "http://localhost:3000"}/api/mcp`;
 
 /* ────────────────────────────────────────────────────────────
@@ -194,6 +248,11 @@ export default async function DashboardPage({
   const hasGscConnected = properties.some((p) => p.isActive);
   const { hasCredential, hasAnalyticsScope, hasGbpScope, hasAdsScope, hasGtmScope } =
     credentialInfo;
+
+  const [gbpLocationCount, gtmContainerCount] = await Promise.all([
+    getGbpLocationCount(session.id, hasGbpScope),
+    getGtmContainerCount(session.id, platformAccess.gtm, hasGtmScope),
+  ]);
   const totalActiveProperties =
     properties.filter((p) => p.isActive).length + ga4Properties.filter((p) => p.isActive).length;
 
@@ -331,8 +390,14 @@ export default async function DashboardPage({
         <ServiceCard
           name={"BUSINESS PROFILE"}
           connected={hasGbpScope}
-          metaLabel="SCOPE"
-          metaValue={hasGbpScope ? "Reviews, posts, insights" : "Not granted"}
+          metaLabel={hasGbpScope && gbpLocationCount != null ? "LOCATIONS" : "SCOPE"}
+          metaValue={
+            hasGbpScope
+              ? gbpLocationCount != null
+                ? `${gbpLocationCount} location${gbpLocationCount === 1 ? "" : "s"}`
+                : "Reviews, posts, insights"
+              : "Not granted"
+          }
           subLabel={hasGbpScope ? "STATUS" : "SETUP TIME"}
           subValue={hasGbpScope ? "Live" : "~ 30 seconds"}
           ctaConnect="/api/gsc/connect"
@@ -363,8 +428,14 @@ export default async function DashboardPage({
           <ServiceCard
             name={"TAG MANAGER"}
             connected={hasGtmScope}
-            metaLabel="SCOPE"
-            metaValue={hasGtmScope ? "Tags, triggers, variables" : "Not granted"}
+            metaLabel={hasGtmScope && gtmContainerCount != null ? "CONTAINERS" : "SCOPE"}
+            metaValue={
+              hasGtmScope
+                ? gtmContainerCount != null
+                  ? `${gtmContainerCount} container${gtmContainerCount === 1 ? "" : "s"}`
+                  : "Tags, triggers, variables"
+                : "Not granted"
+            }
             subLabel={hasGtmScope ? "STATUS" : "SETUP TIME"}
             subValue={hasGtmScope ? "Live" : "~ 30 seconds"}
             ctaConnect="/api/platform/connect?platform=gtm"
