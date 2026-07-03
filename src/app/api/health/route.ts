@@ -59,10 +59,15 @@ export async function GET() {
 
   const allOk = Object.values(checks).every((v) => v === "ok" || v.startsWith("ok ("));
 
+  // Railway injects RAILWAY_GIT_COMMIT_SHA at deploy time; lets us verify
+  // which commit is actually serving in production.
+  const commit = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? "unknown";
+
   return NextResponse.json(
     {
       status: allOk ? "ok" : "degraded",
       checks,
+      commit,
       timestamp: new Date().toISOString(),
     },
     { status: allOk ? 200 : 503 }
