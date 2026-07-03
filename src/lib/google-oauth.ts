@@ -15,6 +15,12 @@ export function buildGoogleAuthUrl(params: {
    * scopes, so connecting GTM/Ads does not drop GSC/GA4/GBP access.
    */
   includeGrantedScopes?: boolean;
+  /**
+   * Defaults to "consent", which connect flows need to guarantee a refresh
+   * token. Plain sign-in should pass "select_account" instead - forcing
+   * consent on login makes Google show a confirm screen every time.
+   */
+  prompt?: "consent" | "select_account" | "none";
 }): string {
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID!);
@@ -26,8 +32,7 @@ export function buildGoogleAuthUrl(params: {
   if (params.includeGrantedScopes) {
     url.searchParams.set("include_granted_scopes", "true");
   }
-  // Force consent to ensure we always receive a refresh token
-  url.searchParams.set("prompt", "consent");
+  url.searchParams.set("prompt", params.prompt ?? "consent");
   // Pre-select the right Google account so users can't accidentally
   // connect a different one than the email tied to their OMG account.
   if (params.loginHint) {

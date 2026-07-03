@@ -17,10 +17,15 @@ export async function GET(req: NextRequest) {
     const state = randomBytes(16).toString("hex");
     const loginCallbackUri = `${config.app.url}/api/auth/google/callback`;
 
+    // Plain sign-in: no refresh token needed, so no forced consent screen.
+    // "online" + "select_account" = pick your account and you're in; Google
+    // only re-prompts when it genuinely needs to.
     const googleAuthUrl = buildGoogleAuthUrl({
       scopes: ["openid", "email", "profile"],
       redirectUri: loginCallbackUri,
       state,
+      accessType: "online",
+      prompt: "select_account",
     });
 
     const response = NextResponse.redirect(googleAuthUrl);
