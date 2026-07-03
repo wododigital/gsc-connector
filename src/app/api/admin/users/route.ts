@@ -27,7 +27,8 @@ export async function GET(req: NextRequest) {
           subscription: { include: { plan: true } },
           gscProperties: { where: { isActive: true }, select: { id: true } },
           ga4Properties: { where: { isActive: true }, select: { id: true } },
-          googleCredentials: { select: { scopes: true } },
+          googleCredentials: { select: { scopes: true, status: true } },
+          platformAccess: { select: { platform: true, enabled: true } },
         },
       }),
       db.user.count({ where }),
@@ -47,6 +48,9 @@ export async function GET(req: NextRequest) {
       hasAnalyticsScope: u.googleCredentials.some((c) =>
         c.scopes.includes("analytics.readonly")
       ),
+      needsReauth: u.googleCredentials.some((c) => c.status === "needs_reauth"),
+      adsAccess: u.platformAccess.some((p) => p.platform === "google_ads" && p.enabled),
+      gtmAccess: u.platformAccess.some((p) => p.platform === "gtm" && p.enabled),
       subscriptionStatus: u.subscription?.status ?? "active",
     }));
 

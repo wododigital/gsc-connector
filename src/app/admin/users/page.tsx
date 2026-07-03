@@ -12,6 +12,9 @@ interface User {
   callsLimit: number;
   gscPropertiesCount: number;
   ga4PropertiesCount: number;
+  needsReauth: boolean;
+  adsAccess: boolean;
+  gtmAccess: boolean;
   subscriptionStatus: string;
 }
 
@@ -60,6 +63,17 @@ export default function AdminUsers() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ planId }),
+    });
+    fetchUsers();
+    setChangingPlan(null);
+  };
+
+  const togglePlatform = async (userId: string, platform: "google_ads" | "gtm", enabled: boolean) => {
+    setChangingPlan(userId);
+    await fetch(`/api/admin/users/${userId}/platform-access`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform, enabled }),
     });
     fetchUsers();
     setChangingPlan(null);
@@ -117,6 +131,7 @@ export default function AdminUsers() {
             <th>PLAN</th>
             <th>USAGE</th>
             <th>PROPERTIES</th>
+            <th>PLATFORMS</th>
             <th>JOINED</th>
             <th className="right">CHANGE PLAN</th>
           </tr>
@@ -124,11 +139,11 @@ export default function AdminUsers() {
         <tbody>
           {loading ? (
             <tr className="row-empty">
-              <td colSpan={6}>Loading users...</td>
+              <td colSpan={7}>Loading users...</td>
             </tr>
           ) : users.length === 0 ? (
             <tr className="row-empty">
-              <td colSpan={6}>No users found</td>
+              <td colSpan={7}>No users found</td>
             </tr>
           ) : (
             users.map((u) => {
@@ -181,6 +196,35 @@ export default function AdminUsers() {
                   </td>
                   <td className="mono dim">
                     GSC {u.gscPropertiesCount} · GA4 {u.ga4PropertiesCount}
+                    {u.needsReauth && (
+                      <div style={{ color: "var(--vermilion)", fontSize: 10, marginTop: 2 }}>
+                        NEEDS RECONNECT
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        type="button"
+                        disabled={changingPlan === u.id}
+                        onClick={() => togglePlatform(u.id, "google_ads", !u.adsAccess)}
+                        className={`pill ${u.adsAccess ? "success" : ""}`}
+                        title={u.adsAccess ? "Click to revoke Google Ads access" : "Click to grant Google Ads access"}
+                        style={{ cursor: "pointer", border: "1px solid var(--rule)", background: "transparent", opacity: u.adsAccess ? 1 : 0.45 }}
+                      >
+                        ADS {u.adsAccess ? "ON" : "OFF"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={changingPlan === u.id}
+                        onClick={() => togglePlatform(u.id, "gtm", !u.gtmAccess)}
+                        className={`pill ${u.gtmAccess ? "success" : ""}`}
+                        title={u.gtmAccess ? "Click to revoke Tag Manager access" : "Click to grant Tag Manager access"}
+                        style={{ cursor: "pointer", border: "1px solid var(--rule)", background: "transparent", opacity: u.gtmAccess ? 1 : 0.45 }}
+                      >
+                        GTM {u.gtmAccess ? "ON" : "OFF"}
+                      </button>
+                    </div>
                   </td>
                   <td className="dim mono">
                     {new Date(u.createdAt).toLocaleDateString()}

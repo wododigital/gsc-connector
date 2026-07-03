@@ -240,7 +240,9 @@ export type AppErrorCode =
   | "CREDENTIAL_NOT_FOUND"
   | "NO_CREDENTIAL"
   | "NO_GA4_PROPERTY"
-  | "GA4_PROPERTY_NOT_FOUND";
+  | "GA4_PROPERTY_NOT_FOUND"
+  | "GOOGLE_UNAVAILABLE"
+  | "PLATFORM_ACCESS_DENIED";
 
 export class AppError extends Error {
   constructor(

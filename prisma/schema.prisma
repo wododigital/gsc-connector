@@ -38,8 +38,30 @@ model User {
   userPrompts          UserPrompt[]
   promptTemplateStates UserPromptTemplateState[]
   brandProfile         BrandProfile?
+  platformAccess       PlatformAccess[]
 
   @@map("users")
+}
+
+// ============================================================
+// Per-user platform entitlements (admin-granted)
+// Gates access to premium platform integrations (google_ads, gtm):
+// controls both the dashboard connect buttons and which MCP tools
+// are registered for the user's sessions.
+// ============================================================
+model PlatformAccess {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  platform  String // "google_ads" | "gtm"
+  enabled   Boolean  @default(true)
+  grantedBy String?  @map("granted_by") // admin email
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@map("platform_access")
 }
 
 // ============================================================
@@ -192,6 +214,12 @@ model GoogleCredential {
   refreshTokenEncrypted String   @map("refresh_token_encrypted")
   tokenExpiry           DateTime @map("token_expiry")
   scopes                String   @default("")
+  // Credential health: "active" | "needs_reauth". Set to needs_reauth when
+  // Google returns invalid_grant on refresh (revoked/expired consent) so the
+  // dashboard can prompt reconnection and the admin alert fires only once.
+  status                String    @default("active")
+  lastRefreshError      String?   @map("last_refresh_error")
+  lastRefreshAt         DateTime? @map("last_refresh_at")
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 

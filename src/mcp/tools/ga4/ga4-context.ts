@@ -7,6 +7,7 @@
 
 import db from "../../../lib/db.js";
 import { decrypt } from "../../../lib/encryption.js";
+import { refreshCredentialAccessToken } from "../../../lib/google-refresh.js";
 import { AppError } from "../../../types/index.js";
 import { resolveGA4Property } from "../../../lib/ga4/resolve-property.js";
 
@@ -30,6 +31,8 @@ async function getAccessToken(userId: string): Promise<string> {
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,
+      userId: true,
+      googleEmail: true,
       accessTokenEncrypted: true,
       refreshTokenEncrypted: true,
       tokenExpiry: true,
@@ -57,44 +60,9 @@ async function getAccessToken(userId: string): Promise<string> {
     return decrypt(credential.accessTokenEncrypted);
   }
 
-  // Token expired - refresh it
-  const refreshToken = decrypt(credential.refreshTokenEncrypted);
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  });
-
-  if (!res.ok) {
-    throw new AppError(
-      "TOKEN_REFRESH_FAILED",
-      "Failed to refresh Google credentials. Please reconnect your Google account.",
-      401
-    );
-  }
-
-  const data = (await res.json()) as {
-    access_token: string;
-    expires_in: number;
-  };
-
-  // Update ONLY the credential we refreshed (updateMany({ userId }) used to
-  // cross-write this token onto credential rows with different scopes).
-  const { encrypt } = await import("../../../lib/encryption.js");
-  await db.googleCredential.update({
-    where: { id: credential.id },
-    data: {
-      accessTokenEncrypted: encrypt(data.access_token),
-      tokenExpiry: new Date(Date.now() + data.expires_in * 1000),
-    },
-  });
-
-  return data.access_token;
+  // Token expired - refresh via the shared helper (marks credential health
+  // + alerts admin on permanent failure, updates only this credential row).
+  return refreshCredentialAccessToken(credential);
 }
 
 /**

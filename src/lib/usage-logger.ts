@@ -13,7 +13,7 @@ export interface UsageLogParams {
   source: string;
   status: "success" | "error";
   responseTimeMs: number;
-  service?: "gsc" | "ga4" | "gbp";
+  service?: "gsc" | "ga4" | "gbp" | "gtm" | "ads";
 }
 
 export async function logToolCall(params: UsageLogParams): Promise<void> {

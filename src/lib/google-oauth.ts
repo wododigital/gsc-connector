@@ -10,6 +10,11 @@ export function buildGoogleAuthUrl(params: {
   state: string;
   accessType?: string;
   loginHint?: string;
+  /**
+   * Incremental authorization: the new grant keeps all previously granted
+   * scopes, so connecting GTM/Ads does not drop GSC/GA4/GBP access.
+   */
+  includeGrantedScopes?: boolean;
 }): string {
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID!);
@@ -18,6 +23,9 @@ export function buildGoogleAuthUrl(params: {
   url.searchParams.set("scope", params.scopes.join(" "));
   url.searchParams.set("state", params.state);
   url.searchParams.set("access_type", params.accessType ?? "offline");
+  if (params.includeGrantedScopes) {
+    url.searchParams.set("include_granted_scopes", "true");
+  }
   // Force consent to ensure we always receive a refresh token
   url.searchParams.set("prompt", "consent");
   // Pre-select the right Google account so users can't accidentally

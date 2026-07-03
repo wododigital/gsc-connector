@@ -45,6 +45,7 @@ export const mockDb = {
   ticketMessage: makePrismaModel(),
   adminNotification: makePrismaModel(),
   activityLog: makePrismaModel(),
+  platformAccess: makePrismaModel(),
   $connect: vi.fn(),
   $disconnect: vi.fn(),
 };

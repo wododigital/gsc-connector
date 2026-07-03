@@ -19,6 +19,12 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "crypto";
 import { validateAuth } from "./middleware/auth.js";
+import { startWatchdog } from "./watchdog.js";
+import { getPlatformAccessMap } from "../lib/platform-access.js";
+
+// Gated platform tools (registered per-user based on admin-granted access)
+import { registerGtmTools } from "./tools/gtm/index.js";
+import { registerAdsTools } from "./tools/ads/index.js";
 
 // Tool registration functions
 import { registerSearchAnalyticsTool } from "./tools/search-analytics.js";
@@ -85,20 +91,23 @@ interface Session {
   transport: StreamableHTTPServerTransport;
   userId: string;
   createdAt: number;
+  lastActivityAt: number;
 }
 
 const sessions = new Map<string, Session>();
 
-// Clean up stale sessions older than 2 hours every 30 minutes.
-// Prevents memory leaks when clients disconnect without sending DELETE.
-const SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+// Clean up sessions IDLE for 2+ hours, every 30 minutes. Reaping by
+// last activity (not creation time) so an actively used session is never
+// closed mid-conversation. Prevents memory leaks when clients disconnect
+// without sending DELETE.
+const SESSION_IDLE_MAX_MS = 2 * 60 * 60 * 1000;
 setInterval(() => {
-  const cutoff = Date.now() - SESSION_MAX_AGE_MS;
+  const cutoff = Date.now() - SESSION_IDLE_MAX_MS;
   for (const [id, session] of sessions.entries()) {
-    if (session.createdAt < cutoff) {
+    if (session.lastActivityAt < cutoff) {
       session.transport.close().catch(() => undefined);
       sessions.delete(id);
-      console.log(`[MCP] Stale session cleaned up: ${id}`);
+      console.log(`[MCP] Idle session cleaned up: ${id}`);
     }
   }
 }, 30 * 60 * 1000);
@@ -106,7 +115,7 @@ setInterval(() => {
 // ----------------------------------------------------------------
 // Factory: create a fresh McpServer per session (not per request)
 // ----------------------------------------------------------------
-function createMcpServer(user: UserContext): McpServer {
+async function createMcpServer(user: UserContext): Promise<McpServer> {
   const server = new McpServer({
     name: "omg-connector",
     version: "1.0.0",
@@ -166,6 +175,18 @@ function createMcpServer(user: UserContext): McpServer {
   registerGbpSearchKeywordsTool(server, userCtx);
   registerGbpGetPostsTool(server, userCtx);
   registerGbpGetMediaTool(server, userCtx);
+
+  // Gated platforms: only registered for entitled users, so tools/list never
+  // shows gtm_*/ads_* to anyone else. Entitlement is ALSO re-checked inside
+  // every tool call, because sessions can outlive an admin revocation.
+  try {
+    const access = await getPlatformAccessMap(user.userId);
+    if (access.gtm) registerGtmTools(server, userCtx);
+    if (access.google_ads) registerAdsTools(server, userCtx);
+  } catch (err) {
+    // Fail closed: if the entitlement lookup breaks, gated tools stay off.
+    console.error("[MCP] Platform access lookup failed:", err);
+  }
 
   return server;
 }
@@ -227,6 +248,7 @@ app.post("/mcp", validateAuth, async (req: Request, res: Response) => {
         return;
       }
 
+      session.lastActivityAt = Date.now();
       await session.transport.handleRequest(req, res, req.body);
       return;
     }
@@ -242,7 +264,12 @@ app.post("/mcp", validateAuth, async (req: Request, res: Response) => {
         onsessioninitialized: (id) => {
           // Register session in the store as soon as the ID is assigned.
           // Using the callback (not after handleRequest) avoids race conditions.
-          sessions.set(id, { transport, userId: user.userId, createdAt: Date.now() });
+          sessions.set(id, {
+            transport,
+            userId: user.userId,
+            createdAt: Date.now(),
+            lastActivityAt: Date.now(),
+          });
           console.log(`[MCP] Session created: ${id} for user ${user.userId}`);
 
           // Auto-cleanup when transport closes
@@ -253,7 +280,7 @@ app.post("/mcp", validateAuth, async (req: Request, res: Response) => {
         },
       });
 
-      const server = createMcpServer(user);
+      const server = await createMcpServer(user);
       await server.connect(transport);
       await transport.handleRequest(req, res, req.body);
       return;
@@ -346,6 +373,7 @@ app.listen(PORT, () => {
   console.log(`[MCP] OMG Bridge MCP server running on port ${PORT}`);
   console.log(`[MCP] Health: http://localhost:${PORT}/health`);
   console.log(`[MCP] Endpoint: http://localhost:${PORT}/mcp`);
+  startWatchdog();
 });
 
 export default app;

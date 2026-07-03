@@ -4,6 +4,7 @@ import db from "@/lib/db";
 import { CopyButton } from "@/components/copy-button";
 import { ConnectionActions } from "@/components/connection-actions";
 import { ConnectAi } from "@/components/connect-ai";
+import { getPlatformAccessMap } from "@/lib/platform-access";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -35,22 +36,33 @@ async function getGA4Properties(userId: string) {
 }
 
 async function getCredentialInfo(userId: string) {
+  const empty = {
+    hasCredential: false,
+    hasAnalyticsScope: false,
+    hasGbpScope: false,
+    hasAdsScope: false,
+    hasGtmScope: false,
+    needsReauth: false,
+  };
   try {
-    const credential = await db.googleCredential.findFirst({
+    // Union scopes across all credential rows - platform helpers pick the
+    // right credential per scope, so "connected" means ANY row has the scope.
+    const credentials = await db.googleCredential.findMany({
       where: { userId },
-      select: { scopes: true },
-      orderBy: { updatedAt: "desc" },
+      select: { scopes: true, status: true },
     });
-    if (!credential) {
-      return { hasCredential: false, hasAnalyticsScope: false, hasGbpScope: false };
-    }
+    if (credentials.length === 0) return empty;
+    const allScopes = credentials.map((c) => c.scopes).join(" ");
     return {
       hasCredential: true,
-      hasAnalyticsScope: credential.scopes.includes("analytics.readonly"),
-      hasGbpScope: credential.scopes.includes("business.manage"),
+      hasAnalyticsScope: allScopes.includes("analytics.readonly"),
+      hasGbpScope: allScopes.includes("business.manage"),
+      hasAdsScope: allScopes.includes("auth/adwords"),
+      hasGtmScope: allScopes.includes("tagmanager.readonly"),
+      needsReauth: credentials.some((c) => c.status === "needs_reauth"),
     };
   } catch {
-    return { hasCredential: false, hasAnalyticsScope: false, hasGbpScope: false };
+    return empty;
   }
 }
 
@@ -174,10 +186,14 @@ export default async function DashboardPage({
       .findUnique({ where: { userId: session.id }, include: { plan: true } })
       .catch(() => null),
   ]);
+  const platformAccess = await getPlatformAccessMap(session.id).catch(
+    () => ({ google_ads: false, gtm: false })
+  );
   const { hasActiveKey, activeKeyPrefix } = keySummary;
 
   const hasGscConnected = properties.some((p) => p.isActive);
-  const { hasCredential, hasAnalyticsScope, hasGbpScope } = credentialInfo;
+  const { hasCredential, hasAnalyticsScope, hasGbpScope, hasAdsScope, hasGtmScope } =
+    credentialInfo;
   const totalActiveProperties =
     properties.filter((p) => p.isActive).length + ga4Properties.filter((p) => p.isActive).length;
 
@@ -321,16 +337,39 @@ export default async function DashboardPage({
           subValue={hasGbpScope ? "Live" : "~ 30 seconds"}
           ctaConnect="/api/gsc/connect"
         />
-        <ServiceCard
-          name={"GOOGLE ADS"}
-          connected={false}
-          comingSoon
-          metaLabel="SCOPE"
-          metaValue="Campaigns, spend, ROAS"
-          subLabel="STATUS"
-          subValue="In development"
-          ctaConnect="#"
-        />
+        {platformAccess.google_ads ? (
+          <ServiceCard
+            name={"GOOGLE ADS"}
+            connected={hasAdsScope}
+            metaLabel="SCOPE"
+            metaValue={hasAdsScope ? "Campaigns, conversions" : "Not granted"}
+            subLabel={hasAdsScope ? "STATUS" : "SETUP TIME"}
+            subValue={hasAdsScope ? "Live" : "~ 30 seconds"}
+            ctaConnect="/api/platform/connect?platform=google_ads"
+          />
+        ) : (
+          <ServiceCard
+            name={"GOOGLE ADS"}
+            connected={false}
+            comingSoon
+            metaLabel="SCOPE"
+            metaValue="Campaigns, spend, ROAS"
+            subLabel="STATUS"
+            subValue="Restricted access"
+            ctaConnect="#"
+          />
+        )}
+        {platformAccess.gtm && (
+          <ServiceCard
+            name={"TAG MANAGER"}
+            connected={hasGtmScope}
+            metaLabel="SCOPE"
+            metaValue={hasGtmScope ? "Tags, triggers, variables" : "Not granted"}
+            subLabel={hasGtmScope ? "STATUS" : "SETUP TIME"}
+            subValue={hasGtmScope ? "Live" : "~ 30 seconds"}
+            ctaConnect="/api/platform/connect?platform=gtm"
+          />
+        )}
       </div>
 
       {/* GSC + GA4 property exposure preview (top 5; full list lives on /dashboard/properties) */}

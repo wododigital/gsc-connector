@@ -6,8 +6,8 @@
  */
 
 import db from "../../lib/db.js";
-import { decrypt, encrypt } from "../../lib/encryption.js";
-import { refreshGoogleToken } from "../../lib/google-api.js";
+import { decrypt } from "../../lib/encryption.js";
+import { refreshCredentialAccessToken } from "../../lib/google-refresh.js";
 import { AppError } from "../../types/index.js";
 import { resolveSiteUrl } from "../../lib/resolve-site-url.js";
 
@@ -20,6 +20,8 @@ export interface GscContext {
 /** Shared token refresh logic for a credential record */
 async function resolveAccessToken(credential: {
   id: string;
+  userId: string;
+  googleEmail: string;
   accessTokenEncrypted: string;
   refreshTokenEncrypted: string;
   tokenExpiry: Date;
@@ -30,22 +32,9 @@ async function resolveAccessToken(credential: {
     return decrypt(credential.accessTokenEncrypted);
   }
 
-  // Token is expired or about to expire - refresh it
-  const refreshToken = decrypt(credential.refreshTokenEncrypted);
-  const newTokens = await refreshGoogleToken(refreshToken);
-
-  const newExpiry = new Date(Date.now() + newTokens.expires_in * 1000);
-  const newAccessTokenEncrypted = encrypt(newTokens.access_token);
-
-  await db.googleCredential.update({
-    where: { id: credential.id },
-    data: {
-      accessTokenEncrypted: newAccessTokenEncrypted,
-      tokenExpiry: newExpiry,
-    },
-  });
-
-  return newTokens.access_token;
+  // Token is expired or about to expire - refresh it (marks credential
+  // health + alerts admin on permanent failure)
+  return refreshCredentialAccessToken(credential);
 }
 
 /**
