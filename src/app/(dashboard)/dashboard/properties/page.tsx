@@ -20,6 +20,8 @@ import {
   type GtmAccount,
   type GtmContainer,
 } from "@/lib/gtm/api";
+import { getAdsAccessToken } from "@/lib/ads/access";
+import { listAccessibleCustomers, adsSearch, AdsApiError } from "@/lib/ads/api";
 import { getPlatformAccessMap } from "@/lib/platform-access";
 import { PropertiesTabs, type PropertyTabKey } from "./properties-tabs";
 import type { Metadata } from "next";
@@ -75,9 +77,10 @@ async function getCredentialScopes(userId: string) {
       hasCredential: credentials.length > 0,
       hasGbpScope: allScopes.includes("business.manage"),
       hasGtmScope: allScopes.includes("tagmanager"),
+      hasAdsScope: allScopes.includes("adwords"),
     };
   } catch {
-    return { hasCredential: false, hasGbpScope: false, hasGtmScope: false };
+    return { hasCredential: false, hasGbpScope: false, hasGtmScope: false, hasAdsScope: false };
   }
 }
 
@@ -159,6 +162,71 @@ async function getGtmData(
         : err instanceof Error
           ? err.message
           : "Failed to load Tag Manager data";
+    return { state: "error", message };
+  }
+}
+
+type AdsCustomer = {
+  id: string;
+  descriptiveName: string | null;
+  currencyCode: string | null;
+  isManager: boolean;
+};
+
+type AdsStatus =
+  | { state: "no_credential" }
+  | { state: "no_scope" }
+  | { state: "ok"; customers: AdsCustomer[] }
+  | { state: "error"; message: string };
+
+async function getAdsCustomerInfo(accessToken: string, customerId: string): Promise<AdsCustomer> {
+  try {
+    const rows = await adsSearch(
+      accessToken,
+      customerId,
+      "SELECT customer.id, customer.descriptive_name, customer.currency_code, customer.manager FROM customer",
+      customerId
+    );
+    const row = rows[0] as
+      | { customer?: { descriptiveName?: string; currencyCode?: string; manager?: boolean } }
+      | undefined;
+    return {
+      id: customerId,
+      descriptiveName: row?.customer?.descriptiveName ?? null,
+      currencyCode: row?.customer?.currencyCode ?? null,
+      isManager: row?.customer?.manager ?? false,
+    };
+  } catch (err) {
+    // Per-account failure (e.g. client account needing a different
+    // login-customer-id) shouldn't kill the whole page - fall back to the
+    // bare ID and keep going.
+    console.warn(`[properties/ads] Failed to load customer info for ${customerId}:`, err);
+    return { id: customerId, descriptiveName: null, currencyCode: null, isManager: false };
+  }
+}
+
+async function getAdsData(
+  userId: string,
+  hasCredential: boolean,
+  hasAdsScope: boolean
+): Promise<AdsStatus> {
+  if (!hasCredential) return { state: "no_credential" };
+  if (!hasAdsScope) return { state: "no_scope" };
+  try {
+    const accessToken = await getAdsAccessToken(userId);
+    const resourceNames = await listAccessibleCustomers(accessToken);
+    const customerIds = resourceNames.map((r) => r.replace("customers/", ""));
+    const customers = await Promise.all(
+      customerIds.map((id) => getAdsCustomerInfo(accessToken, id))
+    );
+    return { state: "ok", customers };
+  } catch (err) {
+    const message =
+      err instanceof AdsApiError
+        ? err.userMessage(process.env.APP_URL || "")
+        : err instanceof Error
+          ? err.message
+          : "Failed to load Google Ads data";
     return { state: "error", message };
   }
 }
@@ -428,6 +496,63 @@ function GtmAccountsPane({ accounts }: { accounts: GtmAccountWithContainers[] })
   );
 }
 
+function AdsAccountsPane({ customers }: { customers: AdsCustomer[] }) {
+  if (customers.length === 0) {
+    return (
+      <GbpReconnectPane
+        headline="No Ads accounts"
+        copy="Your Google account is authorized for Ads but has no accessible customer accounts. Ask the account owner to grant access, then come back here."
+      />
+    );
+  }
+
+  return (
+    <div style={{ background: "var(--surface-1)", border: "1px solid var(--rule-strong)" }}>
+      <div
+        style={{
+          padding: "14px 22px",
+          borderBottom: "1px solid var(--rule)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+          {customers.length} account{customers.length === 1 ? "" : "s"}
+        </div>
+        <span className="pill info" style={{ fontSize: 10 }}>LIVE</span>
+      </div>
+
+      {customers.map((customer) => (
+        <div
+          key={customer.id}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto",
+            gap: 12,
+            alignItems: "center",
+            padding: "18px 22px",
+            borderBottom: "1px solid var(--rule)",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>
+              {customer.descriptiveName || customer.id}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2, fontFamily: "var(--mono)" }}>
+              {customer.id}
+              {customer.currencyCode ? ` · ${customer.currencyCode}` : ""}
+            </div>
+          </div>
+          {customer.isManager && (
+            <span className="pill" style={{ fontSize: 9 }}>MANAGER</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ────────────────────────────────────────────────────────────
  * Page
  * ──────────────────────────────────────────────────────────── */
@@ -442,10 +567,13 @@ export default async function PropertiesPage() {
     getPlatformAccessMap(session.id).catch(() => ({ google_ads: false, gtm: false })),
   ]);
 
-  const [gbpStatus, gtmStatus] = await Promise.all([
+  const [gbpStatus, gtmStatus, adsStatus] = await Promise.all([
     getGbpData(session.id, credentialScopes.hasCredential, credentialScopes.hasGbpScope),
     platformAccess.gtm
       ? getGtmData(session.id, credentialScopes.hasCredential, credentialScopes.hasGtmScope)
+      : Promise.resolve(null),
+    platformAccess.google_ads
+      ? getAdsData(session.id, credentialScopes.hasCredential, credentialScopes.hasAdsScope)
       : Promise.resolve(null),
   ]);
 
@@ -459,15 +587,19 @@ export default async function PropertiesPage() {
       ? gtmStatus.accounts.reduce((s, a) => s + a.containers.length, 0)
       : 0;
 
+  const adsCustomerCount = adsStatus?.state === "ok" ? adsStatus.customers.length : 0;
+
   const tabs: { key: PropertyTabKey; label: string; count: number }[] = [
     { key: "ga4", label: "GA4", count: ga4Properties.length },
     { key: "gsc", label: "Search Console", count: gscProperties.length },
     { key: "gbp", label: "Business Profile", count: gbpLocationCount },
-    // GTM is entitlement-gated: the tab simply doesn't exist for others
+    // GTM and Ads are entitlement-gated: the tab simply doesn't exist for others
     ...(platformAccess.gtm
       ? [{ key: "gtm" as const, label: "Tag Manager", count: gtmContainerCount }]
       : []),
-    { key: "ads", label: "Ads", count: 0 },
+    ...(platformAccess.google_ads
+      ? [{ key: "ads" as const, label: "Ads", count: adsCustomerCount }]
+      : []),
   ];
 
   // Default to whichever connected source the user has the most of, falling
@@ -578,13 +710,57 @@ export default async function PropertiesPage() {
     }
   }
 
-  const adsPane = (
-    <EmptyServicePane
-      comingSoon
-      service="Google Ads"
-      copy="Campaigns, spend, ROAS and keyword bids from any Ads accounts you manage. Landing soon."
-    />
-  );
+  let adsPane: React.ReactNode = null;
+  if (platformAccess.google_ads && adsStatus) {
+    if (adsStatus.state === "ok") {
+      adsPane = <AdsAccountsPane customers={adsStatus.customers} />;
+    } else if (adsStatus.state === "no_scope") {
+      adsPane = (
+        <div
+          style={{
+            padding: "64px",
+            textAlign: "center",
+            background: "var(--surface-1)",
+            border: "1px dashed var(--rule-strong)",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--display)",
+              fontWeight: 700,
+              fontSize: 24,
+              textTransform: "uppercase",
+              letterSpacing: "-0.02em",
+              marginBottom: 8,
+            }}
+          >
+            Ads is ready
+          </div>
+          <p style={{ color: "var(--ink-2)", fontSize: 13, maxWidth: 460, margin: "0 auto 24px" }}>
+            Campaigns, conversion actions and GAQL reporting for any Ads account you manage.
+            Connect once to add Ads access to your Google grant.
+          </p>
+          <a className="btn btn-primary" href="/api/platform/connect?platform=google_ads">
+            Connect Google Ads &rarr;
+          </a>
+        </div>
+      );
+    } else if (adsStatus.state === "no_credential") {
+      adsPane = (
+        <EmptyServicePane
+          service="Google Ads"
+          copy="Connect a Google account first so we can read your Ads accounts and campaigns."
+        />
+      );
+    } else {
+      adsPane = (
+        <GbpReconnectPane
+          headline="Google Ads load failed"
+          copy={adsStatus.message}
+        />
+      );
+    }
+  }
 
   return (
     <>
@@ -613,7 +789,7 @@ export default async function PropertiesPage() {
           gsc: gscPane,
           gbp: gbpPane,
           ...(platformAccess.gtm ? { gtm: gtmPane } : {}),
-          ads: adsPane,
+          ...(platformAccess.google_ads ? { ads: adsPane } : {}),
         }}
       />
     </>
