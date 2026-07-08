@@ -95,7 +95,7 @@ export async function adsSearch(
   const res = await fetch(`${ADS_BASE}/customers/${cid}/googleAds:search`, {
     method: "POST",
     headers: adsHeaders(accessToken, loginCustomerId),
-    body: JSON.stringify({ query, pageSize: 200 }),
+    body: JSON.stringify({ query }),
   });
   if (!res.ok) throw new AdsApiError(res.status, await res.text());
   const data = (await res.json()) as { results?: AdsSearchRow[] };
