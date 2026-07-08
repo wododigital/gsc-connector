@@ -9,7 +9,7 @@
 
 import { AppError } from "../../types/index.js";
 
-const ADS_VERSION = process.env.GOOGLE_ADS_API_VERSION || "v19";
+const ADS_VERSION = process.env.GOOGLE_ADS_API_VERSION || "v21";
 const ADS_BASE = `https://googleads.googleapis.com/${ADS_VERSION}`;
 
 export class AdsApiError extends Error {
