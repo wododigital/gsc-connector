@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin-auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import {
   SidebarLink,
   SidebarSection,
@@ -98,28 +99,18 @@ export default async function DashboardLayout({
   const session = await getSession();
   if (!session) redirect("/auth/login");
 
-  // Onboarding redirect: only push the user there if they haven't finished it.
-  const user = await db.user.findUnique({
-    where: { id: session.id },
-    select: { onboardingCompleted: true },
-  });
-  if (user && !user.onboardingCompleted) redirect("/onboarding");
-
-  // Subscription stats for the usage banner.
-  const subscription = await db.userSubscription.findUnique({
-    where: { userId: session.id },
-    include: { plan: true },
-  });
-  const isFreeUser = subscription?.plan.name === "free";
-  const callsUsed = subscription?.callsUsed ?? 0;
-  const callsLimit = subscription?.plan.monthlyCalls ?? 100;
-  const periodEnd = (
-    subscription?.periodEnd ?? new Date(Date.now() + 30 * 86400000)
-  ).toISOString();
-  const planLabel = subscription?.plan.name?.toUpperCase() ?? "FREE";
-
-  // Counts for sidebar badges. All wrapped so failures fall back to 0.
-  const [promptCount, propertyCount] = await Promise.all([
+  // All independent of each other - run concurrently instead of serially
+  // awaiting each one (was 3 sequential DB round-trips on every dashboard
+  // layout render, including hard navigations from the plain brand link).
+  const [user, subscription, promptCount, propertyCount] = await Promise.all([
+    db.user.findUnique({
+      where: { id: session.id },
+      select: { onboardingCompleted: true },
+    }),
+    db.userSubscription.findUnique({
+      where: { userId: session.id },
+      include: { plan: true },
+    }),
     db.userPrompt
       .count({ where: { userId: session.id } })
       .catch(() => 0),
@@ -128,6 +119,17 @@ export default async function DashboardLayout({
       db.ga4Property.count({ where: { userId: session.id, isActive: true } }).catch(() => 0),
     ]).then(([a, b]) => a + b),
   ]);
+
+  // Onboarding redirect: only push the user there if they haven't finished it.
+  if (user && !user.onboardingCompleted) redirect("/onboarding");
+
+  const isFreeUser = subscription?.plan.name === "free";
+  const callsUsed = subscription?.callsUsed ?? 0;
+  const callsLimit = subscription?.plan.monthlyCalls ?? 100;
+  const periodEnd = (
+    subscription?.periodEnd ?? new Date(Date.now() + 30 * 86400000)
+  ).toISOString();
+  const planLabel = subscription?.plan.name?.toUpperCase() ?? "FREE";
 
   const isAdmin = isAdminEmail(session.email);
   const userInitials = initialsFor(session.email);
@@ -149,7 +151,7 @@ export default async function DashboardLayout({
 
       {/* ── Topbar ─────────────────────────────────────────── */}
       <header className="topbar">
-        <a href="/dashboard" className="brand">
+        <Link href="/dashboard" className="brand">
           <img src="/omg-logo-light.webp" alt="OMG / BRIDGE" className="logo-img" />
           <svg
             className="logo-icon"
@@ -173,7 +175,7 @@ export default async function DashboardLayout({
               OMG
             </text>
           </svg>
-        </a>
+        </Link>
         <div className="breadcrumb">
           <span className="dot" />
           <span>WORKSPACE / WODO DIGITAL /</span>

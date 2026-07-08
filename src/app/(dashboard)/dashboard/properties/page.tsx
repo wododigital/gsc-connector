@@ -102,18 +102,21 @@ async function getGbpData(
   try {
     const accessToken = await getGbpAccessToken(userId);
     const accounts = await listGbpAccounts(accessToken);
-    const enriched: GbpAccountWithLocations[] = [];
-    for (const account of accounts) {
-      let locations: GbpLocation[] = [];
-      try {
-        locations = await listGbpLocations(accessToken, account.name);
-      } catch (locErr) {
-        // Per-account failure shouldn't kill the whole page; show the
-        // account with an empty list and continue.
-        console.warn(`[properties/gbp] Failed to list locations for ${account.name}:`, locErr);
-      }
-      enriched.push({ ...account, locations });
-    }
+    // Per-account lookups are independent - run them concurrently instead of
+    // serially awaiting each one (was N sequential round-trips to Google).
+    const enriched: GbpAccountWithLocations[] = await Promise.all(
+      accounts.map(async (account) => {
+        let locations: GbpLocation[] = [];
+        try {
+          locations = await listGbpLocations(accessToken, account.name);
+        } catch (locErr) {
+          // Per-account failure shouldn't kill the whole page; show the
+          // account with an empty list and continue.
+          console.warn(`[properties/gbp] Failed to list locations for ${account.name}:`, locErr);
+        }
+        return { ...account, locations };
+      })
+    );
     return { state: "ok", accounts: enriched };
   } catch (err) {
     const message =
@@ -144,16 +147,19 @@ async function getGtmData(
   try {
     const accessToken = await getGtmAccessToken(userId);
     const accounts = await listGtmAccounts(accessToken);
-    const enriched: GtmAccountWithContainers[] = [];
-    for (const account of accounts) {
-      let containers: GtmContainer[] = [];
-      try {
-        containers = await listGtmContainers(accessToken, account.path);
-      } catch (cErr) {
-        console.warn(`[properties/gtm] Failed to list containers for ${account.path}:`, cErr);
-      }
-      enriched.push({ ...account, containers });
-    }
+    // Per-account lookups are independent - run them concurrently instead of
+    // serially awaiting each one (was N sequential round-trips to Google).
+    const enriched: GtmAccountWithContainers[] = await Promise.all(
+      accounts.map(async (account) => {
+        let containers: GtmContainer[] = [];
+        try {
+          containers = await listGtmContainers(accessToken, account.path);
+        } catch (cErr) {
+          console.warn(`[properties/gtm] Failed to list containers for ${account.path}:`, cErr);
+        }
+        return { ...account, containers };
+      })
+    );
     return { state: "ok", accounts: enriched };
   } catch (err) {
     const message =

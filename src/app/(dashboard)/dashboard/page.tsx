@@ -138,11 +138,10 @@ async function getGbpLocationCount(userId: string, hasGbpScope: boolean) {
   return cachedLiveCount(`gbp:${userId}`, async () => {
     const token = await getGbpAccessToken(userId);
     const accounts = await listGbpAccounts(token);
-    let total = 0;
-    for (const account of accounts) {
-      total += (await listGbpLocations(token, account.name)).length;
-    }
-    return total;
+    const counts = await Promise.all(
+      accounts.map((account) => listGbpLocations(token, account.name).then((l) => l.length))
+    );
+    return counts.reduce((sum, n) => sum + n, 0);
   });
 }
 
@@ -151,11 +150,10 @@ async function getGtmContainerCount(userId: string, entitled: boolean, hasGtmSco
   return cachedLiveCount(`gtm:${userId}`, async () => {
     const token = await getGtmAccessToken(userId);
     const accounts = await listGtmAccounts(token);
-    let total = 0;
-    for (const account of accounts) {
-      total += (await listGtmContainers(token, account.path)).length;
-    }
-    return total;
+    const counts = await Promise.all(
+      accounts.map((account) => listGtmContainers(token, account.path).then((c) => c.length))
+    );
+    return counts.reduce((sum, n) => sum + n, 0);
   });
 }
 

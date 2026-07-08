@@ -36,7 +36,6 @@ export function SidebarLink({
       title={title ?? label}
       data-nav-link
       className={`nav-link${isActive ? " active" : ""}`}
-      prefetch={false}
     >
       <span className="icon" aria-hidden="true">{icon}</span>
       <span className="label-text">{label}</span>
